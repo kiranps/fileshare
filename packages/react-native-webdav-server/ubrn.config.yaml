@@ -1,0 +1,3 @@
+rust:
+  directory: ./rust
+  manifestPath: "webdavserver/Cargo.toml"

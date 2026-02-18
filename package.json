@@ -1,0 +1,16 @@
+{
+  "name": "webdav-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "mobile:start": "pnpm --filter mobile start",
+    "mobile:android": "pnpm --filter mobile android",
+    "rust:build": "pnpm --filter react-native-webdav-server ubrn:android",
+    "rust:clean": "pnpm --filter react-native-webdav-server ubrn:clean"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.27.0"
+}
