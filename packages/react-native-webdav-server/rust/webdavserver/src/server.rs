@@ -1,8 +1,12 @@
 use crate::ServerError;
+use axum::http::Uri;
+use axum::middleware;
 use axum::{
     Router,
     body::Body,
-    http::{Method, Request, Response, StatusCode},
+    http::{Method, Request, StatusCode},
+    middleware::Next,
+    response::Response,
     routing::any,
 };
 use std::path::{Path, PathBuf};
@@ -16,6 +20,17 @@ type JoinHandleResult = tokio::task::JoinHandle<Result<(), ServerError>>;
 use std::sync::Once;
 
 static INIT_LOGGING: Once = Once::new();
+
+pub async fn prefix_middleware(mut req: Request<axum::body::Body>, next: Next) -> Response {
+    let original = req.uri().path_and_query().map(|x| x.as_str()).unwrap_or("");
+
+    let new_path = format!("/data{}", original);
+
+    let new_uri: Uri = new_path.parse().unwrap();
+    *req.uri_mut() = new_uri;
+
+    next.run(req).await
+}
 
 pub fn init_logging() {
     INIT_LOGGING.call_once(|| {
@@ -155,7 +170,9 @@ fn router() -> Router {
                     tower_http::trace::DefaultOnResponse::new().level(tracing::Level::INFO),
                 ),
         )
+        .layer(middleware::from_fn(prefix_middleware))
 }
+
 async fn route_request(req: Request<Body>) -> Response<Body> {
     match req.method() {
         &Method::OPTIONS => options_response(),
@@ -293,9 +310,11 @@ fn multistatus(responses: Vec<String>) -> Response<Body> {
 }
 fn resolve_path(uri_path: &str) -> PathBuf {
     //let base_path = "/storage/emulated/0";
-    let base_path = "data";
-    Path::new(base_path).join(uri_path.trim_start_matches('/'))
+    //let base_path = "data";
+    //Path::new(base_path).join(uri_path.trim_start_matches('/'))
+    Path::new(uri_path.trim_start_matches('/')).to_path_buf()
 }
+
 fn ensure_trailing_slash(path: &str) -> String {
     if path.ends_with('/') {
         path.to_owned()
