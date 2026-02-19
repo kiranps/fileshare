@@ -4,6 +4,7 @@ use axum::middleware;
 use axum::{
     Router,
     body::Body,
+    extract::State,
     http::{Method, Request, StatusCode},
     middleware::Next,
     response::Response,
@@ -21,13 +22,15 @@ use std::sync::Once;
 
 static INIT_LOGGING: Once = Once::new();
 
-pub async fn prefix_middleware(mut req: Request<axum::body::Body>, next: Next) -> Response {
+pub async fn prefix_middleware(
+    State(base_path): State<String>,
+    mut req: Request<Body>,
+    next: Next,
+) -> Response {
     let original = req.uri().path_and_query().map(|x| x.as_str()).unwrap_or("");
+    let new_path = format!("/{}{}", base_path.trim_start_matches('/'), original);
 
-    let new_path = format!("/data{}", original);
-
-    let new_uri: Uri = new_path.parse().unwrap();
-    *req.uri_mut() = new_uri;
+    *req.uri_mut() = new_path.parse::<Uri>().expect("valid URI");
 
     next.run(req).await
 }
@@ -68,6 +71,7 @@ pub fn init_logging() {
 #[derive(uniffi::Object)]
 pub struct WebDavServer {
     pub port: u16,
+    base_path: String,
     shutdown_tx: Mutex<Option<oneshot::Sender<()>>>,
     handle: Mutex<Option<JoinHandleResult>>,
     runtime: Mutex<Option<Runtime>>,
@@ -77,9 +81,14 @@ pub struct WebDavServer {
 #[uniffi::export]
 impl WebDavServer {
     #[uniffi::constructor]
-    pub fn new(port: u16) -> Self {
+    pub fn new(port: u16, base_path: String) -> Self {
         WebDavServer {
             port,
+            base_path: if base_path.is_empty() {
+                "data".to_string()
+            } else {
+                base_path
+            },
             shutdown_tx: Mutex::new(None),
             handle: Mutex::new(None),
             runtime: Mutex::new(None),
@@ -108,6 +117,7 @@ impl WebDavServer {
             *tx_guard = Some(shutdown_tx);
         }
         let port = self.port;
+        let base_path = self.base_path.clone();
         let handle = {
             let runtime_guard = self.runtime.lock().unwrap();
             runtime_guard.as_ref().unwrap().spawn(async move {
@@ -115,7 +125,7 @@ impl WebDavServer {
                     .await
                     .map_err(|_| ServerError::BindFailed(port))?;
 
-                let app = router();
+                let app = router(base_path);
 
                 axum::serve(listener, app)
                     .with_graceful_shutdown(async {
@@ -157,7 +167,7 @@ impl WebDavServer {
 
 // ========== ROUTING AND HELPERS ============
 
-fn router() -> Router {
+fn router(base_path: String) -> Router {
     Router::new()
         .route("/", any(route_request))
         .route("/{*path}", any(route_request))
@@ -170,7 +180,7 @@ fn router() -> Router {
                     tower_http::trace::DefaultOnResponse::new().level(tracing::Level::INFO),
                 ),
         )
-        .layer(middleware::from_fn(prefix_middleware))
+        .layer(middleware::from_fn_with_state(base_path, prefix_middleware))
 }
 
 async fn route_request(req: Request<Body>) -> Response<Body> {
