@@ -11,25 +11,12 @@ uniffi::setup_scaffolding!();
 pub enum ServerError {
     #[error("server already running")]
     AlreadyRunning,
-
     #[error("server not running")]
     NotRunning,
-
     #[error("failed to bind server on port {0}")]
     BindFailed(u16),
-
     #[error("server runtime error: {message}")]
     RuntimeError { message: String },
 }
 
-/// UniFFI-exported start
-#[uniffi::export]
-pub fn start_server(port: u16) -> Result<String, ServerError> {
-    server::start(port)
-}
-
-/// UniFFI-exported stop
-#[uniffi::export]
-pub async fn stop_server() -> Result<String, ServerError> {
-    server::stop().await
-}
+pub use server::WebDavServer;

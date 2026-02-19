@@ -35,16 +35,24 @@ import nativeModule, {
   type UniffiForeignFutureCompleteVoid,
 } from "./webdavserver-ffi";
 import {
+  type FfiConverter, 
   type UniffiByteArray, 
+  type UniffiObjectFactory, 
+  type UniffiRustArcPtr, 
+  type UnsafeMutableRawPointer, 
   AbstractFfiConverterByteArray, 
   FfiConverterInt32, 
+  FfiConverterObject, 
   FfiConverterUInt16, 
+  FfiConverterUInt64, 
   RustBuffer, 
+  UniffiAbstractObject, 
   UniffiError, 
   UniffiInternalError, 
   UniffiRustCaller, 
+  destructorGuardSymbol, 
+  pointerLiteralSymbol, 
   uniffiCreateFfiConverterString, 
-  uniffiRustCallAsync, 
   uniffiTypeNameSymbol, 
   variantOrdinalSymbol } from "uniffi-bindgen-react-native";
 
@@ -59,49 +67,6 @@ const uniffiIsDebug =
   false;
 // Public interface members begin here.
 
-/**
- * UniFFI-exported start
- */
-export function startServer(port: /*u16*/number): string /*throws*/ {
-    return FfiConverterString.lift(
-        uniffiCaller.rustCallWithError(
-            /*liftError:*/ FfiConverterTypeServerError.lift.bind(FfiConverterTypeServerError),
-            /*caller:*/ (callStatus) => {
-                return nativeModule().ubrn_uniffi_webdavserver_fn_func_start_server(
-        FfiConverterUInt16.lower(port),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift,
-    ));
-    }
-/**
- * UniFFI-exported stop
- */
-export async function stopServer(asyncOpts_?: { signal: AbortSignal }): Promise<string> /*throws*/ {
-    const __stack = uniffiIsDebug ? new Error().stack : undefined;
-    try {
-        return await uniffiRustCallAsync(
-            /*rustCaller:*/ uniffiCaller,
-            /*rustFutureFunc:*/ () => {
-                return nativeModule().ubrn_uniffi_webdavserver_fn_func_stop_server(
-                );
-            },
-            /*pollFunc:*/ nativeModule().ubrn_ffi_webdavserver_rust_future_poll_rust_buffer,
-            /*cancelFunc:*/ nativeModule().ubrn_ffi_webdavserver_rust_future_cancel_rust_buffer,
-            /*completeFunc:*/ nativeModule().ubrn_ffi_webdavserver_rust_future_complete_rust_buffer,
-            /*freeFunc:*/ nativeModule().ubrn_ffi_webdavserver_rust_future_free_rust_buffer,
-            /*liftFunc:*/ FfiConverterString.lift.bind(FfiConverterString),
-            /*liftString:*/ FfiConverterString.lift,
-            /*asyncOpts:*/ asyncOpts_,
-            /*errorHandler:*/ FfiConverterTypeServerError.lift.bind(FfiConverterTypeServerError)
-        );
-    } catch (__error: any) {
-        if (uniffiIsDebug && __error instanceof Error) {
-            __error.stack = __stack;
-        }
-        throw __error;
-    }
-    }
 
 
 
@@ -115,6 +80,8 @@ const stringConverter = {
         uniffiCaller.rustCall((status) => nativeModule().ubrn_uniffi_internal_fn_func_ffi__string_to_byte_length(s, status)),
 };
 const FfiConverterString = uniffiCreateFfiConverterString(stringConverter);
+
+
 
 
 
@@ -376,6 +343,141 @@ const FfiConverterTypeServerError = (() => {
     return new FFIConverter();
 })();
 
+
+/**
+ * WebDavServer struct encapsulates server lifecycle
+ */
+export interface WebDavServerInterface {
+    
+    start()  /*throws*/: string;
+    stop()  /*throws*/: string;
+}
+
+
+/**
+ * WebDavServer struct encapsulates server lifecycle
+ */
+export class WebDavServer extends UniffiAbstractObject implements WebDavServerInterface {
+
+    readonly [uniffiTypeNameSymbol] = "WebDavServer";
+    readonly [destructorGuardSymbol]: UniffiRustArcPtr;
+    readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
+    constructor(port: /*u16*/number) {
+        super();
+        const pointer =
+            uniffiCaller.rustCall(
+            /*caller:*/ (callStatus) => {
+                return nativeModule().ubrn_uniffi_webdavserver_fn_constructor_webdavserver_new(
+        FfiConverterUInt16.lower(port),
+                callStatus);
+            },
+            /*liftString:*/ FfiConverterString.lift,
+    );
+        this[pointerLiteralSymbol] = pointer;
+        this[destructorGuardSymbol] = uniffiTypeWebDavServerObjectFactory.bless(pointer);
+    }
+
+    
+
+    
+public start(): string /*throws*/ {
+    return FfiConverterString.lift(
+        uniffiCaller.rustCallWithError(
+            /*liftError:*/ FfiConverterTypeServerError.lift.bind(FfiConverterTypeServerError),
+            /*caller:*/ (callStatus) => {
+                return nativeModule().ubrn_uniffi_webdavserver_fn_method_webdavserver_start(uniffiTypeWebDavServerObjectFactory.clonePointer(this), 
+                callStatus);
+            },
+            /*liftString:*/ FfiConverterString.lift,
+    ));
+    }
+    
+public stop(): string /*throws*/ {
+    return FfiConverterString.lift(
+        uniffiCaller.rustCallWithError(
+            /*liftError:*/ FfiConverterTypeServerError.lift.bind(FfiConverterTypeServerError),
+            /*caller:*/ (callStatus) => {
+                return nativeModule().ubrn_uniffi_webdavserver_fn_method_webdavserver_stop(uniffiTypeWebDavServerObjectFactory.clonePointer(this), 
+                callStatus);
+            },
+            /*liftString:*/ FfiConverterString.lift,
+    ));
+    }
+    
+
+    /**
+     * {@inheritDoc uniffi-bindgen-react-native#UniffiAbstractObject.uniffiDestroy}
+     */
+    uniffiDestroy(): void {
+        const ptr = (this as any)[destructorGuardSymbol];
+        if (ptr !== undefined) {
+            const pointer = uniffiTypeWebDavServerObjectFactory.pointer(this);
+            uniffiTypeWebDavServerObjectFactory.freePointer(pointer);
+            uniffiTypeWebDavServerObjectFactory.unbless(ptr);
+            delete (this as any)[destructorGuardSymbol];
+        }
+    }
+
+    static instanceOf(obj: any): obj is WebDavServer {
+        return uniffiTypeWebDavServerObjectFactory.isConcreteType(obj);
+    }
+
+    
+}
+
+const uniffiTypeWebDavServerObjectFactory: UniffiObjectFactory<WebDavServerInterface> = (() => {
+    
+    return {
+    create(pointer: UnsafeMutableRawPointer): WebDavServerInterface {
+        const instance = Object.create(WebDavServer.prototype);
+        instance[pointerLiteralSymbol] = pointer;
+        instance[destructorGuardSymbol] = this.bless(pointer);
+        instance[uniffiTypeNameSymbol] = "WebDavServer";
+        return instance;
+    },
+
+    
+    bless(p: UnsafeMutableRawPointer): UniffiRustArcPtr {
+        return uniffiCaller.rustCall(
+            /*caller:*/ (status) =>
+                nativeModule().ubrn_uniffi_internal_fn_method_webdavserver_ffi__bless_pointer(p, status),
+            /*liftString:*/ FfiConverterString.lift
+        );
+    },
+
+    unbless(ptr: UniffiRustArcPtr) {
+        ptr.markDestroyed();
+    },
+
+    pointer(obj: WebDavServerInterface): UnsafeMutableRawPointer {
+        if ((obj as any)[destructorGuardSymbol] === undefined) {
+            throw new UniffiInternalError.UnexpectedNullPointer();
+        }
+        return (obj as any)[pointerLiteralSymbol];
+    },
+
+    clonePointer(obj: WebDavServerInterface): UnsafeMutableRawPointer {
+        const pointer = this.pointer(obj);
+        return uniffiCaller.rustCall(
+            /*caller:*/ (callStatus) => nativeModule().ubrn_uniffi_webdavserver_fn_clone_webdavserver(pointer, callStatus),
+            /*liftString:*/ FfiConverterString.lift
+        );
+    },
+
+    freePointer(pointer: UnsafeMutableRawPointer): void {
+        uniffiCaller.rustCall(
+            /*caller:*/ (callStatus) => nativeModule().ubrn_uniffi_webdavserver_fn_free_webdavserver(pointer, callStatus),
+            /*liftString:*/ FfiConverterString.lift
+        );
+    },
+
+    isConcreteType(obj: any): obj is WebDavServerInterface {
+        return obj[destructorGuardSymbol] && obj[uniffiTypeNameSymbol] === "WebDavServer";
+    },
+}})();
+// FfiConverter for WebDavServerInterface
+const FfiConverterTypeWebDavServer =  new FfiConverterObject(uniffiTypeWebDavServerObjectFactory);
+
 /**
  * This should be called before anything else.
  *
@@ -394,11 +496,14 @@ function uniffiEnsureInitialized() {
     if (bindingsContractVersion !== scaffoldingContractVersion) {
         throw new UniffiInternalError.ContractVersionMismatch(scaffoldingContractVersion, bindingsContractVersion);
     }
-    if (nativeModule().ubrn_uniffi_webdavserver_checksum_func_start_server() !== 18055) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_webdavserver_checksum_func_start_server");
+    if (nativeModule().ubrn_uniffi_webdavserver_checksum_method_webdavserver_start() !== 54695) {
+        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_webdavserver_checksum_method_webdavserver_start");
     }
-    if (nativeModule().ubrn_uniffi_webdavserver_checksum_func_stop_server() !== 9402) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_webdavserver_checksum_func_stop_server");
+    if (nativeModule().ubrn_uniffi_webdavserver_checksum_method_webdavserver_stop() !== 48387) {
+        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_webdavserver_checksum_method_webdavserver_stop");
+    }
+    if (nativeModule().ubrn_uniffi_webdavserver_checksum_constructor_webdavserver_new() !== 20572) {
+        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_webdavserver_checksum_constructor_webdavserver_new");
     }
 
     }
@@ -407,5 +512,6 @@ export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
     FfiConverterTypeServerError,
+    FfiConverterTypeWebDavServer,
   }
 });

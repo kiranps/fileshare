@@ -1,28 +1,17 @@
 import { Text, View, Button, StyleSheet } from "react-native";
 import { useState } from "react";
-import { startServer, stopServer } from "react-native-webdav-server";
+import { WebDavServer } from "react-native-webdav-server";
 
 export default function HTTPServer() {
   const [message, setMessage] = useState<string>("");
+  const server = new WebDavServer(8080);
 
   const handleStartServer = () => {
-    startServer(8080);
-    //.then((x) => {
-    //setMessage(x);
-    //})
-    //.catch((err) => {
-    //setMessage(err.message);
-    //});
+    server.start();
   };
 
   const handleStopServer = () => {
-    stopServer()
-      .then((x) => {
-        setMessage(x);
-      })
-      .catch((err) => {
-        setMessage(err.message);
-      });
+    server.stop();
   };
 
   return (

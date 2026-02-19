@@ -2,8 +2,9 @@ use axum::http::{Method, StatusCode};
 use reqwest::header;
 use std::fs::{self, File};
 use std::io::Write;
-use std::sync::Once;
-use std::time::Duration;
+use std::net::TcpStream;
+use std::sync::OnceLock;
+use std::time::{Duration, Instant};
 
 fn setup_test_dir(path: &str) {
     let dir = std::path::Path::new("data/test").join(path);
@@ -17,15 +18,33 @@ fn setup_test_file(path: &str, content: &str) {
     file.write_all(content.as_bytes()).unwrap();
 }
 
+fn wait_for_port(port: u16, timeout: Duration) {
+    let start = Instant::now();
+
+    loop {
+        if TcpStream::connect(("127.0.0.1", port)).is_ok() {
+            return;
+        }
+
+        if start.elapsed() > timeout {
+            panic!("server did not start within {:?}", timeout);
+        }
+
+        std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
 const PORT: u16 = 8080;
 const BASE_URL: &str = "http://localhost:8080";
 
-static INIT: Once = Once::new();
+static SERVER: OnceLock<webdavserver::WebDavServer> = OnceLock::new();
 
 fn setup() {
-    INIT.call_once(|| {
-        webdavserver::start_server(PORT).unwrap();
-        std::thread::sleep(Duration::from_secs(2));
+    SERVER.get_or_init(|| {
+        let server = webdavserver::WebDavServer::new(PORT);
+        server.start().unwrap();
+        wait_for_port(PORT, Duration::from_secs(5));
+        server
     });
 }
 
