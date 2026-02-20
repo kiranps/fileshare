@@ -6,7 +6,7 @@
   "scripts": {
     "mobile:start": "pnpm --filter mobile start",
     "mobile:android": "pnpm --filter mobile android",
-    "rust:build": "pnpm --filter react-native-webdav-server ubrn:android",
+    "rust:build": "pnpm --filter react-native-webdav-server ubrn:android && pnpm install",
     "rust:clean": "pnpm --filter react-native-webdav-server ubrn:clean",
     "rust:test": "cd packages/react-native-webdav-server/rust/webdavserver; cargo test"
   },
