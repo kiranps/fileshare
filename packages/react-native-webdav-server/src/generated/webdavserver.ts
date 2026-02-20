@@ -362,13 +362,14 @@ export class WebDavServer extends UniffiAbstractObject implements WebDavServerIn
     readonly [uniffiTypeNameSymbol] = "WebDavServer";
     readonly [destructorGuardSymbol]: UniffiRustArcPtr;
     readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
-    constructor(port: /*u16*/number) {
+    constructor(port: /*u16*/number, basePath: string) {
         super();
         const pointer =
             uniffiCaller.rustCall(
             /*caller:*/ (callStatus) => {
                 return nativeModule().ubrn_uniffi_webdavserver_fn_constructor_webdavserver_new(
         FfiConverterUInt16.lower(port),
+        FfiConverterString.lower(basePath),
                 callStatus);
             },
             /*liftString:*/ FfiConverterString.lift,
@@ -502,7 +503,7 @@ function uniffiEnsureInitialized() {
     if (nativeModule().ubrn_uniffi_webdavserver_checksum_method_webdavserver_stop() !== 48387) {
         throw new UniffiInternalError.ApiChecksumMismatch("uniffi_webdavserver_checksum_method_webdavserver_stop");
     }
-    if (nativeModule().ubrn_uniffi_webdavserver_checksum_constructor_webdavserver_new() !== 20572) {
+    if (nativeModule().ubrn_uniffi_webdavserver_checksum_constructor_webdavserver_new() !== 58839) {
         throw new UniffiInternalError.ApiChecksumMismatch("uniffi_webdavserver_checksum_constructor_webdavserver_new");
     }
 

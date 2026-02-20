@@ -20,7 +20,7 @@ interface NativeModuleInterface {
     ubrn_uniffi_internal_fn_func_ffi__arraybuffer_to_string(buffer: Uint8Array, uniffi_out_err: UniffiRustCallStatus): string;
     ubrn_uniffi_webdavserver_fn_clone_webdavserver(ptr: bigint, uniffi_out_err: UniffiRustCallStatus): bigint;
     ubrn_uniffi_webdavserver_fn_free_webdavserver(ptr: bigint, uniffi_out_err: UniffiRustCallStatus): void;
-    ubrn_uniffi_webdavserver_fn_constructor_webdavserver_new(port: number, uniffi_out_err: UniffiRustCallStatus): bigint;
+    ubrn_uniffi_webdavserver_fn_constructor_webdavserver_new(port: number, basePath: Uint8Array, uniffi_out_err: UniffiRustCallStatus): bigint;
     ubrn_uniffi_webdavserver_fn_method_webdavserver_start(ptr: bigint, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
     ubrn_uniffi_webdavserver_fn_method_webdavserver_stop(ptr: bigint, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
     ubrn_uniffi_webdavserver_checksum_method_webdavserver_start(): number;

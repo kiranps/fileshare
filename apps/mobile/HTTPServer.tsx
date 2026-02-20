@@ -4,7 +4,7 @@ import { WebDavServer } from "react-native-webdav-server";
 
 export default function HTTPServer() {
   const [message, setMessage] = useState<string>("");
-  const server = new WebDavServer(8080);
+  const server = new WebDavServer(8080, "/storage/emulated/0");
 
   const handleStartServer = () => {
     server.start();
