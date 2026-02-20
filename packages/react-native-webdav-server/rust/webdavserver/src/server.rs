@@ -218,19 +218,7 @@ async fn serve_file_head(req: Request<Body>) -> Response<Body> {
 }
 async fn file_metadata(uri_path: &str) -> Result<(PathBuf, std::fs::Metadata), Response<Body>> {
     let path = resolve_path(uri_path);
-    let meta = match tokio::fs::metadata(&path).await {
-        Ok(m) => m,
-        Err(e) => {
-            error!(
-                uri_path = %uri_path,
-                resolved = %path.display(),
-                error = %e,
-                kind = ?e.kind(),
-                "metadata failed"
-            );
-            return Err(not_found());
-        }
-    };
+    let meta = tokio::fs::metadata(&path).await.map_err(|_| not_found())?;
     Ok((path, meta))
 }
 async fn read_file(path: &Path) -> Response<Body> {
@@ -259,7 +247,6 @@ fn head_response(meta: &std::fs::Metadata) -> Response<Body> {
         .unwrap()
 }
 async fn propfind(req: Request<Body>) -> Response<Body> {
-    info!("hi");
     let depth = req
         .headers()
         .get("Depth")
@@ -268,13 +255,10 @@ async fn propfind(req: Request<Body>) -> Response<Body> {
     if depth != "0" && depth != "1" {
         return bad_request("Only Depth: 0 or 1 supported");
     }
-    info!("hi");
     let (base_path, base_meta) = match file_metadata(req.uri().path()).await {
         Ok(v) => v,
         Err(e) => return e,
     };
-    info!("hi");
-    info!("base path = {}", base_path.display());
     let mut responses = Vec::new();
     responses.push(propfind_response(req.uri().path(), &base_meta));
     if depth == "1" && base_meta.is_dir() {
@@ -337,12 +321,10 @@ fn multistatus(responses: Vec<String>) -> Response<Body> {
 }
 
 fn resolve_path(uri_path: &str) -> PathBuf {
-    let p = Path::new(uri_path);
-
-    if p.is_absolute() {
-        p.to_path_buf()
+    if let Some(stripped) = uri_path.strip_prefix("/./") {
+        PathBuf::from(format!("./{}", stripped))
     } else {
-        PathBuf::from("/").join(p)
+        PathBuf::from(uri_path)
     }
 }
 

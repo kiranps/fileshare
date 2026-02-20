@@ -6,6 +6,7 @@ use std::io::Write;
 use std::net::TcpStream;
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
+use tracing::{debug, error, info, trace, warn};
 
 fn setup_test_dir(path: &str) {
     let dir = std::path::Path::new("data/test").join(path);
@@ -49,7 +50,7 @@ static SERVER: OnceLock<webdavserver::WebDavServer> = OnceLock::new();
 
 fn setup() {
     SERVER.get_or_init(|| {
-        let server = webdavserver::WebDavServer::new(PORT, String::from("data"));
+        let server = webdavserver::WebDavServer::new(PORT, String::from("./data"));
         server.start().unwrap();
         wait_for_port(PORT, Duration::from_secs(5));
         server
