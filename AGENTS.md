@@ -62,6 +62,7 @@ This guide is for both automated coding agents (Copilot, Cursor, LLM-based bots,
   
 ### Rust Native Modules
 From either Rust source directory, e.g. `packages/react-native-webdav-server/rust/webdavserver`:
+- **Directory:** Always change to the correct Rust module directory before running commands (e.g. `cd packages/react-native-webdav-server/rust/webdavserver`).
 - **Build:**
   ```sh
   cargo build
@@ -80,6 +81,14 @@ From either Rust source directory, e.g. `packages/react-native-webdav-server/rus
   # Single test:
   cargo test <test_name>
   ```
+- **Run a demo/example (e.g., start_server):**
+  ```sh
+  cargo run --example start_server
+  ```
+  - Ensure any required data/config files are present (refer to the `data/` or example documentation).
+  - If the command fails due to missing files/crates, check the directory or update dependencies via `cargo update`.
+  - Example output/usage may differ; consult `examples/start_server.rs` for custom arguments or environment variables.
+
 
 ---
 
@@ -135,6 +144,22 @@ From either Rust source directory, e.g. `packages/react-native-webdav-server/rus
 ---
 
 ## 🤖 Agent/Automation/Workflow Rules
+
+### Rust webdavserver module auto-validation
+
+- Whenever ANY file is modified in `packages/react-native-webdav-server/rust/webdavserver/` or its subdirectories:
+  - Switch working context or shell to this directory.
+  - Run the following commands in sequence:
+      - `cargo build` (compile check)
+      - `cargo test` (tests/coverage)
+      - `cargo run` (main binary, if exists)
+      - `cargo run --example start_server` (demo, if example present)
+  - Before running demo/example, verify existence of required `data/` or config files as needed.
+  - Capture and summarize all command outputs, errors, and results for agent/human review.
+- Recommended for CI, git hooks, or custom file-watcher scripts—ensure cross-platform compatibility.
+- Agents & contributors MUST follow this workflow after each file change to ensure module stability and catch regressions early.
+- For troubleshooting, review cargo command logs and update dependencies or configs as necessary if errors occur.
+
 
 - **Automated agents must:**
   - Make deterministic, atomic file changes.
