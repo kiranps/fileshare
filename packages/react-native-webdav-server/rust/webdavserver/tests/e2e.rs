@@ -50,7 +50,7 @@ static SERVER: OnceLock<webdavserver::WebDavServer> = OnceLock::new();
 
 fn setup() {
     SERVER.get_or_init(|| {
-        let server = webdavserver::WebDavServer::new(PORT, String::from("./data"));
+        let server = webdavserver::WebDavServer::new(PORT, String::from("data"));
         server.start().unwrap();
         wait_for_port(PORT, Duration::from_secs(5));
         server

@@ -1,15 +1,16 @@
 use crate::ServerError;
+use axum::body::Body;
 use axum::http::Uri;
 use axum::middleware;
 use axum::{
     Router,
-    body::Body,
     extract::State,
     http::{Method, Request, StatusCode},
     middleware::Next,
     response::Response,
     routing::any,
 };
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -28,10 +29,29 @@ pub async fn prefix_middleware(
     mut req: Request<Body>,
     next: Next,
 ) -> Response {
-    let original = req.uri().path_and_query().map(|x| x.as_str()).unwrap_or("");
-    let new_path = format!("/{}{}", base_path.trim_start_matches('/'), original);
+    let uri = req.uri().clone();
 
-    *req.uri_mut() = new_path.parse::<Uri>().expect("valid URI");
+    let mut parts = uri.into_parts();
+
+    let new_path_and_query = match parts.path_and_query {
+        Some(pq) => {
+            let path = pq.path();
+            match pq.query() {
+                Some(existing) => {
+                    format!("{path}?{existing}&base_path={base_path}")
+                }
+                None => {
+                    format!("{path}?base_path={base_path}")
+                }
+            }
+        }
+        None => format!("/?base_path={base_path}"),
+    };
+
+    parts.path_and_query = Some(new_path_and_query.parse().expect("valid path and query"));
+
+    let new_uri = Uri::from_parts(parts).expect("valid uri");
+    *req.uri_mut() = new_uri;
 
     next.run(req).await
 }
@@ -203,25 +223,26 @@ fn options_response() -> Response<Body> {
         .unwrap()
 }
 async fn serve_file(req: Request<Body>) -> Response<Body> {
-    match file_metadata(req.uri().path()).await {
-        Ok((path, meta)) if meta.is_file() => read_file(&path).await,
+    match file_metadata(req.uri()).await {
+        Ok((path, meta)) if meta.is_file() => read_file(req.uri()).await,
         Ok(_) => forbidden("Cannot GET a directory"),
         Err(e) => e,
     }
 }
 async fn serve_file_head(req: Request<Body>) -> Response<Body> {
-    match file_metadata(req.uri().path()).await {
+    match file_metadata(req.uri()).await {
         Ok((_, meta)) if meta.is_file() => head_response(&meta),
         Ok(_) => forbidden("Cannot HEAD a directory"),
         Err(e) => e,
     }
 }
-async fn file_metadata(uri_path: &str) -> Result<(PathBuf, std::fs::Metadata), Response<Body>> {
-    let path = resolve_path(uri_path);
+async fn file_metadata(uri: &Uri) -> Result<(PathBuf, std::fs::Metadata), Response<Body>> {
+    let path = resolve_path(uri);
     let meta = tokio::fs::metadata(&path).await.map_err(|_| not_found())?;
     Ok((path, meta))
 }
-async fn read_file(path: &Path) -> Response<Body> {
+async fn read_file(uri: &Uri) -> Response<Body> {
+    let path = resolve_path(uri);
     let mut file = tokio::fs::File::open(path)
         .await
         .map_err(|_| not_found())
@@ -255,14 +276,20 @@ async fn propfind(req: Request<Body>) -> Response<Body> {
     if depth != "0" && depth != "1" {
         return bad_request("Only Depth: 0 or 1 supported");
     }
-    let (base_path, base_meta) = match file_metadata(req.uri().path()).await {
+    let (base_path, base_meta) = match file_metadata(req.uri()).await {
         Ok(v) => v,
         Err(e) => return e,
     };
     let mut responses = Vec::new();
     responses.push(propfind_response(req.uri().path(), &base_meta));
     if depth == "1" && base_meta.is_dir() {
-        let mut entries = tokio::fs::read_dir(&base_path).await.unwrap();
+        let mut entries = match tokio::fs::read_dir(&base_path).await {
+            Ok(e) => e,
+            Err(e) => {
+                error!("read_dir failed: {}", e);
+                return Default::default();
+            }
+        };
         while let Ok(Some(entry)) = entries.next_entry().await {
             let meta = match entry.metadata().await {
                 Ok(m) => m,
@@ -278,13 +305,12 @@ async fn propfind(req: Request<Body>) -> Response<Body> {
     }
     multistatus(responses)
 }
-fn propfind_response(href: &str, meta: &std::fs::Metadata) -> String {
+fn propfind_response(uri: &str, meta: &std::fs::Metadata) -> String {
     let (modified, etag) = file_timestamps(meta);
-    let href = if meta.is_dir() && !href.ends_with('/') {
-        format!("{}/", href)
-    } else {
-        href.to_string()
-    };
+    let href = dav_path(uri);
+    let resourcetype = if meta.is_dir() { "<D:collection/>" } else { "" };
+    let contentlength = if meta.is_dir() { 0 } else { meta.len() };
+
     format!(
         r#"<D:response>
 <D:href>{}</D:href>
@@ -299,8 +325,8 @@ fn propfind_response(href: &str, meta: &std::fs::Metadata) -> String {
 </D:propstat>
 </D:response>"#,
         href,
-        if meta.is_dir() { "<D:collection/>" } else { "" },
-        if meta.is_dir() { 0 } else { meta.len() },
+        resourcetype,
+        contentlength,
         httpdate::fmt_http_date(modified),
         etag
     )
@@ -320,12 +346,9 @@ fn multistatus(responses: Vec<String>) -> Response<Body> {
         .unwrap()
 }
 
-fn resolve_path(uri_path: &str) -> PathBuf {
-    if let Some(stripped) = uri_path.strip_prefix("/./") {
-        PathBuf::from(format!("./{}", stripped))
-    } else {
-        PathBuf::from(uri_path)
-    }
+fn resolve_path(uri: &Uri) -> PathBuf {
+    let base_path = extract_base_path(uri);
+    PathBuf::from(base_path).join(uri.path().trim_start_matches('/'))
 }
 
 fn ensure_trailing_slash(path: &str) -> String {
@@ -348,6 +371,35 @@ fn file_timestamps(meta: &std::fs::Metadata) -> (std::time::SystemTime, String) 
     );
     (modified, etag)
 }
+fn dav_path(path: &str) -> String {
+    let is_dir = path.ends_with('/');
+    let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+
+    if segments.len() <= 2 {
+        return if path.starts_with('/') {
+            path.to_string()
+        } else {
+            format!("/{}", path)
+        };
+    }
+
+    let tail = &segments[segments.len() - 2..];
+    let mut result = format!("/{}", tail.join("/"));
+
+    if is_dir {
+        result.push('/');
+    }
+
+    result
+}
+
+fn extract_base_path(uri: &Uri) -> String {
+    uri.query()
+        .and_then(|q| serde_urlencoded::from_str::<HashMap<String, String>>(q).ok())
+        .and_then(|params| params.get("base_path").cloned())
+        .unwrap_or_else(|| "/".to_string())
+}
+
 fn ok(body: impl Into<Body>) -> Response<Body> {
     Response::builder()
         .status(StatusCode::OK)
