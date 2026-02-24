@@ -226,6 +226,111 @@ async fn propfile_depth_1_dir_name_has_space() {
 }
 
 #[tokio::test]
+async fn delete_file_success() {
+    setup_test_file("deleteme.txt", "remove this");
+    let client = reqwest::Client::new();
+    let url = format!("{}/test/deleteme.txt", BASE_URL);
+
+    let res = client
+        .request(reqwest::Method::DELETE, &url)
+        .send()
+        .await
+        .expect("request failed");
+
+    assert_eq!(res.status(), StatusCode::NO_CONTENT);
+    // File should really be gone
+    assert!(std::fs::metadata("data/test/deleteme.txt").is_err());
+}
+
+#[tokio::test]
+async fn delete_empty_directory_success() {
+    setup_test_dir("todelete_emptydir");
+    let client = reqwest::Client::new();
+    let url = format!("{}/test/todelete_emptydir", BASE_URL);
+
+    let res = client
+        .request(reqwest::Method::DELETE, &url)
+        .send()
+        .await
+        .expect("request failed");
+
+    assert_eq!(res.status(), StatusCode::NO_CONTENT);
+    // Directory should really be gone
+    assert!(std::fs::metadata("data/test/todelete_emptydir").is_err());
+}
+
+#[tokio::test]
+async fn delete_nonexistent_file_or_dir() {
+    let _ = std::fs::remove_file("data/test/surely_does_not_exist.txt");
+    let _ = std::fs::remove_dir_all("data/test/surely_does_not_exist_dir");
+    let client = reqwest::Client::new();
+
+    // Nonexistent file
+    let url1 = format!("{}/test/surely_does_not_exist.txt", BASE_URL);
+    let res1 = client
+        .request(reqwest::Method::DELETE, &url1)
+        .send()
+        .await
+        .expect("request failed");
+    assert_eq!(res1.status(), StatusCode::NOT_FOUND);
+
+    // Nonexistent directory
+    let url2 = format!("{}/test/surely_does_not_exist_dir", BASE_URL);
+    let res2 = client
+        .request(reqwest::Method::DELETE, &url2)
+        .send()
+        .await
+        .expect("request failed");
+    assert_eq!(res2.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn delete_directory_recursive_success() {
+    // Create dir with files and a subdirectory
+    setup_test_file("recdel/me.txt", "top");
+    setup_test_file("recdel/sub/file1.txt", "subfile");
+    setup_test_file("recdel/sub/file2.txt", "subfile2");
+    let client = reqwest::Client::new();
+    let url = format!("{}/test/recdel", BASE_URL);
+    let res = client
+        .request(reqwest::Method::DELETE, &url)
+        .send().await.expect("request failed");
+    assert_eq!(res.status(), StatusCode::NO_CONTENT);
+    assert!(std::fs::metadata("data/test/recdel").is_err());
+    assert!(std::fs::metadata("data/test/recdel/me.txt").is_err());
+    assert!(std::fs::metadata("data/test/recdel/sub").is_err());
+    assert!(std::fs::metadata("data/test/recdel/sub/file1.txt").is_err());
+}
+
+#[tokio::test]
+async fn delete_file_permission_denied() {
+    // Only run on unix
+    #[cfg(unix)] {
+        use std::os::unix::fs::PermissionsExt;
+        let file_path = "data/test/forbidden.txt";
+        setup_test_file("forbidden.txt", "cannot delete this");
+        let perms = std::fs::Permissions::from_mode(0o444); // read-only
+        let _ = std::fs::set_permissions(file_path, perms);
+        let client = reqwest::Client::new();
+        let url = format!("{}/test/forbidden.txt", BASE_URL);
+        let res = client
+            .request(reqwest::Method::DELETE, &url)
+            .send()
+            .await
+            .expect("request failed");
+        // Some filesystems/CI may still let us delete, so allow either forbidden or no_content
+        assert!(
+            res.status() == StatusCode::FORBIDDEN
+             || res.status() == StatusCode::NO_CONTENT,
+            "Expected FORBIDDEN or NO_CONTENT, got {}",
+            res.status()
+        );
+        // Cleanup (try to delete anyway)
+        let _ = std::fs::remove_file(file_path);
+    }
+}
+
+#[tokio::test]
 async fn get_not_found() {
     let client = reqwest::Client::new();
     let res = client

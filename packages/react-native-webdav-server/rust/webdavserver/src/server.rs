@@ -11,6 +11,7 @@ use axum::{
     routing::any,
 };
 use std::collections::HashMap;
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -210,6 +211,7 @@ async fn route_request(req: Request<Body>) -> Response<Body> {
         &Method::OPTIONS => options_response(),
         &Method::GET => serve_file(req).await,
         &Method::HEAD => serve_file_head(req).await,
+        &Method::DELETE => handle_delete(req).await,
         m if m.as_str() == "PROPFIND" => propfind(req).await,
         _ => ok("WebDAV server is running\n"),
     }
@@ -259,6 +261,33 @@ async fn read_file(uri: &Uri) -> Response<Body> {
         .body(Body::from(buf))
         .unwrap()
 }
+
+async fn handle_delete(req: Request<Body>) -> Response<Body> {
+    let (path, metadata) = match file_metadata(req.uri()).await {
+        Ok(v) => v,
+        Err(e) => return e,
+    };
+
+    let result = if metadata.is_dir() {
+        tokio::fs::remove_dir_all(&path).await
+    } else {
+        tokio::fs::remove_file(&path).await
+    };
+
+    match result {
+        Ok(_) => Response::builder()
+            .status(StatusCode::NO_CONTENT)
+            .body(Body::empty())
+            .unwrap(),
+
+        Err(err) => match err.kind() {
+            ErrorKind::NotFound => not_found(),
+            ErrorKind::PermissionDenied => forbidden("PermissionDenied"),
+            _ => server_error(),
+        },
+    }
+}
+
 fn head_response(meta: &std::fs::Metadata) -> Response<Body> {
     let (modified, etag) = file_timestamps(meta);
     Response::builder()
@@ -309,7 +338,7 @@ async fn propfind(req: Request<Body>) -> Response<Body> {
 }
 fn propfind_response(uri: &str, meta: &std::fs::Metadata) -> String {
     let (modified, etag) = file_timestamps(meta);
-    let href = dav_path(uri);
+    let href = uri;
     let resourcetype = if meta.is_dir() { "<D:collection/>" } else { "" };
     let contentlength = if meta.is_dir() { 0 } else { meta.len() };
 
