@@ -147,6 +147,8 @@ From either Rust source directory, e.g. `packages/react-native-webdav-server/rus
 
 ### Rust webdavserver module auto-validation
 
+**Implementation Checklist:** See [`packages/react-native-webdav-server/rust/webdavserver/CHECKLIST.md`] for detailed protocol and feature requirements.
+
 - Whenever ANY file is modified in `packages/react-native-webdav-server/rust/webdavserver/` or its subdirectories:
   - Switch working context or shell to this directory.
   - Run the following commands in sequence:
