@@ -1,5 +1,5 @@
 use crate::ServerError;
-use axum::body::Body;
+use axum::body::{Body, to_bytes};
 use axum::http::Uri;
 use axum::middleware;
 use axum::{
@@ -213,6 +213,7 @@ async fn route_request(req: Request<Body>) -> Response<Body> {
         &Method::HEAD => serve_file_head(req).await,
         &Method::DELETE => handle_delete(req).await,
         m if m.as_str() == "PROPFIND" => propfind(req).await,
+        m if m.as_str() == "MKCOL" => handle_mkcol(req).await,
         _ => ok("WebDAV server is running\n"),
     }
 }
@@ -220,7 +221,7 @@ fn options_response() -> Response<Body> {
     Response::builder()
         .status(StatusCode::OK)
         .header("DAV", "1")
-        .header("Allow", "OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND")
+        .header("Allow", "OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, MKCOL")
         .header("MS-Author-Via", "DAV")
         .body(Body::empty())
         .unwrap()
@@ -283,6 +284,86 @@ async fn handle_delete(req: Request<Body>) -> Response<Body> {
         Err(err) => match err.kind() {
             ErrorKind::NotFound => not_found(),
             ErrorKind::PermissionDenied => forbidden("PermissionDenied"),
+            _ => server_error(),
+        },
+    }
+}
+
+async fn handle_mkcol(req: Request<Body>) -> Response<Body> {
+    let target_path = resolve_path(req.uri());
+
+    let body_bytes = match to_bytes(req.into_body(), usize::MAX).await {
+        Ok(b) => b,
+        Err(_) => return bad_request("Failed to read request body"),
+    };
+    let body_len = body_bytes.len();
+    if body_len > 0 {
+        return unsupported_media_type("MKCOL request body not supported");
+    }
+
+    // Step 2: Check if resource already exists
+    match tokio::fs::metadata(&target_path).await {
+        Ok(_) => {
+            // Resource already exists (file or directory)
+            return Response::builder()
+                .status(StatusCode::CONFLICT)
+                .body(Body::from("Resource already exists"))
+                .unwrap();
+        }
+        Err(e) => {
+            // Only proceed if error is NotFound
+            if e.kind() != ErrorKind::NotFound {
+                return server_error();
+            }
+        }
+    }
+
+    // Step 3: Check parent directory exists
+    if let Some(parent) = target_path.parent() {
+        match tokio::fs::metadata(parent).await {
+            Ok(meta) => {
+                if !meta.is_dir() {
+                    return Response::builder()
+                        .status(StatusCode::CONFLICT)
+                        .body(Body::from("Parent is not a directory"))
+                        .unwrap();
+                }
+            }
+            Err(_) => {
+                return Response::builder()
+                    .status(StatusCode::CONFLICT)
+                    .body(Body::from("Parent directory does not exist"))
+                    .unwrap();
+            }
+        }
+    } else {
+        // No parent: cannot create collection
+        return Response::builder()
+            .status(StatusCode::CONFLICT)
+            .body(Body::from("Invalid path: no parent directory"))
+            .unwrap();
+    }
+
+    // Step 4: Attempt to create directory
+    match tokio::fs::create_dir(&target_path).await {
+        Ok(_) => Response::builder()
+            .status(StatusCode::CREATED)
+            .body(Body::empty())
+            .unwrap(),
+        Err(e) => match e.kind() {
+            ErrorKind::PermissionDenied => forbidden("Permission Denied"),
+            ErrorKind::AlreadyExists => Response::builder()
+                .status(StatusCode::CONFLICT)
+                .body(Body::from("Resource already exists"))
+                .unwrap(),
+            ErrorKind::NotFound => Response::builder()
+                .status(StatusCode::CONFLICT)
+                .body(Body::from("Parent directory does not exist"))
+                .unwrap(),
+            ErrorKind::Other => Response::builder()
+                .status(StatusCode::INSUFFICIENT_STORAGE)
+                .body(Body::from("Insufficient Storage"))
+                .unwrap(),
             _ => server_error(),
         },
     }
@@ -405,27 +486,6 @@ fn file_timestamps(meta: &std::fs::Metadata) -> (std::time::SystemTime, String) 
     );
     (modified, etag)
 }
-fn dav_path(path: &str) -> String {
-    let is_dir = path.ends_with('/');
-    let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
-
-    if segments.len() <= 2 {
-        return if path.starts_with('/') {
-            path.to_string()
-        } else {
-            format!("/{}", path)
-        };
-    }
-
-    let tail = &segments[segments.len() - 2..];
-    let mut result = format!("/{}", tail.join("/"));
-
-    if is_dir {
-        result.push('/');
-    }
-
-    result
-}
 
 fn extract_base_path(uri: &Uri) -> String {
     uri.query()
@@ -462,5 +522,11 @@ fn server_error() -> Response<Body> {
     Response::builder()
         .status(StatusCode::INTERNAL_SERVER_ERROR)
         .body(Body::from("Internal server error"))
+        .unwrap()
+}
+fn unsupported_media_type(body: impl Into<Body>) -> Response<Body> {
+    Response::builder()
+        .status(StatusCode::UNSUPPORTED_MEDIA_TYPE)
+        .body(body.into())
         .unwrap()
 }

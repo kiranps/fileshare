@@ -294,7 +294,9 @@ async fn delete_directory_recursive_success() {
     let url = format!("{}/test/recdel", BASE_URL);
     let res = client
         .request(reqwest::Method::DELETE, &url)
-        .send().await.expect("request failed");
+        .send()
+        .await
+        .expect("request failed");
     assert_eq!(res.status(), StatusCode::NO_CONTENT);
     assert!(std::fs::metadata("data/test/recdel").is_err());
     assert!(std::fs::metadata("data/test/recdel/me.txt").is_err());
@@ -305,7 +307,8 @@ async fn delete_directory_recursive_success() {
 #[tokio::test]
 async fn delete_file_permission_denied() {
     // Only run on unix
-    #[cfg(unix)] {
+    #[cfg(unix)]
+    {
         use std::os::unix::fs::PermissionsExt;
         let file_path = "data/test/forbidden.txt";
         setup_test_file("forbidden.txt", "cannot delete this");
@@ -320,8 +323,7 @@ async fn delete_file_permission_denied() {
             .expect("request failed");
         // Some filesystems/CI may still let us delete, so allow either forbidden or no_content
         assert!(
-            res.status() == StatusCode::FORBIDDEN
-             || res.status() == StatusCode::NO_CONTENT,
+            res.status() == StatusCode::FORBIDDEN || res.status() == StatusCode::NO_CONTENT,
             "Expected FORBIDDEN or NO_CONTENT, got {}",
             res.status()
         );
@@ -340,4 +342,85 @@ async fn get_not_found() {
         .expect("request failed");
 
     assert_eq!(res.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn mkcol_success_creates_collection() {
+    // Remove collection if it already exists
+    let _ = std::fs::remove_dir_all("data/test/new_collection");
+
+    let client = reqwest::Client::new();
+    let url = format!("{}/test/new_collection", BASE_URL);
+    let res = client
+        .request(Method::from_bytes(b"MKCOL").unwrap(), &url)
+        .send()
+        .await
+        .expect("MKCOL request failed");
+
+    assert_eq!(
+        res.status(),
+        StatusCode::CREATED,
+        "MKCOL should return 201 when creating a new collection"
+    );
+    assert!(
+        std::fs::metadata("data/test/new_collection")
+            .unwrap()
+            .is_dir(),
+        "New collection should exist as directory on disk"
+    );
+}
+
+#[tokio::test]
+async fn mkcol_on_existing_resource_fails() {
+    // Create directory and file to test conflict
+    setup_test_dir("existing_collection");
+    setup_test_file("existing_file.txt", "foobar");
+    let client = reqwest::Client::new();
+    let dir_url = format!("{}/test/existing_collection", BASE_URL);
+    let file_url = format!("{}/test/existing_file.txt", BASE_URL);
+    // Try MKCOL on existing collection
+    let dir_res = client
+        .request(Method::from_bytes(b"MKCOL").unwrap(), &dir_url)
+        .send()
+        .await
+        .expect("MKCOL on existing collection failed");
+    assert!(
+        dir_res.status() == StatusCode::METHOD_NOT_ALLOWED
+            || dir_res.status() == StatusCode::CONFLICT,
+        "MKCOL on existing collection should return 405 or 409, got {}",
+        dir_res.status()
+    );
+    // Try MKCOL on existing file (should fail)
+    let file_res = client
+        .request(Method::from_bytes(b"MKCOL").unwrap(), &file_url)
+        .send()
+        .await
+        .expect("MKCOL on existing file failed");
+    assert!(
+        file_res.status() == StatusCode::METHOD_NOT_ALLOWED
+            || file_res.status() == StatusCode::CONFLICT,
+        "MKCOL on existing file should return 405 or 409, got {}",
+        file_res.status()
+    );
+}
+
+#[tokio::test]
+async fn mkcol_with_request_body_415() {
+    let client = reqwest::Client::new();
+    let url = format!("{}/test/body_collection", BASE_URL);
+    // Remove in case it exists
+    let _ = std::fs::remove_dir_all("data/test/body_collection");
+    let res = client
+        .request(Method::from_bytes(b"MKCOL").unwrap(), &url)
+        .header("Content-Type", "text/plain")
+        .body("This should not be accepted.")
+        .send()
+        .await
+        .expect("MKCOL with body failed");
+    // RFC 4918: respond 415 Unsupported Media Type
+    assert_eq!(
+        res.status(),
+        StatusCode::UNSUPPORTED_MEDIA_TYPE,
+        "MKCOL with body should return 415"
+    );
 }
