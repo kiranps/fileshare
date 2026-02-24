@@ -19,6 +19,7 @@ use tokio::net::TcpListener;
 use tokio::runtime::{Builder, Runtime};
 use tokio::sync::oneshot;
 use tracing::{debug, error, info, trace, warn};
+use urlencoding::decode;
 type JoinHandleResult = tokio::task::JoinHandle<Result<(), ServerError>>;
 use std::sync::Once;
 
@@ -238,6 +239,7 @@ async fn serve_file_head(req: Request<Body>) -> Response<Body> {
 }
 async fn file_metadata(uri: &Uri) -> Result<(PathBuf, std::fs::Metadata), Response<Body>> {
     let path = resolve_path(uri);
+    info!("{:?}", path);
     let meta = tokio::fs::metadata(&path).await.map_err(|_| not_found())?;
     Ok((path, meta))
 }
@@ -347,8 +349,11 @@ fn multistatus(responses: Vec<String>) -> Response<Body> {
 }
 
 fn resolve_path(uri: &Uri) -> PathBuf {
-    let base_path = extract_base_path(uri);
-    PathBuf::from(base_path).join(uri.path().trim_start_matches('/'))
+    let path: String = extract_base_path(uri);
+    let decoded = decode(uri.path())
+        .expect("invalid percent encoding")
+        .into_owned();
+    PathBuf::from(path).join(decoded.trim_start_matches('/'))
 }
 
 fn ensure_trailing_slash(path: &str) -> String {

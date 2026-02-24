@@ -7,6 +7,7 @@ use std::net::TcpStream;
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 use tracing::{debug, error, info, trace, warn};
+mod utils;
 
 fn setup_test_dir(path: &str) {
     let dir = std::path::Path::new("data/test").join(path);
@@ -178,6 +179,50 @@ async fn propfile_depth_1() {
     assert!(body.contains("dir1"));
     assert!(body.contains("a.txt"));
     assert!(body.contains("b.txt"));
+}
+
+#[tokio::test]
+async fn propfile_depth_1_dir_name_has_space() {
+    //use quick_xml::Reader;
+    //use quick_xml::events::Event;
+    use urlencoding::encode;
+    use utils::parse_webdav_multistatus;
+
+    setup_test_file("dir with space/a.txt", "A");
+
+    let client = reqwest::Client::new();
+    let res = client
+        .request(
+            Method::from_bytes(b"PROPFIND").unwrap(),
+            format!("{}/test", BASE_URL),
+        )
+        .header("depth", "1")
+        .send()
+        .await
+        .expect("request failed");
+
+    assert_eq!(res.status(), StatusCode::MULTI_STATUS);
+    let body = res.text().await.unwrap();
+    let items = parse_webdav_multistatus(&body).unwrap();
+    let paths: Vec<String> = items.into_iter().map(|item| item.path).collect();
+    assert!(paths.iter().any(|p| p.contains("dir with space")));
+
+    let encoded = encode("dir with space");
+    let res = client
+        .request(
+            Method::from_bytes(b"PROPFIND").unwrap(),
+            format!("{}/test/{}", BASE_URL, encoded),
+        )
+        .header("depth", "1")
+        .send()
+        .await
+        .expect("request failed");
+
+    assert_eq!(res.status(), StatusCode::MULTI_STATUS);
+    let body = res.text().await.unwrap();
+    let items = parse_webdav_multistatus(&body).unwrap();
+    let paths: Vec<String> = items.into_iter().map(|item| item.path).collect();
+    assert!(paths.iter().any(|p| p.contains("a.txt")));
 }
 
 #[tokio::test]
