@@ -423,3 +423,114 @@ async fn mkcol_with_request_body_415() {
         "MKCOL with body should return 415"
     );
 }
+
+#[tokio::test]
+async fn put_create_file() {
+    let path = "put_created.txt";
+    let client = reqwest::Client::new();
+    let url = format!("{}/test/{}", BASE_URL, path);
+    let body = "webdav put data";
+    let res = client
+        .put(&url)
+        .body(body)
+        .send()
+        .await
+        .expect("PUT failed");
+    assert_eq!(res.status(), StatusCode::CREATED);
+    let content = std::fs::read_to_string(format!("data/test/{}", path)).unwrap();
+    assert_eq!(content, body);
+}
+
+#[tokio::test]
+async fn put_overwrite_file() {
+    let path = "put_overwrite.txt";
+    setup_test_file(path, "old content");
+    let client = reqwest::Client::new();
+    let url = format!("{}/test/{}", BASE_URL, path);
+    let new_body = "updated content";
+    let res = client
+        .put(&url)
+        .body(new_body)
+        .send()
+        .await
+        .expect("PUT failed");
+    assert_eq!(res.status(), StatusCode::NO_CONTENT);
+    let content = std::fs::read_to_string(format!("data/test/{}", path)).unwrap();
+    assert_eq!(content, new_body);
+}
+
+#[tokio::test]
+async fn put_to_directory_should_fail() {
+    setup_test_dir("putdir");
+    let client = reqwest::Client::new();
+    let url = format!("{}/test/putdir", BASE_URL); // folder path
+    let res = client
+        .put(&url)
+        .body("fail")
+        .send()
+        .await
+        .expect("PUT failed");
+    assert_eq!(res.status(), StatusCode::CONFLICT);
+}
+
+#[tokio::test]
+async fn put_missing_parent_should_fail() {
+    let path = "missingparentdir/newfile.txt";
+    // Remove any previous parent dir
+    let _ = std::fs::remove_dir_all("data/test/missingparentdir");
+    let client = reqwest::Client::new();
+    let url = format!("{}/test/{}", BASE_URL, path);
+    let res = client
+        .put(&url)
+        .body("abc")
+        .send()
+        .await
+        .expect("PUT failed");
+    assert_eq!(res.status(), StatusCode::CONFLICT);
+}
+
+#[tokio::test]
+async fn put_empty_body_creates_empty_file() {
+    let path = "put_zero.txt";
+    let client = reqwest::Client::new();
+    let url = format!("{}/test/{}", BASE_URL, path);
+    let res = client.put(&url).body("").send().await.expect("PUT failed");
+    assert!(res.status().is_success(), "status: {}", res.status());
+    let meta = std::fs::metadata(format!("data/test/{}", path)).unwrap();
+    assert_eq!(meta.len(), 0);
+}
+
+#[tokio::test]
+async fn put_permission_denied() {
+    // Only on unix: set parent dir to read-only
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let dirname = "readonly_dir";
+        setup_test_dir(dirname);
+        let dir_path = format!("data/test/{}", dirname);
+        let file_path = format!("{}/put_forbidden.txt", dir_path);
+        // Make dir readonly
+        let perms = std::fs::Permissions::from_mode(0o555);
+        let _ = std::fs::set_permissions(&dir_path, perms.clone());
+        let client = reqwest::Client::new();
+        let url = format!("{}/test/{}/put_forbidden.txt", BASE_URL, dirname);
+        let res = client
+            .put(&url)
+            .body("should fail")
+            .send()
+            .await
+            .expect("PUT failed");
+        // Accept forbidden or conflict (macos/ci may give 409)
+        assert!(
+            res.status() == StatusCode::FORBIDDEN || res.status() == StatusCode::CONFLICT,
+            "expected FORBIDDEN or CONFLICT, got {}",
+            res.status()
+        );
+        // Restore permissions for cleanup
+        let perms = std::fs::Permissions::from_mode(0o755);
+        let _ = std::fs::set_permissions(&dir_path, perms);
+        let _ = std::fs::remove_file(&file_path);
+        let _ = std::fs::remove_dir(&dir_path);
+    }
+}
