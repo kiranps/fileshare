@@ -2928,6 +2928,7 @@ dependencies = [
  "tracing-android",
  "tracing-subscriber",
  "uniffi",
+ "url 2.5.8",
  "urlencoding",
  "xml-rs",
 ]

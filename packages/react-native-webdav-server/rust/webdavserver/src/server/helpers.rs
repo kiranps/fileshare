@@ -62,6 +62,12 @@ pub fn resolve_path(uri: &Uri) -> PathBuf {
     PathBuf::from(path).join(decoded.trim_start_matches('/'))
 }
 
+pub fn absolute_destination_path(path: &str, uri: &Uri) -> PathBuf {
+    let base_path: String = extract_base_path(uri);
+    let decoded = decode(path).expect("invalid percent encoding").into_owned();
+    PathBuf::from(base_path).join(decoded.trim_start_matches('/'))
+}
+
 pub fn ensure_trailing_slash(path: &str) -> String {
     if path.ends_with('/') {
         path.to_owned()

@@ -5,6 +5,7 @@ use axum::http::StatusCode;
 use axum::http::{Method, Request, Uri};
 use axum::response::Response;
 use axum::{Router, middleware, routing::any};
+use std::path::Path;
 use std::string::String;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
@@ -16,8 +17,8 @@ pub fn router(base_path: String) -> Router {
         .route("/{*path}", any(route_request))
         .layer(
             TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::new().level(tracing::Level::INFO))
-                .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
+                .make_span_with(DefaultMakeSpan::new().level(tracing::Level::DEBUG))
+                .on_response(DefaultOnResponse::new().level(tracing::Level::DEBUG)),
         )
         .layer(middleware::from_fn_with_state(base_path, prefix_middleware))
 }
@@ -31,6 +32,7 @@ async fn route_request(req: Request<Body>) -> Response<Body> {
         &Method::PUT => handle_put(req).await,
         m if m.as_str() == "PROPFIND" => propfind(req).await,
         m if m.as_str() == "MKCOL" => handle_mkcol(req).await,
+        m if m.as_str() == "COPY" => handle_copy(req).await,
         _ => ok("WebDAV server is running\n"),
     }
 }
@@ -39,7 +41,10 @@ fn options_response() -> Response<Body> {
     Response::builder()
         .status(StatusCode::OK)
         .header("DAV", "1")
-        .header("Allow", "OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, MKCOL")
+        .header(
+            "Allow",
+            "OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, MKCOL, COPY",
+        )
         .header("MS-Author-Via", "DAV")
         .body(Body::empty())
         .unwrap()
@@ -302,4 +307,146 @@ async fn propfind(req: Request<Body>) -> Response<Body> {
         }
     }
     multistatus(responses)
+}
+
+// WebDAV COPY implementation per RFC 4918
+async fn handle_copy(req: Request<Body>) -> Response<Body> {
+    // ---------- Validate headers ----------
+    let destination = match req.headers().get("Destination") {
+        Some(v) => match v.to_str() {
+            Ok(s) => s,
+            Err(_) => return bad_request("Invalid Destination header"),
+        },
+        None => return bad_request("Missing Destination header"),
+    };
+
+    let overwrite = req
+        .headers()
+        .get("Overwrite")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("T");
+
+    let depth = req
+        .headers()
+        .get("Depth")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("infinity");
+
+    if depth != "0" && depth != "1" && depth != "infinity" {
+        return bad_request("Invalid Depth header");
+    }
+
+    // ---------- Resolve paths ----------
+    let source_path = resolve_path(req.uri());
+
+    let dest_uri: Uri = match destination.parse() {
+        Ok(u) => u,
+        Err(_) => return bad_request("Invalid Destination URI"),
+    };
+
+    let dest_path = absolute_destination_path(dest_uri.path(), req.uri());
+
+    if source_path == dest_path {
+        return forbidden("Cannot COPY resource onto itself");
+    }
+
+    // ---------- Validate source ----------
+    let source_meta = match tokio::fs::metadata(&source_path).await {
+        Ok(m) => m,
+        Err(_) => return not_found(),
+    };
+
+    // ---------- Handle overwrite ----------
+    let dest_exists = tokio::fs::metadata(&dest_path).await.is_ok();
+
+    if dest_exists {
+        if overwrite == "F" {
+            return Response::builder()
+                .status(StatusCode::PRECONDITION_FAILED)
+                .body(Body::from("Destination exists and Overwrite is F"))
+                .unwrap();
+        }
+
+        // Remove existing destination before copy
+        let _ = if tokio::fs::metadata(&dest_path)
+            .await
+            .map(|m| m.is_dir())
+            .unwrap_or(false)
+        {
+            tokio::fs::remove_dir_all(&dest_path).await
+        } else {
+            tokio::fs::remove_file(&dest_path).await
+        };
+    }
+
+    // ---------- Ensure parent exists ----------
+    if let Some(parent) = dest_path.parent() {
+        match tokio::fs::metadata(parent).await {
+            Ok(meta) if meta.is_dir() => {}
+            _ => {
+                return Response::builder()
+                    .status(StatusCode::CONFLICT)
+                    .body(Body::from("Parent directory does not exist"))
+                    .unwrap();
+            }
+        }
+    }
+
+    // ---------- Perform copy ----------
+    let result = if source_meta.is_file() {
+        tokio::fs::copy(&source_path, &dest_path).await.map(|_| ())
+    } else {
+        // Directory copy
+        if depth == "0" {
+            tokio::fs::create_dir(&dest_path).await
+        } else {
+            copy_dir_recursive(&source_path, &dest_path).await
+        }
+    };
+
+    match result {
+        Ok(_) => {
+            if dest_exists {
+                Response::builder()
+                    .status(StatusCode::NO_CONTENT)
+                    .body(Body::empty())
+                    .unwrap()
+            } else {
+                Response::builder()
+                    .status(StatusCode::CREATED)
+                    .body(Body::empty())
+                    .unwrap()
+            }
+        }
+        Err(e) => match e.kind() {
+            std::io::ErrorKind::PermissionDenied => forbidden("Permission Denied"),
+            _ => server_error(),
+        },
+    }
+}
+
+use std::future::Future;
+use std::pin::Pin;
+
+fn copy_dir_recursive<'a>(
+    src: &'a Path,
+    dst: &'a Path,
+) -> Pin<Box<dyn Future<Output = Result<(), std::io::Error>> + Send + 'a>> {
+    Box::pin(async move {
+        tokio::fs::create_dir(dst).await?;
+
+        let mut entries = tokio::fs::read_dir(src).await?;
+        while let Some(entry) = entries.next_entry().await? {
+            let file_type = entry.file_type().await?;
+            let new_dst = dst.join(entry.file_name());
+
+            if file_type.is_dir() {
+                copy_dir_recursive(&entry.path(), &new_dst).await?;
+            } else {
+                tokio::fs::copy(entry.path(), new_dst).await?;
+            }
+        }
+
+        Ok(())
+    })
 }
