@@ -183,8 +183,6 @@ async fn propfile_depth_1() {
 
 #[tokio::test]
 async fn propfile_depth_1_dir_name_has_space() {
-    //use quick_xml::Reader;
-    //use quick_xml::events::Event;
     use urlencoding::encode;
     use utils::parse_webdav_multistatus;
 
@@ -203,6 +201,7 @@ async fn propfile_depth_1_dir_name_has_space() {
 
     assert_eq!(res.status(), StatusCode::MULTI_STATUS);
     let body = res.text().await.unwrap();
+    //println!("{}", body);
     let items = parse_webdav_multistatus(&body).unwrap();
     let paths: Vec<String> = items.into_iter().map(|item| item.path).collect();
     assert!(paths.iter().any(|p| p.contains("dir with space")));
