@@ -34,6 +34,7 @@ async fn route_request(req: Request<Body>) -> Response<Body> {
         m if m.as_str() == "PROPFIND" => propfind(req).await,
         m if m.as_str() == "MKCOL" => handle_mkcol(req).await,
         m if m.as_str() == "COPY" => handle_copy(req).await,
+        m if m.as_str() == "MOVE" => handle_move(req).await,
         _ => ok("WebDAV server is running\n"),
     }
 }
@@ -451,4 +452,148 @@ fn copy_dir_recursive<'a>(
 
         Ok(())
     })
+}
+
+// TODO  WebDAV MOVE implementation per RFC 4918 - donot modify anything above this line
+
+async fn handle_move(req: Request<Body>) -> Response<Body> {
+    // Validate Destination header
+    let destination = match req.headers().get("Destination") {
+        Some(v) => match v.to_str() {
+            Ok(s) => s,
+            Err(_) => return bad_request("Invalid Destination header"),
+        },
+        None => return bad_request("Missing Destination header"),
+    };
+
+    let overwrite = req
+        .headers()
+        .get("Overwrite")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("T");
+
+    // Resolve paths
+    let source_path = resolve_path(req.uri());
+
+    let dest_uri: Uri = match destination.parse() {
+        Ok(u) => u,
+        Err(_) => return bad_request("Invalid Destination URI"),
+    };
+
+    let dest_path = absolute_destination_path(dest_uri.path(), req.uri());
+
+    if source_path == dest_path {
+        return forbidden("Cannot MOVE resource onto itself");
+    }
+
+    // Validate source
+    let source_meta = match tokio::fs::metadata(&source_path).await {
+        Ok(m) => m,
+        Err(_) => return not_found(),
+    };
+
+    // Handle overwrite / destination exists
+    let dest_exists = tokio::fs::metadata(&dest_path).await.is_ok();
+
+    if dest_exists {
+        if overwrite == "F" {
+            return Response::builder()
+                .status(StatusCode::PRECONDITION_FAILED)
+                .body(Body::from("Destination exists and Overwrite is F"))
+                .unwrap();
+        }
+
+        // Remove existing destination before move
+        let _ = if tokio::fs::metadata(&dest_path)
+            .await
+            .map(|m| m.is_dir())
+            .unwrap_or(false)
+        {
+            tokio::fs::remove_dir_all(&dest_path).await
+        } else {
+            tokio::fs::remove_file(&dest_path).await
+        };
+    }
+
+    // Ensure parent exists
+    if let Some(parent) = dest_path.parent() {
+        match tokio::fs::metadata(parent).await {
+            Ok(meta) if meta.is_dir() => {}
+            _ => {
+                return Response::builder()
+                    .status(StatusCode::CONFLICT)
+                    .body(Body::from("Parent directory does not exist"))
+                    .unwrap();
+            }
+        }
+    }
+
+    // Try rename first (efficient, preserves metadata)
+    match tokio::fs::rename(&source_path, &dest_path).await {
+        Ok(_) => {
+            if dest_exists {
+                Response::builder()
+                    .status(StatusCode::NO_CONTENT)
+                    .body(Body::empty())
+                    .unwrap()
+            } else {
+                Response::builder()
+                    .status(StatusCode::CREATED)
+                    .body(Body::empty())
+                    .unwrap()
+            }
+        }
+        Err(e) => {
+            // If rename failed due to cross-device link (EXDEV) or other reasons, fall back to copy+delete
+            if e.raw_os_error() == Some(18) {
+                // EXDEV on Unix - cross-device link
+                let copy_result = if source_meta.is_file() {
+                    tokio::fs::copy(&source_path, &dest_path).await.map(|_| ())
+                } else {
+                    copy_dir_recursive(&source_path, &dest_path).await
+                };
+
+                match copy_result {
+                    Ok(_) => {
+                        // Remove source
+                        let remove_res = if source_meta.is_file() {
+                            tokio::fs::remove_file(&source_path).await
+                        } else {
+                            tokio::fs::remove_dir_all(&source_path).await
+                        };
+                        match remove_res {
+                            Ok(_) => {
+                                if dest_exists {
+                                    Response::builder()
+                                        .status(StatusCode::NO_CONTENT)
+                                        .body(Body::empty())
+                                        .unwrap()
+                                } else {
+                                    Response::builder()
+                                        .status(StatusCode::CREATED)
+                                        .body(Body::empty())
+                                        .unwrap()
+                                }
+                            }
+                            Err(err) => match err.kind() {
+                                std::io::ErrorKind::PermissionDenied => {
+                                    forbidden("Permission Denied")
+                                }
+                                _ => server_error(),
+                            },
+                        }
+                    }
+                    Err(err) => match err.kind() {
+                        std::io::ErrorKind::PermissionDenied => forbidden("Permission Denied"),
+                        _ => server_error(),
+                    },
+                }
+            } else {
+                match e.kind() {
+                    std::io::ErrorKind::PermissionDenied => forbidden("Permission Denied"),
+                    _ => server_error(),
+                }
+            }
+        }
+    }
 }

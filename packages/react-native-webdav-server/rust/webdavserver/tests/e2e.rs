@@ -642,3 +642,114 @@ async fn copy_dir_missing_parent_should_fail() {
     assert_eq!(res.status(), StatusCode::CONFLICT);
     assert!(std::fs::metadata("data/test/newparent/copy_dir_dest").is_err());
 }
+
+#[tokio::test]
+async fn move_file_creates_new() {
+    setup_test_file("moveme.txt", "move-content");
+
+    let client = reqwest::Client::new();
+    let src_url = format!("{}/test/moveme.txt", BASE_URL);
+    let dest_url = format!("{}/test/moved.txt", BASE_URL);
+
+    let res = client
+        .request(Method::from_bytes(b"MOVE").unwrap(), &src_url)
+        .header("Destination", dest_url.clone())
+        .send()
+        .await
+        .expect("MOVE failed");
+
+    assert_eq!(res.status(), StatusCode::CREATED);
+    let content = std::fs::read_to_string("data/test/moved.txt").unwrap();
+    assert_eq!(content, "move-content");
+    assert!(std::fs::metadata("data/test/moveme.txt").is_err());
+}
+
+#[tokio::test]
+async fn move_file_overwrite_allowed() {
+    setup_test_file("mv_src.txt", "new-content");
+    setup_test_file("mv_dest.txt", "old-content");
+    let client = reqwest::Client::new();
+    let src_url = format!("{}/test/mv_src.txt", BASE_URL);
+    let dest_url = format!("{}/test/mv_dest.txt", BASE_URL);
+
+    let res = client
+        .request(Method::from_bytes(b"MOVE").unwrap(), &src_url)
+        .header("Destination", dest_url.clone())
+        .header("Overwrite", "T")
+        .send()
+        .await
+        .expect("MOVE failed");
+
+    assert_eq!(res.status(), StatusCode::NO_CONTENT);
+    let content = std::fs::read_to_string("data/test/mv_dest.txt").unwrap();
+    assert_eq!(content, "new-content");
+    assert!(std::fs::metadata("data/test/mv_src.txt").is_err());
+}
+
+#[tokio::test]
+async fn move_file_overwrite_forbidden() {
+    setup_test_file("mv_src2.txt", "src-content");
+    setup_test_file("mv_dest2.txt", "dest-content");
+    let client = reqwest::Client::new();
+    let src_url = format!("{}/test/mv_src2.txt", BASE_URL);
+    let dest_url = format!("{}/test/mv_dest2.txt", BASE_URL);
+
+    let res = client
+        .request(Method::from_bytes(b"MOVE").unwrap(), &src_url)
+        .header("Destination", dest_url.clone())
+        .header("Overwrite", "F")
+        .send()
+        .await
+        .expect("MOVE failed");
+
+    assert_eq!(res.status(), StatusCode::PRECONDITION_FAILED);
+    // Destination should be untouched and source still present
+    let dest_content = std::fs::read_to_string("data/test/mv_dest2.txt").unwrap();
+    assert_eq!(dest_content, "dest-content");
+    let src_content = std::fs::read_to_string("data/test/mv_src2.txt").unwrap();
+    assert_eq!(src_content, "src-content");
+}
+
+#[tokio::test]
+async fn move_directory_recursive_success() {
+    setup_test_file("mv_dir_src/top.txt", "top");
+    setup_test_file("mv_dir_src/sub/inner.txt", "inner");
+    let client = reqwest::Client::new();
+    let src_url = format!("{}/test/mv_dir_src", BASE_URL);
+    let dest_url = format!("{}/test/mv_dir_dest", BASE_URL);
+
+    let res = client
+        .request(Method::from_bytes(b"MOVE").unwrap(), &src_url)
+        .header("Destination", dest_url.clone())
+        .send()
+        .await
+        .expect("MOVE failed");
+
+    assert_eq!(res.status(), StatusCode::CREATED);
+    assert!(std::fs::metadata("data/test/mv_dir_dest").unwrap().is_dir());
+    assert_eq!(
+        std::fs::read_to_string("data/test/mv_dir_dest/top.txt").unwrap(),
+        "top"
+    );
+    assert_eq!(
+        std::fs::read_to_string("data/test/mv_dir_dest/sub/inner.txt").unwrap(),
+        "inner"
+    );
+    assert!(std::fs::metadata("data/test/mv_dir_src").is_err());
+}
+
+#[tokio::test]
+async fn move_onto_self_forbidden() {
+    setup_test_file("self.txt", "me");
+    let client = reqwest::Client::new();
+    let url = format!("{}/test/self.txt", BASE_URL);
+
+    let res = client
+        .request(Method::from_bytes(b"MOVE").unwrap(), &url)
+        .header("Destination", url.clone())
+        .send()
+        .await
+        .expect("MOVE failed");
+
+    assert_eq!(res.status(), StatusCode::FORBIDDEN);
+}
