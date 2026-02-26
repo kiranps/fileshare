@@ -9,7 +9,7 @@ use std::path::Path;
 use std::string::String;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
-use tracing::error;
+use tracing::{error, info};
 
 pub fn router(base_path: String) -> Router {
     Router::new()
@@ -24,6 +24,7 @@ pub fn router(base_path: String) -> Router {
 }
 
 async fn route_request(req: Request<Body>) -> Response<Body> {
+    info!("{:#?}", req);
     match req.method() {
         &Method::OPTIONS => options_response(),
         &Method::GET => serve_file(req).await,
@@ -358,6 +359,7 @@ async fn handle_copy(req: Request<Body>) -> Response<Body> {
 
     // ---------- Handle overwrite ----------
     let dest_exists = tokio::fs::metadata(&dest_path).await.is_ok();
+    info!("############ {:#?}", dest_exists);
 
     if dest_exists {
         if overwrite == "F" {

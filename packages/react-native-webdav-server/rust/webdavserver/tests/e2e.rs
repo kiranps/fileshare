@@ -534,3 +534,111 @@ async fn put_permission_denied() {
         let _ = std::fs::remove_dir(&dir_path);
     }
 }
+
+#[tokio::test]
+async fn copy_dir_creates_new() {
+    setup_test_file("copy_dir_src/a.txt", "hi");
+    setup_test_file("copy_dir_src/b.txt", "bye");
+    setup_test_file("copy_dir_src/subdir/c.txt", "dai");
+
+    let client = reqwest::Client::new();
+    let dest_url = format!("{}/test/copy_dir_dest", BASE_URL);
+    let res = client
+        .request(
+            Method::from_bytes(b"COPY").unwrap(),
+            format!("{}/test/copy_dir_src", BASE_URL),
+        )
+        .header("Destination", dest_url.clone())
+        .send()
+        .await
+        .expect("COPY failed");
+
+    assert_eq!(res.status(), StatusCode::CREATED);
+    assert!(
+        std::fs::metadata("data/test/copy_dir_dest")
+            .unwrap()
+            .is_dir()
+    );
+    let file_a = std::fs::read_to_string("data/test/copy_dir_dest/a.txt").unwrap();
+    assert_eq!(file_a, "hi");
+    let file_b = std::fs::read_to_string("data/test/copy_dir_dest/b.txt").unwrap();
+    assert_eq!(file_b, "bye");
+    let file_c = std::fs::read_to_string("data/test/copy_dir_dest/subdir/c.txt").unwrap();
+    assert_eq!(file_c, "dai");
+}
+
+#[tokio::test]
+async fn copy_dir_overwrites_when_allowed() {
+    setup_test_file("copy_dir_src_over/a.txt", "hi");
+    setup_test_file("copy_dir_src_over/subdir/c.txt", "bye");
+
+    setup_test_file("copy_dir_dest_over/b.txt", "dai");
+    setup_test_file("copy_dir_dest_over/subdir/c.txt", "dai");
+
+    let client = reqwest::Client::new();
+    let dest_url = format!("{}/test/copy_dir_dest_over", BASE_URL);
+    let res = client
+        .request(
+            Method::from_bytes(b"COPY").unwrap(),
+            format!("{}/test/copy_dir_src_over", BASE_URL),
+        )
+        .header("Destination", dest_url.clone())
+        .header("Overwrite", "T")
+        .send()
+        .await
+        .expect("COPY failed");
+
+    assert_eq!(res.status(), StatusCode::NO_CONTENT);
+    assert!(std::fs::metadata("data/test/copy_dir_dest_over/a.txt").is_ok());
+    assert_eq!(
+        std::fs::read_to_string("data/test/copy_dir_dest_over/subdir/c.txt").unwrap(),
+        "bye"
+    );
+    assert!(std::fs::metadata("data/test/copy_dir_dest_over/b.txt").is_err());
+}
+
+#[tokio::test]
+async fn copy_dir_forbidden_overwrite() {
+    setup_test_file("copy_dir_src_for/fa.txt", "hi");
+    setup_test_file("copy_dir_src_for/subdir/fc.txt", "bye");
+
+    setup_test_file("copy_dir_dest_for/b.txt", "dai");
+    setup_test_file("copy_dir_dest_for/subdir/k.txt", "keepme");
+
+    let client = reqwest::Client::new();
+    let dest_url = format!("{}/test/copy_dir_dest_for", BASE_URL);
+    let res = client
+        .request(
+            Method::from_bytes(b"COPY").unwrap(),
+            format!("{}/test/copy_dir_src_for", BASE_URL),
+        )
+        .header("Destination", dest_url.clone())
+        .header("Overwrite", "F")
+        .send()
+        .await
+        .expect("COPY failed");
+    assert_eq!(res.status(), StatusCode::PRECONDITION_FAILED);
+    assert_eq!(
+        std::fs::read_to_string("data/test/copy_dir_dest_for/subdir/k.txt").unwrap(),
+        "keepme"
+    );
+    assert!(std::fs::metadata("data/test/copy_dir_dest_for/c.txt").is_err());
+}
+
+#[tokio::test]
+async fn copy_dir_missing_parent_should_fail() {
+    let _ = std::fs::remove_dir_all("data/test/newparent");
+    let client = reqwest::Client::new();
+    let dest_url = format!("{}/test/newparent/copy_dir_dest", BASE_URL);
+    let res = client
+        .request(
+            Method::from_bytes(b"COPY").unwrap(),
+            format!("{}/test/copy_dir_src", BASE_URL),
+        )
+        .header("Destination", dest_url.clone())
+        .send()
+        .await
+        .expect("COPY failed");
+    assert_eq!(res.status(), StatusCode::CONFLICT);
+    assert!(std::fs::metadata("data/test/newparent/copy_dir_dest").is_err());
+}
