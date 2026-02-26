@@ -1,12 +1,4 @@
-import { registerRootComponent } from "expo";
+import { registerRootComponent } from 'expo';
+import App from './App';
 
-import { uniffiInitAsync } from "react-native-webdav-server";
-
-import App from "./App";
-
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
-uniffiInitAsync().then(() => {
-  registerRootComponent(App);
-});
+registerRootComponent(App);
