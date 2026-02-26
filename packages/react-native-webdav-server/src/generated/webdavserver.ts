@@ -344,9 +344,6 @@ const FfiConverterTypeServerError = (() => {
 })();
 
 
-/**
- * WebDavServer struct encapsulates server lifecycle
- */
 export interface WebDavServerInterface {
     
     start()  /*throws*/: string;
@@ -354,9 +351,6 @@ export interface WebDavServerInterface {
 }
 
 
-/**
- * WebDavServer struct encapsulates server lifecycle
- */
 export class WebDavServer extends UniffiAbstractObject implements WebDavServerInterface {
 
     readonly [uniffiTypeNameSymbol] = "WebDavServer";

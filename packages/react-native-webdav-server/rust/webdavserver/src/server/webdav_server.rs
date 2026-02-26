@@ -1,8 +1,11 @@
-use std::sync::{Mutex, atomic::{AtomicBool, Ordering}};
-use tokio::sync::oneshot;
-use tokio::runtime::{Builder, Runtime};
-use crate::ServerError;
 use super::logging::init_logging;
+use crate::ServerError;
+use std::sync::{
+    Mutex,
+    atomic::{AtomicBool, Ordering},
+};
+use tokio::runtime::{Builder, Runtime};
+use tokio::sync::oneshot;
 
 type JoinHandleResult = tokio::task::JoinHandle<Result<(), ServerError>>;
 
@@ -48,6 +51,7 @@ impl WebDavServer {
             *runtime_guard = Some(rt);
         }
         let addr = format!("0.0.0.0:{}", self.port);
+
         let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
 
         {
@@ -81,7 +85,11 @@ impl WebDavServer {
             let mut handle_guard = self.handle.lock().unwrap();
             *handle_guard = Some(handle);
         }
-        Ok(format!("server started on port {}", self.port))
+
+        let lan_ip = local_lan_ip().unwrap();
+        let startup_message = format!("server started on {}:{}", lan_ip, self.port);
+        eprintln!("{}", startup_message);
+        Ok(startup_message)
     }
 
     pub fn stop(&self) -> Result<String, ServerError> {
@@ -101,4 +109,12 @@ impl WebDavServer {
 
         Ok("server stopped successfully".to_string())
     }
+}
+
+fn local_lan_ip() -> Option<std::net::IpAddr> {
+    use std::net::UdpSocket;
+
+    let socket = UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("8.8.8.8:80").ok()?;
+    socket.local_addr().ok().map(|addr| addr.ip())
 }

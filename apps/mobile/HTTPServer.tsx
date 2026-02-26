@@ -8,15 +8,14 @@ export default function HTTPServer() {
   const [isRunning, setIsRunning] = useState(false);
 
   const handleStartServer = () => {
-    server.start();
-    setIsRunning(true);
-    setMessage("Server started");
+    const res = server.start();
+    setMessage(res);
   };
 
   const handleStopServer = () => {
-    server.stop();
+    const res = server.stop();
     setIsRunning(false);
-    setMessage("Server stopped");
+    setMessage(res);
   };
 
   return (
