@@ -5,6 +5,9 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { Server as ServerIcon, Wifi, Play, Square, Copy, CheckCircle2, XCircle } from 'lucide-react-native';
 import { interopIcon } from '@/utils/css';
 
+import { WebDavServer } from "react-native-webdav-server";
+const server = new WebDavServer(8080, "/storage/emulated/0");
+
 interopIcon(ServerIcon);
 interopIcon(Wifi);
 interopIcon(Play);
@@ -27,12 +30,15 @@ export default function ServerScreen() {
   const toggleServer = () => {
     setIsRunning(!isRunning);
     if (!isRunning) {
-      Alert.alert(
-        'Server Started',
-        `${protocol} server is now running on port ${serverDetails.port}`
-      );
+    const res = server.start();
+        if (res) {
+          Alert.alert(res );
+        }
     } else {
-      Alert.alert('Server Stopped', 'Server has been stopped.');
+    const res = server.stop();
+        if (res) {
+          Alert.alert(res );
+        }
     }
   };
 

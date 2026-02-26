@@ -6,6 +6,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "newArchEnabled": true,
     "scheme": "myapp",
     "experiments": {
       "tsconfigPaths": true,
@@ -25,14 +26,15 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
+      "package": "com.kiran.shareit",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.MANAGE_EXTERNAL_STORAGE"
+      ]
     }
   }
 }
