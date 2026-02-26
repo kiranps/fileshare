@@ -1,8 +1,6 @@
 use std::sync::{Mutex, atomic::{AtomicBool, Ordering}};
 use tokio::sync::oneshot;
 use tokio::runtime::{Builder, Runtime};
-use axum::body::Body;
-use std::path::PathBuf;
 use crate::ServerError;
 use super::logging::init_logging;
 

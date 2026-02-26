@@ -6,9 +6,6 @@ mod middleware;
 mod routing;
 mod webdav_server;
 
-pub use logging::init_logging;
-pub use middleware::prefix_middleware;
-pub use routing::router;
 pub use webdav_server::WebDavServer;
 
 // NOTE: All prior code has been split into modules above without logic changes.
