@@ -23,8 +23,6 @@ pub struct WebDavServer {
 pub struct StartResponse {
     pub ip: String,
     pub port: u16,
-    pub running: bool,
-    pub error: Option<String>,
 }
 
 #[uniffi::export]
@@ -105,8 +103,6 @@ impl WebDavServer {
         Ok(StartResponse {
             ip: lan_ip,
             port: self.port,
-            running: true,
-            error: None,
         })
     }
 
