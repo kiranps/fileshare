@@ -26,8 +26,17 @@ export function useWebDavServer(): UseWebDavServerReturn {
     ({ port, basePath }: { port?: number; basePath: string }) => {
       if (!serverRef.current || isRunning) return;
 
+      const opts = {
+        port,
+        basePath,
+        auth: {
+          username: 'kiran',
+          password: 'password',
+        },
+      };
+
       try {
-        const result = serverRef.current.start(port, basePath);
+        const result = serverRef.current.start(opts);
         setIp(result.ip);
         setPort(result.port); // use returned port
         setIsRunning(true);

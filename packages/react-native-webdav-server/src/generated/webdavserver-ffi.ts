@@ -40,8 +40,7 @@ interface NativeModuleInterface {
   ): bigint;
   ubrn_uniffi_webdavserver_fn_method_webdavserver_start(
     ptr: bigint,
-    port: Uint8Array,
-    basePath: Uint8Array,
+    opts: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus,
   ): Uint8Array;
   ubrn_uniffi_webdavserver_fn_method_webdavserver_stop(

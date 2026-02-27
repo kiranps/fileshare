@@ -19,4 +19,4 @@ pub enum ServerError {
     RuntimeError { message: String },
 }
 
-pub use server::WebDavServer;
+pub use server::{StartOptions, WebDavServer};

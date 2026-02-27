@@ -71,6 +71,124 @@ const uniffiIsDebug =
   false;
 // Public interface members begin here.
 
+export type Auth = {
+  username: string;
+  password: string;
+};
+
+/**
+ * Generated factory for {@link Auth} record objects.
+ */
+export const Auth = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<Auth, ReturnType<typeof defaults>>(defaults);
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link Auth}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link Auth}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link webdavserver} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<Auth>,
+  });
+})();
+
+const FfiConverterTypeAuth = (() => {
+  type TypeName = Auth;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        username: FfiConverterString.read(from),
+        password: FfiConverterString.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.username, into);
+      FfiConverterString.write(value.password, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterString.allocationSize(value.username) +
+        FfiConverterString.allocationSize(value.password)
+      );
+    }
+  }
+  return new FFIConverter();
+})();
+
+export type StartOptions = {
+  port: /*u16*/ number | undefined;
+  basePath: string;
+  auth: Auth | undefined;
+};
+
+/**
+ * Generated factory for {@link StartOptions} record objects.
+ */
+export const StartOptions = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<StartOptions, ReturnType<typeof defaults>>(
+      defaults,
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link StartOptions}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link StartOptions}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link webdavserver} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<StartOptions>,
+  });
+})();
+
+const FfiConverterTypeStartOptions = (() => {
+  type TypeName = StartOptions;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        port: FfiConverterOptionalUInt16.read(from),
+        basePath: FfiConverterString.read(from),
+        auth: FfiConverterOptionalTypeAuth.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterOptionalUInt16.write(value.port, into);
+      FfiConverterString.write(value.basePath, into);
+      FfiConverterOptionalTypeAuth.write(value.auth, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterOptionalUInt16.allocationSize(value.port) +
+        FfiConverterString.allocationSize(value.basePath) +
+        FfiConverterOptionalTypeAuth.allocationSize(value.auth)
+      );
+    }
+  }
+  return new FFIConverter();
+})();
+
 export type StartResponse = {
   ip: string;
   port: /*u16*/ number;
@@ -398,10 +516,7 @@ const FfiConverterTypeServerError = (() => {
 })();
 
 export interface WebDavServerInterface {
-  start(
-    port: /*u16*/ number | undefined,
-    basePath: string,
-  ) /*throws*/ : StartResponse;
+  start(opts: StartOptions) /*throws*/ : StartResponse;
   stop() /*throws*/ : string;
 }
 
@@ -427,10 +542,7 @@ export class WebDavServer
       uniffiTypeWebDavServerObjectFactory.bless(pointer);
   }
 
-  public start(
-    port: /*u16*/ number | undefined,
-    basePath: string,
-  ): StartResponse /*throws*/ {
+  public start(opts: StartOptions): StartResponse /*throws*/ {
     return FfiConverterTypeStartResponse.lift(
       uniffiCaller.rustCallWithError(
         /*liftError:*/ FfiConverterTypeServerError.lift.bind(
@@ -439,8 +551,7 @@ export class WebDavServer
         /*caller:*/ (callStatus) => {
           return nativeModule().ubrn_uniffi_webdavserver_fn_method_webdavserver_start(
             uniffiTypeWebDavServerObjectFactory.clonePointer(this),
-            FfiConverterOptionalUInt16.lower(port),
-            FfiConverterString.lower(basePath),
+            FfiConverterTypeStartOptions.lower(opts),
             callStatus,
           );
         },
@@ -553,6 +664,11 @@ const FfiConverterTypeWebDavServer = new FfiConverterObject(
   uniffiTypeWebDavServerObjectFactory,
 );
 
+// FfiConverter for Auth | undefined
+const FfiConverterOptionalTypeAuth = new FfiConverterOptional(
+  FfiConverterTypeAuth,
+);
+
 // FfiConverter for /*u16*/number | undefined
 const FfiConverterOptionalUInt16 = new FfiConverterOptional(FfiConverterUInt16);
 
@@ -580,7 +696,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_webdavserver_checksum_method_webdavserver_start() !==
-    58044
+    45751
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_webdavserver_checksum_method_webdavserver_start",
@@ -607,7 +723,9 @@ function uniffiEnsureInitialized() {
 export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
+    FfiConverterTypeAuth,
     FfiConverterTypeServerError,
+    FfiConverterTypeStartOptions,
     FfiConverterTypeStartResponse,
     FfiConverterTypeWebDavServer,
   },

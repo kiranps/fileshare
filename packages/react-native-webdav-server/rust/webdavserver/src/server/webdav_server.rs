@@ -1,7 +1,7 @@
 use super::logging::init_logging;
 use crate::ServerError;
 use std::sync::{
-    Mutex,
+    Arc, Mutex,
     atomic::{AtomicBool, Ordering},
 };
 use tokio::runtime::{Builder, Runtime};
@@ -34,6 +34,19 @@ pub struct StartResponse {
     pub port: u16,
 }
 
+#[derive(uniffi::Record)]
+pub struct Auth {
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(uniffi::Record)]
+pub struct StartOptions {
+    pub port: Option<u16>,
+    pub base_path: String,
+    pub auth: Option<Auth>,
+}
+
 #[uniffi::export]
 impl WebDavServer {
     #[uniffi::constructor]
@@ -41,13 +54,9 @@ impl WebDavServer {
         Self::default()
     }
 
-    pub fn start(
-        &self,
-        port: Option<u16>,
-        base_path: String,
-    ) -> Result<StartResponse, ServerError> {
+    pub fn start(&self, opts: StartOptions) -> Result<StartResponse, ServerError> {
         init_logging();
-        let port = port.unwrap_or(8080);
+        let port = opts.port.unwrap_or(8080);
         if self.running.swap(true, Ordering::SeqCst) {
             return Err(ServerError::AlreadyRunning);
         }
@@ -67,19 +76,28 @@ impl WebDavServer {
             let mut tx_guard = self.shutdown_tx.lock().unwrap();
             *tx_guard = Some(shutdown_tx);
         }
-        let base_path = if base_path.is_empty() {
+        let base_path = if opts.base_path.is_empty() {
             "data".to_string()
         } else {
-            base_path
+            opts.base_path
+        };
+
+        // Convert optional Auth record into shared Arc<Option<(user, pass)>>
+        let auth_state: Arc<Option<(String, String)>> = match opts.auth {
+            Some(a) if !a.username.is_empty() && !a.password.is_empty() => {
+                Arc::new(Some((a.username, a.password)))
+            }
+            _ => Arc::new(None),
         };
         let handle = {
             let runtime_guard = self.runtime.lock().unwrap();
+            let auth_state = auth_state.clone();
             runtime_guard.as_ref().unwrap().spawn(async move {
                 let listener = tokio::net::TcpListener::bind(&addr)
                     .await
                     .map_err(|_| ServerError::BindFailed(port))?;
 
-                let app = super::routing::router(base_path);
+                let app = super::routing::router(base_path, auth_state);
 
                 axum::serve(listener, app)
                     .with_graceful_shutdown(async {
