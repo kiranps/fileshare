@@ -36,12 +36,12 @@ interface NativeModuleInterface {
     uniffi_out_err: UniffiRustCallStatus,
   ): void;
   ubrn_uniffi_webdavserver_fn_constructor_webdavserver_new(
-    port: number,
-    basePath: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus,
   ): bigint;
   ubrn_uniffi_webdavserver_fn_method_webdavserver_start(
     ptr: bigint,
+    port: Uint8Array,
+    basePath: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus,
   ): Uint8Array;
   ubrn_uniffi_webdavserver_fn_method_webdavserver_stop(

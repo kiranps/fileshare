@@ -41,8 +41,10 @@ import {
   type UniffiRustArcPtr,
   type UnsafeMutableRawPointer,
   AbstractFfiConverterByteArray,
+  FfiConverterBool,
   FfiConverterInt32,
   FfiConverterObject,
+  FfiConverterOptional,
   FfiConverterUInt16,
   FfiConverterUInt64,
   RustBuffer,
@@ -53,6 +55,7 @@ import {
   destructorGuardSymbol,
   pointerLiteralSymbol,
   uniffiCreateFfiConverterString,
+  uniffiCreateRecord,
   uniffiTypeNameSymbol,
   variantOrdinalSymbol,
 } from "uniffi-bindgen-react-native";
@@ -67,6 +70,64 @@ const uniffiIsDebug =
   process?.env?.NODE_ENV !== "production" ||
   false;
 // Public interface members begin here.
+
+export type StartResponse = {
+  ip: string;
+  port: /*u16*/ number;
+};
+
+/**
+ * Generated factory for {@link StartResponse} record objects.
+ */
+export const StartResponse = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<StartResponse, ReturnType<typeof defaults>>(
+      defaults,
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link StartResponse}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link StartResponse}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link webdavserver} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<StartResponse>,
+  });
+})();
+
+const FfiConverterTypeStartResponse = (() => {
+  type TypeName = StartResponse;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        ip: FfiConverterString.read(from),
+        port: FfiConverterUInt16.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.ip, into);
+      FfiConverterUInt16.write(value.port, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterString.allocationSize(value.ip) +
+        FfiConverterUInt16.allocationSize(value.port)
+      );
+    }
+  }
+  return new FFIConverter();
+})();
 
 const stringConverter = {
   stringToBytes: (s: string) =>
@@ -337,7 +398,10 @@ const FfiConverterTypeServerError = (() => {
 })();
 
 export interface WebDavServerInterface {
-  start() /*throws*/ : string;
+  start(
+    port: /*u16*/ number | undefined,
+    basePath: string,
+  ) /*throws*/ : StartResponse;
   stop() /*throws*/ : string;
 }
 
@@ -348,13 +412,11 @@ export class WebDavServer
   readonly [uniffiTypeNameSymbol] = "WebDavServer";
   readonly [destructorGuardSymbol]: UniffiRustArcPtr;
   readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
-  constructor(port: /*u16*/ number, basePath: string) {
+  constructor() {
     super();
     const pointer = uniffiCaller.rustCall(
       /*caller:*/ (callStatus) => {
         return nativeModule().ubrn_uniffi_webdavserver_fn_constructor_webdavserver_new(
-          FfiConverterUInt16.lower(port),
-          FfiConverterString.lower(basePath),
           callStatus,
         );
       },
@@ -365,8 +427,11 @@ export class WebDavServer
       uniffiTypeWebDavServerObjectFactory.bless(pointer);
   }
 
-  public start(): string /*throws*/ {
-    return FfiConverterString.lift(
+  public start(
+    port: /*u16*/ number | undefined,
+    basePath: string,
+  ): StartResponse /*throws*/ {
+    return FfiConverterTypeStartResponse.lift(
       uniffiCaller.rustCallWithError(
         /*liftError:*/ FfiConverterTypeServerError.lift.bind(
           FfiConverterTypeServerError,
@@ -374,6 +439,8 @@ export class WebDavServer
         /*caller:*/ (callStatus) => {
           return nativeModule().ubrn_uniffi_webdavserver_fn_method_webdavserver_start(
             uniffiTypeWebDavServerObjectFactory.clonePointer(this),
+            FfiConverterOptionalUInt16.lower(port),
+            FfiConverterString.lower(basePath),
             callStatus,
           );
         },
@@ -486,6 +553,9 @@ const FfiConverterTypeWebDavServer = new FfiConverterObject(
   uniffiTypeWebDavServerObjectFactory,
 );
 
+// FfiConverter for /*u16*/number | undefined
+const FfiConverterOptionalUInt16 = new FfiConverterOptional(FfiConverterUInt16);
+
 /**
  * This should be called before anything else.
  *
@@ -510,7 +580,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_webdavserver_checksum_method_webdavserver_start() !==
-    54695
+    58044
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_webdavserver_checksum_method_webdavserver_start",
@@ -526,7 +596,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_webdavserver_checksum_constructor_webdavserver_new() !==
-    58839
+    46813
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_webdavserver_checksum_constructor_webdavserver_new",
@@ -538,6 +608,7 @@ export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
     FfiConverterTypeServerError,
+    FfiConverterTypeStartResponse,
     FfiConverterTypeWebDavServer,
   },
 });

@@ -11,15 +11,24 @@ type JoinHandleResult = tokio::task::JoinHandle<Result<(), ServerError>>;
 
 #[derive(uniffi::Object)]
 pub struct WebDavServer {
-    pub port: u16,
-    base_path: String,
     shutdown_tx: Mutex<Option<oneshot::Sender<()>>>,
     handle: Mutex<Option<JoinHandleResult>>,
     runtime: Mutex<Option<Runtime>>,
-    running: AtomicBool, // ✅ IMPORTANT
+    running: AtomicBool,
 }
 
-#[derive(uniffi::Object)]
+impl Default for WebDavServer {
+    fn default() -> Self {
+        Self {
+            shutdown_tx: Mutex::new(None),
+            handle: Mutex::new(None),
+            runtime: Mutex::new(None),
+            running: AtomicBool::new(false),
+        }
+    }
+}
+
+#[derive(uniffi::Record)]
 pub struct StartResponse {
     pub ip: String,
     pub port: u16,
@@ -28,23 +37,17 @@ pub struct StartResponse {
 #[uniffi::export]
 impl WebDavServer {
     #[uniffi::constructor]
-    pub fn new(port: u16, base_path: String) -> Self {
-        WebDavServer {
-            port,
-            base_path: if base_path.is_empty() {
-                "data".to_string()
-            } else {
-                base_path
-            },
-            shutdown_tx: Mutex::new(None),
-            handle: Mutex::new(None),
-            runtime: Mutex::new(None),
-            running: AtomicBool::new(false),
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    pub fn start(&self) -> Result<StartResponse, ServerError> {
+    pub fn start(
+        &self,
+        port: Option<u16>,
+        base_path: String,
+    ) -> Result<StartResponse, ServerError> {
         init_logging();
+        let port = port.unwrap_or(8080);
         if self.running.swap(true, Ordering::SeqCst) {
             return Err(ServerError::AlreadyRunning);
         }
@@ -56,7 +59,7 @@ impl WebDavServer {
             let mut runtime_guard = self.runtime.lock().unwrap();
             *runtime_guard = Some(rt);
         }
-        let addr = format!("0.0.0.0:{}", self.port);
+        let addr = format!("0.0.0.0:{}", port);
 
         let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
 
@@ -64,8 +67,11 @@ impl WebDavServer {
             let mut tx_guard = self.shutdown_tx.lock().unwrap();
             *tx_guard = Some(shutdown_tx);
         }
-        let port = self.port;
-        let base_path = self.base_path.clone();
+        let base_path = if base_path.is_empty() {
+            "data".to_string()
+        } else {
+            base_path
+        };
         let handle = {
             let runtime_guard = self.runtime.lock().unwrap();
             runtime_guard.as_ref().unwrap().spawn(async move {
@@ -97,13 +103,10 @@ impl WebDavServer {
             .map(|ip| ip.to_string())
             .unwrap_or_else(|| "0.0.0.0".to_string());
 
-        let startup_message = format!("server started on {}:{}", lan_ip, self.port);
+        let startup_message = format!("server started on {}:{}", lan_ip, port);
         eprintln!("{}", startup_message);
 
-        Ok(StartResponse {
-            ip: lan_ip,
-            port: self.port,
-        })
+        Ok(StartResponse { ip: lan_ip, port })
     }
 
     pub fn stop(&self) -> Result<String, ServerError> {

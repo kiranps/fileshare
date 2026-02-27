@@ -4,9 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Server as ServerIcon, Wifi, Play, Square, Copy, CheckCircle2, XCircle } from 'lucide-react-native';
 import { interopIcon } from '@/utils/css';
+import {useWebDavServer} from '@/hooks/webdavserver';
 
-import { WebDavServer } from "react-native-webdav-server";
-const server = new WebDavServer(8080, "/storage/emulated/0");
 
 interopIcon(ServerIcon);
 interopIcon(Wifi);
@@ -17,28 +16,25 @@ interopIcon(CheckCircle2);
 interopIcon(XCircle);
 
 export default function ServerScreen() {
-  const [isRunning, setIsRunning] = useState(false);
+  //const [isRunning, setIsRunning] = useState(false);
   const [protocol, setProtocol] = useState<'FTP' | 'WebDAV'>('FTP');
+  const { ip, port, isRunning, start, stop } = useWebDavServer();
 
   // Mock data for connection details
   const serverDetails = {
-    ip: '192.168.1.105',
-    port: '2121',
+    ip: ip,
+    port: port,
     username: 'admin',
   };
 
   const toggleServer = () => {
-    setIsRunning(!isRunning);
     if (!isRunning) {
-    const res = server.start();
-        if (res) {
-          Alert.alert(res );
+        const params = {
+            basePath: "/storage/emulated/0"
         }
+        start(params);
     } else {
-    const res = server.stop();
-        if (res) {
-          Alert.alert(res );
-        }
+        stop();
     }
   };
 
