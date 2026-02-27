@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { interopIcon }  from '@/utils/css';
+import { interopIcon } from '@/utils/css';
 import {
   Settings as SettingsIcon,
   Server,
@@ -23,14 +23,19 @@ interopIcon(RefreshCw);
 
 type Protocol = 'FTP' | 'WebDAV';
 
+import { useServerStore } from '@/store/serverStore';
+
 export default function SettingsScreen() {
-  const [port, setPort] = useState('2121');
-  const [rootPath, setRootPath] = useState('/storage/emulated/0');
-  const [protocol, setProtocol] = useState<Protocol>('FTP');
-  const [authEnabled, setAuthEnabled] = useState(true);
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('password');
+  const settings = useServerStore((s: any) => s.settings);
+  const setSettings = useServerStore((s: any) => s.setSettings);
   const [showPassword, setShowPassword] = useState(false);
+
+  const port = settings.portSetting;
+  const rootPath = settings.basePath;
+  const authEnabled = settings.authEnabled;
+  const username = settings.username;
+  const password = settings.password;
+  console.log(settings);
 
   const handleSave = () => {
     // Validate port
@@ -48,17 +53,18 @@ export default function SettingsScreen() {
 
     Alert.alert(
       'Settings Saved',
-      `Configuration updated:\n\nProtocol: ${protocol}\nPort: ${port}\nRoot: ${rootPath}\nAuth: ${authEnabled ? 'Enabled' : 'Disabled'}`
+      `Configuration updated:\n\nPort: ${port}\nRoot: ${rootPath}\nAuth: ${authEnabled ? 'Enabled' : 'Disabled'}`
     );
   };
 
   const handleReset = () => {
-    setPort('2121');
-    setRootPath('/storage/emulated/0');
-    setProtocol('FTP');
-    setAuthEnabled(true);
-    setUsername('admin');
-    setPassword('password');
+    setSettings({
+      portSetting: '2121',
+      basePath: '/storage/emulated/0',
+      authEnabled: true,
+      username: 'admin',
+      password: 'password',
+    });
     Alert.alert('Reset', 'Settings have been reset to defaults');
   };
 
@@ -68,78 +74,55 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="bg-background flex-1">
+    <SafeAreaView className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ paddingBottom: 128 }}>
         {/* Header */}
         <View className="flex-row items-center justify-between px-6 py-4">
           <View className="flex-row items-center gap-3">
             <SettingsIcon className="text-primary" size={24} />
-            <Text className="text-foreground text-2xl font-bold">Settings</Text>
+            <Text className="text-2xl font-bold text-foreground">Settings</Text>
           </View>
           <ThemeToggle />
         </View>
 
-        {/* Protocol Selection */}
-        <View className="mb-6 px-6">
-          <Text className="text-foreground mb-3 text-sm font-semibold uppercase tracking-wider opacity-70">
-            Server Protocol
-          </Text>
-          <View className="bg-card border-border flex-row rounded-xl border p-2">
-            {(['FTP', 'WebDAV'] as Protocol[]).map((p) => (
-              <TouchableOpacity
-                key={p}
-                onPress={() => setProtocol(p)}
-                className={`flex-1 flex-row items-center justify-center gap-2 rounded-lg py-3 ${
-                  protocol === p ? 'bg-primary' : ''
-                }`}>
-                <Server size={18} color={protocol === p ? 'white' : 'gray'} />
-                <Text
-                  className={`font-semibold ${protocol === p ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
-                  {p}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
 
         {/* Connection Settings */}
         <View className="mb-6 px-6">
-          <Text className="text-foreground mb-3 text-sm font-semibold uppercase tracking-wider opacity-70">
+          <Text className="mb-3 text-sm font-semibold uppercase tracking-wider text-foreground opacity-70">
             Connection
           </Text>
-          <View className="bg-card border-border overflow-hidden rounded-xl border">
+          <View className="overflow-hidden rounded-xl border border-border bg-card">
             {/* Port */}
-            <View className="border-border border-b p-4">
-              <Text className="text-muted-foreground mb-2 text-sm">Server Port</Text>
+            <View className="border-b border-border p-4">
+              <Text className="mb-2 text-sm text-muted-foreground">Server Port</Text>
               <TextInput
                 value={port}
-                onChangeText={setPort}
-                placeholder="2121"
+                onChangeText={(v) => setSettings({ portSetting: v })}
                 keyboardType="number-pad"
-                className="bg-input border-border text-foreground rounded-lg border px-4 py-3 font-mono"
+                className="rounded-lg border border-border bg-input px-4 py-3 font-mono text-foreground"
               />
-              <Text className="text-muted-foreground mt-2 text-xs">
+              <Text className="mt-2 text-xs text-muted-foreground">
                 Port must be between 1 and 65535
               </Text>
             </View>
 
             {/* Root Path */}
             <View className="p-4">
-              <Text className="text-muted-foreground mb-2 text-sm">Root Filesystem Path</Text>
+              <Text className="mb-2 text-sm text-muted-foreground">Root Filesystem Path</Text>
               <View className="flex-row gap-2">
                 <TextInput
                   value={rootPath}
-                  onChangeText={setRootPath}
+                  onChangeText={(v) => setSettings({ basePath: v })}
                   placeholder="/storage/emulated/0"
-                  className="bg-input border-border text-foreground flex-1 rounded-lg border px-4 py-3 font-mono"
+                  className="flex-1 rounded-lg border border-border bg-input px-4 py-3 font-mono text-foreground"
                 />
                 <TouchableOpacity
                   onPress={selectFolder}
-                  className="bg-secondary border-border flex items-center justify-center rounded-lg border px-4">
+                  className="flex items-center justify-center rounded-lg border border-border bg-secondary px-4">
                   <Folder className="text-secondary-foreground" size={20} />
                 </TouchableOpacity>
               </View>
-              <Text className="text-muted-foreground mt-2 text-xs">
+              <Text className="mt-2 text-xs text-muted-foreground">
                 The folder that will be accessible to connected devices
               </Text>
             </View>
@@ -148,12 +131,12 @@ export default function SettingsScreen() {
 
         {/* Authentication Settings */}
         <View className="mb-6 px-6">
-          <Text className="text-foreground mb-3 text-sm font-semibold uppercase tracking-wider opacity-70">
+          <Text className="mb-3 text-sm font-semibold uppercase tracking-wider text-foreground opacity-70">
             Authentication
           </Text>
-          <View className="bg-card border-border overflow-hidden rounded-xl border">
+          <View className="overflow-hidden rounded-xl border border-border bg-card">
             {/* Auth Toggle */}
-            <View className="border-border border-b p-4">
+            <View className="border-b border-border p-4">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center gap-3">
                   <View className={`rounded-lg p-2 ${authEnabled ? 'bg-primary/20' : 'bg-muted'}`}>
@@ -163,14 +146,14 @@ export default function SettingsScreen() {
                     />
                   </View>
                   <View>
-                    <Text className="text-foreground font-medium">Enable Authentication</Text>
-                    <Text className="text-muted-foreground text-xs">
+                    <Text className="font-medium text-foreground">Enable Authentication</Text>
+                    <Text className="text-xs text-muted-foreground">
                       Require username and password to connect
                     </Text>
                   </View>
                 </View>
                 <TouchableOpacity
-                  onPress={() => setAuthEnabled(!authEnabled)}
+                  onPress={() => setSettings({ authEnabled: !authEnabled })}
                   className={`h-7 w-12 rounded-full p-1 ${authEnabled ? 'bg-primary' : 'bg-muted'}`}>
                   <View
                     className={`h-5 w-5 rounded-full bg-white shadow-sm ${
@@ -184,15 +167,15 @@ export default function SettingsScreen() {
             {/* Username */}
             {authEnabled && (
               <>
-                <View className="border-border border-b p-4">
-                  <Text className="text-muted-foreground mb-2 text-sm">Username</Text>
-                  <View className="bg-input border-border flex-row items-center rounded-lg border px-4">
-                    <Lock size={18} className="text-muted-foreground mr-3" />
+                <View className="border-b border-border p-4">
+                  <Text className="mb-2 text-sm text-muted-foreground">Username</Text>
+                  <View className="flex-row items-center rounded-lg border border-border bg-input px-4">
+                    <Lock size={18} className="mr-3 text-muted-foreground" />
                     <TextInput
                       value={username}
-                      onChangeText={setUsername}
+                      onChangeText={(v) => setSettings({ username: v })}
                       placeholder="Enter username"
-                      className="text-foreground flex-1 py-3"
+                      className="flex-1 py-3 text-foreground"
                       autoCapitalize="none"
                     />
                   </View>
@@ -200,19 +183,19 @@ export default function SettingsScreen() {
 
                 {/* Password */}
                 <View className="p-4">
-                  <Text className="text-muted-foreground mb-2 text-sm">Password</Text>
-                  <View className="bg-input border-border flex-row items-center rounded-lg border px-4">
-                    <Lock size={18} className="text-muted-foreground mr-3" />
+                  <Text className="mb-2 text-sm text-muted-foreground">Password</Text>
+                  <View className="flex-row items-center rounded-lg border border-border bg-input px-4">
+                    <Lock size={18} className="mr-3 text-muted-foreground" />
                     <TextInput
                       value={password}
-                      onChangeText={setPassword}
+                      onChangeText={(v) => setSettings({ password: v })}
                       placeholder="Enter password"
                       secureTextEntry={!showPassword}
-                      className="text-foreground flex-1 py-3"
+                      className="flex-1 py-3 text-foreground"
                       autoCapitalize="none"
                     />
                     <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                      <Text className="text-primary text-sm font-medium">
+                      <Text className="text-sm font-medium text-primary">
                         {showPassword ? 'Hide' : 'Show'}
                       </Text>
                     </TouchableOpacity>
@@ -227,16 +210,16 @@ export default function SettingsScreen() {
         <View className="gap-3 px-6">
           <TouchableOpacity
             onPress={handleSave}
-            className="bg-primary flex-row items-center justify-center gap-2 rounded-xl py-4">
+            className="flex-row items-center justify-center gap-2 rounded-xl bg-primary py-4">
             <Save color="white" size={20} />
             <Text className="text-lg font-semibold text-white">Save Settings</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleReset}
-            className="bg-secondary flex-row items-center justify-center gap-2 rounded-xl py-4">
+            className="flex-row items-center justify-center gap-2 rounded-xl bg-secondary py-4">
             <RefreshCw className="text-secondary-foreground" size={20} />
-            <Text className="text-secondary-foreground text-lg font-semibold">
+            <Text className="text-lg font-semibold text-secondary-foreground">
               Reset to Defaults
             </Text>
           </TouchableOpacity>
