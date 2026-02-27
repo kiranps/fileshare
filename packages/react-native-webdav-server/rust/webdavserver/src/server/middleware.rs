@@ -1,6 +1,6 @@
 use axum::http::Uri;
 use axum::middleware::Next;
-use axum::{extract::State, http::Request, response::Response, body::Body};
+use axum::{body::Body, extract::State, http::Request, response::Response};
 
 pub async fn prefix_middleware(
     State(base_path): State<String>,

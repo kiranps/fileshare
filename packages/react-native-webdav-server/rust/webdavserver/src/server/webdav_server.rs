@@ -19,6 +19,14 @@ pub struct WebDavServer {
     running: AtomicBool, // ✅ IMPORTANT
 }
 
+#[derive(uniffi::Object)]
+pub struct StartResponse {
+    pub ip: String,
+    pub port: u16,
+    pub running: bool,
+    pub error: Option<String>,
+}
+
 #[uniffi::export]
 impl WebDavServer {
     #[uniffi::constructor]
@@ -37,7 +45,7 @@ impl WebDavServer {
         }
     }
 
-    pub fn start(&self) -> Result<String, ServerError> {
+    pub fn start(&self) -> Result<StartResponse, ServerError> {
         init_logging();
         if self.running.swap(true, Ordering::SeqCst) {
             return Err(ServerError::AlreadyRunning);
@@ -86,10 +94,20 @@ impl WebDavServer {
             *handle_guard = Some(handle);
         }
 
-        let lan_ip = local_lan_ip().unwrap();
+        // Get a safe string representation of the local LAN IP; fallback to "0.0.0.0" if unknown.
+        let lan_ip = local_lan_ip()
+            .map(|ip| ip.to_string())
+            .unwrap_or_else(|| "0.0.0.0".to_string());
+
         let startup_message = format!("server started on {}:{}", lan_ip, self.port);
         eprintln!("{}", startup_message);
-        Ok(startup_message)
+
+        Ok(StartResponse {
+            ip: lan_ip,
+            port: self.port,
+            running: true,
+            error: None,
+        })
     }
 
     pub fn stop(&self) -> Result<String, ServerError> {
