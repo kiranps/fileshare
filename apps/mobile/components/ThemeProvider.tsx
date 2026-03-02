@@ -12,7 +12,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const themeVars = colorScheme === 'dark' ? darkTheme : lightTheme;
 
   return (
-    <View style={themeVars} className={`${colorScheme} bg-background flex-1`}>
+    <View style={themeVars} className={`${colorScheme} flex-1 bg-background`}>
       {children}
     </View>
   );

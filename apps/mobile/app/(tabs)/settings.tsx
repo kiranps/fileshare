@@ -12,6 +12,9 @@ import {
   Save,
   RefreshCw,
 } from 'lucide-react-native';
+import { useServerStore } from '@/store/serverStore';
+import { useShallow } from 'zustand/react/shallow';
+import FileBrowser from '@/components/FileBrowser';
 
 interopIcon(SettingsIcon);
 interopIcon(Server);
@@ -21,25 +24,25 @@ interopIcon(Shield);
 interopIcon(Save);
 interopIcon(RefreshCw);
 
-type Protocol = 'FTP' | 'WebDAV';
-
-import { useServerStore } from '@/store/serverStore';
-
 export default function SettingsScreen() {
-  const settings = useServerStore((s: any) => s.settings);
-  const setSettings = useServerStore((s: any) => s.setSettings);
+  const { settings, setSettings } = useServerStore(
+    useShallow((s) => ({
+      settings: s.settings,
+      setSettings: s.setSettings,
+    }))
+  );
   const [showPassword, setShowPassword] = useState(false);
+  const [showFileBrowser, setShowFileBrowser] = useState(false);
 
-  const port = settings.portSetting;
+  const port = settings.port;
   const rootPath = settings.basePath;
   const authEnabled = settings.authEnabled;
   const username = settings.username;
   const password = settings.password;
-  console.log(settings);
 
   const handleSave = () => {
     // Validate port
-    const portNum = parseInt(port);
+    const portNum = port;
     if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
       Alert.alert('Invalid Port', 'Please enter a valid port number (1-65535)');
       return;
@@ -59,7 +62,7 @@ export default function SettingsScreen() {
 
   const handleReset = () => {
     setSettings({
-      portSetting: '2121',
+      port: 8080,
       basePath: '/storage/emulated/0',
       authEnabled: true,
       username: 'admin',
@@ -68,12 +71,14 @@ export default function SettingsScreen() {
     Alert.alert('Reset', 'Settings have been reset to defaults');
   };
 
-  const selectFolder = () => {
-    // Mock folder picker
-    Alert.alert('Folder Picker', 'Folder selection dialog would appear here');
+  const selectFolder = (path: string) => {
+    setSettings({ basePath: path });
+    setShowFileBrowser(false);
   };
 
-  return (
+  return showFileBrowser ? (
+    <FileBrowser rootPath={rootPath} setRootPath={selectFolder} />
+  ) : (
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ paddingBottom: 128 }}>
         {/* Header */}
@@ -85,7 +90,6 @@ export default function SettingsScreen() {
           <ThemeToggle />
         </View>
 
-
         {/* Connection Settings */}
         <View className="mb-6 px-6">
           <Text className="mb-3 text-sm font-semibold uppercase tracking-wider text-foreground opacity-70">
@@ -96,8 +100,12 @@ export default function SettingsScreen() {
             <View className="border-b border-border p-4">
               <Text className="mb-2 text-sm text-muted-foreground">Server Port</Text>
               <TextInput
-                value={port}
-                onChangeText={(v) => setSettings({ portSetting: v })}
+                value={port?.toString() ?? ''}
+                onChangeText={(v) => {
+                  if (/^\d*$/.test(v)) {
+                    setSettings({ port: v === '' ? undefined : Number(v) });
+                  }
+                }}
                 keyboardType="number-pad"
                 className="rounded-lg border border-border bg-input px-4 py-3 font-mono text-foreground"
               />
@@ -109,19 +117,17 @@ export default function SettingsScreen() {
             {/* Root Path */}
             <View className="p-4">
               <Text className="mb-2 text-sm text-muted-foreground">Root Filesystem Path</Text>
-              <View className="flex-row gap-2">
+              <TouchableOpacity onPress={() => setShowFileBrowser(true)} className="flex-row gap-2">
                 <TextInput
                   value={rootPath}
-                  onChangeText={(v) => setSettings({ basePath: v })}
+                  editable={false}
                   placeholder="/storage/emulated/0"
                   className="flex-1 rounded-lg border border-border bg-input px-4 py-3 font-mono text-foreground"
                 />
-                <TouchableOpacity
-                  onPress={selectFolder}
-                  className="flex items-center justify-center rounded-lg border border-border bg-secondary px-4">
+                <View className="flex items-center justify-center rounded-lg border border-border bg-secondary px-4">
                   <Folder className="text-secondary-foreground" size={20} />
-                </TouchableOpacity>
-              </View>
+                </View>
+              </TouchableOpacity>
               <Text className="mt-2 text-xs text-muted-foreground">
                 The folder that will be accessible to connected devices
               </Text>

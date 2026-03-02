@@ -13,6 +13,8 @@ import {
 } from 'lucide-react-native';
 import { interopIcon } from '@/utils/css';
 import { useServerStore } from '@/store/serverStore';
+import { useShallow } from 'zustand/react/shallow';
+import { ToastAndroid } from 'react-native';
 
 interopIcon(ServerIcon);
 interopIcon(Wifi);
@@ -23,23 +25,23 @@ interopIcon(CheckCircle2);
 interopIcon(XCircle);
 
 export default function ServerScreen() {
-  const ip = useServerStore((s: any) => s.ip);
-  const port = useServerStore((s: any) => s.port);
-  const isRunning = useServerStore((s: any) => s.isRunning);
-  const start = useServerStore((s: any) => s.start);
-  const stop = useServerStore((s: any) => s.stop);
+  const { ip, settings, isRunning, start, stop } = useServerStore(
+    useShallow((s) => ({
+      ip: s.ip,
+      settings: s.settings,
+      isRunning: s.isRunning,
+      start: s.start,
+      stop: s.stop,
+    }))
+  );
 
-  // Mock data for connection details
-  const serverDetails = {
-    ip: ip,
-    port: port,
-    username: 'admin',
-  };
+  const port = settings.port;
 
   const toggleServer = () => {
     if (!isRunning) {
       const params = {
-        basePath: '/storage/emulated/0',
+        basePath: settings.basePath,
+        port: settings.port,
       };
       start(params);
     } else {
@@ -48,8 +50,7 @@ export default function ServerScreen() {
   };
 
   const copyAddress = () => {
-    const address = `webdav://${ip}:${port}`;
-    Alert.alert('Copied', `Address copied to clipboard:\n${address}`);
+    ToastAndroid.show('copied', ToastAndroid.SHORT);
   };
 
   return (
@@ -57,7 +58,7 @@ export default function ServerScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 128 }}>
         {/* Header */}
         <View className="flex-row items-center justify-between px-6 py-4">
-          <Text className="text-2xl font-bold text-foreground">PocketServer</Text>
+          <Text className="text-2xl font-bold text-foreground">Share files</Text>
           <ThemeToggle />
         </View>
 
@@ -73,10 +74,12 @@ export default function ServerScreen() {
                 <View>
                   <Text
                     className={`text-lg font-semibold ${isRunning ? 'text-primary' : 'text-muted-foreground'}`}>
-                    {isRunning ? 'Server Running' : 'Server Stopped'}
+                    {isRunning ? 'Sharing active' : 'Not sharing'}
                   </Text>
                   <Text className="text-sm text-muted-foreground">
-                    {isRunning ? 'Ready to connect' : 'Tap to start'}
+                    {isRunning
+                      ? 'Open the link on your computer to browse files'
+                      : 'Tap the button below to start sharing'}
                   </Text>
                 </View>
               </View>
@@ -90,20 +93,15 @@ export default function ServerScreen() {
             {/* Connection Info */}
             {isRunning && (
               <View className="mt-4 border-t border-border/50 pt-4">
-                <View className="mb-3 flex-row items-center justify-between">
-                  <Text className="text-sm text-muted-foreground">Protocol</Text>
-                  <View className="flex-row gap-2 rounded-lg bg-background p-1">
-                    <Text className="text-xs font-medium text-primary-foreground">WebDAV</Text>
-                  </View>
-                </View>
-
                 <TouchableOpacity
                   onPress={copyAddress}
                   className="flex-row items-center justify-between rounded-lg border border-border bg-background p-3">
                   <View>
-                    <Text className="mb-1 text-xs text-muted-foreground">Address</Text>
+                    <Text className="mb-1 text-xs text-muted-foreground">
+                      Open on your computer
+                    </Text>
                     <Text className="font-mono text-sm text-foreground">
-                      webdav://{serverDetails.ip}:{serverDetails.port}
+                      dav://{ip}:{port}
                     </Text>
                   </View>
                   <Copy className="text-muted-foreground" size={18} />
@@ -113,41 +111,19 @@ export default function ServerScreen() {
           </View>
         </View>
 
-        {/* Network Info */}
-        <View className="mb-6 px-6">
-          <Text className="mb-3 text-sm font-semibold uppercase tracking-wider text-foreground opacity-70">
-            Network Details
-          </Text>
-          <View className="overflow-hidden rounded-xl border border-border bg-card">
-            <View className="flex-row items-center justify-between border-b border-border p-4">
-              <View className="flex-row items-center gap-3">
-                <Wifi className="text-muted-foreground" size={20} />
-                <Text className="text-foreground">IP Address</Text>
-              </View>
-              <Text className="font-mono text-muted-foreground">{serverDetails.ip}</Text>
-            </View>
-            <View className="flex-row items-center justify-between border-b border-border p-4">
-              <View className="flex-row items-center gap-3">
-                <ServerIcon className="text-muted-foreground" size={20} />
-                <Text className="text-foreground">Port</Text>
-              </View>
-              <Text className="font-mono text-muted-foreground">{serverDetails.port}</Text>
-            </View>
-          </View>
-        </View>
-
         {/* Instructions */}
         <View className="px-6">
           <Text className="mb-3 text-sm font-semibold uppercase tracking-wider text-foreground opacity-70">
-            How to Connect
+            How to connect
           </Text>
           <View className="rounded-xl border border-border/50 bg-muted/30 p-4">
             <Text className="text-sm leading-relaxed text-muted-foreground">
-              1. Ensure your device and PC are on the same Wi-Fi network.
+              1. Make sure your phone and computer are on the same Wi‑Fi network.
               {'\n\n'}
-              2. Start the server using the button below.
+              2. Tap “Start sharing” below.
               {'\n\n'}
-              3. On your PC, open File Explorer and enter the address above, or use an FTP client.
+              3. On your computer, open the link shown above in a browser or file explorer to browse
+              and download files.
             </Text>
           </View>
         </View>
@@ -161,12 +137,12 @@ export default function ServerScreen() {
           {isRunning ? (
             <>
               <Square color="white" size={20} fill="white" />
-              <Text className="text-lg font-semibold text-white">Stop Server</Text>
+              <Text className="text-lg font-semibold text-white">Stop sharing</Text>
             </>
           ) : (
             <>
               <Play color="white" size={20} fill="white" />
-              <Text className="text-lg font-semibold text-white">Start Server</Text>
+              <Text className="text-lg font-semibold text-white">Start sharing</Text>
             </>
           )}
         </TouchableOpacity>

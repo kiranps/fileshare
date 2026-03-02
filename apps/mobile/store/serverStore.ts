@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WebDavServer } from 'react-native-webdav-server';
 
 type Settings = {
-  portSetting: string;
+  port: number;
   basePath: string;
   authEnabled: boolean;
   username: string;
@@ -13,7 +13,6 @@ type Settings = {
 
 type ServerState = {
   ip: string | null;
-  port: number | null;
   isRunning: boolean;
   settings: Settings;
   setSettings: (patch: Partial<Settings>) => void;
@@ -25,10 +24,9 @@ let serverRef: WebDavServer | null = null;
 
 const initializer = (set: any, get: any) => ({
   ip: null,
-  port: null,
   isRunning: false,
   settings: {
-    portSetting: '2121',
+    port: '8080',
     basePath: '/storage/emulated/0',
     protocol: 'FTP',
     authEnabled: true,
@@ -38,25 +36,23 @@ const initializer = (set: any, get: any) => ({
   setSettings: (patch: Partial<Settings>) => {
     set((s: any) => ({ settings: { ...s.settings, ...patch } }));
   },
-  start: async ({ port, basePath }: { port?: number; basePath?: string } = {}) => {
+  start: async () => {
     const state = get() as ServerState;
     if (!serverRef) {
       serverRef = new WebDavServer();
-      console.log('Initialised WebDavServer');
     }
     if (state.isRunning) return;
 
     try {
       const opts: any = {
-        port: port ?? (Number(state.settings.portSetting) || undefined),
-        basePath: basePath ?? state.settings.basePath,
+        port: state.settings.port,
+        basePath: state.settings.basePath,
       };
       if (state.settings.authEnabled) {
         opts.auth = { username: state.settings.username, password: state.settings.password };
       }
 
       const result = serverRef.start(opts);
-      // react-native-webdav-server appears to return { ip, port }
       set({ ip: result?.ip ?? null, port: result?.port ?? null, isRunning: true });
     } catch (e) {
       console.error('Failed to start WebDAV server', e);
@@ -67,6 +63,7 @@ const initializer = (set: any, get: any) => ({
     const state = get() as ServerState;
     if (!serverRef || !state.isRunning) return;
     try {
+      console.error('stopping server', serverRef);
       serverRef.stop();
       set({ isRunning: false, ip: null, port: null });
     } catch (e) {
@@ -78,9 +75,6 @@ const initializer = (set: any, get: any) => ({
 
 const storage =
   typeof AsyncStorage !== 'undefined' ? createJSONStorage(() => AsyncStorage) : undefined;
-
-const canPersist =
-  typeof storage !== 'undefined' && !!(storage && typeof storage.setItem === 'function');
 
 export const useServerStore = create<ServerState>()(
   persist(
