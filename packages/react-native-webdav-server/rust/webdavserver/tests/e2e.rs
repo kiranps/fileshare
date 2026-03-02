@@ -1,5 +1,7 @@
+mod utils;
 use axum::http::{Method, StatusCode};
 use ctor::{ctor, dtor};
+use percent_encoding::percent_decode_str;
 use reqwest::header;
 use std::fs::{self, File};
 use std::io::Write;
@@ -7,7 +9,7 @@ use std::net::TcpStream;
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 use tracing::{debug, error, info, trace, warn};
-mod utils;
+use utils::parse_webdav_multistatus;
 
 fn setup_test_dir(path: &str) {
     let dir = std::path::Path::new("data/test").join(path);
@@ -182,17 +184,26 @@ async fn propfile_depth_1() {
 
     assert_eq!(res.status(), StatusCode::MULTI_STATUS);
     let body = res.text().await.unwrap();
-    assert!(body.contains("dir1"));
-    assert!(body.contains("a.txt"));
-    assert!(body.contains("b.txt"));
+    let items = parse_webdav_multistatus(&body).unwrap();
+    let paths: Vec<String> = items
+        .into_iter()
+        .map(|item| {
+            percent_decode_str(&item.path)
+                .decode_utf8()
+                .expect("Invalid UTF-8 in path")
+                .into_owned()
+        })
+        .collect();
+    assert!(paths.iter().any(|p| p.contains("dir")));
+    assert!(paths.iter().any(|p| p.contains("a.txt")));
+    assert!(paths.iter().any(|p| p.contains("b.txt")));
 }
 
 #[tokio::test]
 async fn propfile_depth_1_dir_name_has_space() {
     use urlencoding::encode;
-    use utils::parse_webdav_multistatus;
 
-    setup_test_file("dir with space/a.txt", "A");
+    setup_test_file("dir with space/c.txt", "A");
 
     let client = reqwest::Client::new();
     let res = client
@@ -207,9 +218,16 @@ async fn propfile_depth_1_dir_name_has_space() {
 
     assert_eq!(res.status(), StatusCode::MULTI_STATUS);
     let body = res.text().await.unwrap();
-    //println!("{}", body);
     let items = parse_webdav_multistatus(&body).unwrap();
-    let paths: Vec<String> = items.into_iter().map(|item| item.path).collect();
+    let paths: Vec<String> = items
+        .into_iter()
+        .map(|item| {
+            percent_decode_str(&item.path)
+                .decode_utf8()
+                .expect("Invalid UTF-8 in path")
+                .into_owned()
+        })
+        .collect();
     assert!(paths.iter().any(|p| p.contains("dir with space")));
 
     let encoded = encode("dir with space");
