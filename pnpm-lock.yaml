@@ -45,6 +45,9 @@ importers:
       babel-plugin-react-compiler:
         specifier: ^1.0.0
         version: 1.0.0
+      daisyui:
+        specifier: ^5.5.19
+        version: 5.5.19
       eslint:
         specifier: ^9.39.1
         version: 9.39.3(jiti@2.6.1)
@@ -156,7 +159,7 @@ importers:
     dependencies:
       uniffi-bindgen-react-native:
         specifier: github:jhugman/uniffi-bindgen-react-native#main
-        version: https://codeload.github.com/jhugman/uniffi-bindgen-react-native/tar.gz/21702c20a277a622776505744b67d83fc0f48c8a
+        version: https://codeload.github.com/jhugman/uniffi-bindgen-react-native/tar.gz/6edb4727112fd864279ab59432163057e46f1ed7
     devDependencies:
       '@commitlint/config-conventional':
         specifier: ^19.8.1
@@ -3174,6 +3177,9 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  daisyui@5.5.19:
+    resolution: {integrity: sha512-pbFAkl1VCEh/MPCeclKL61I/MqRIFFhNU7yiXoDDRapXN4/qNCoMxeCCswyxEEhqL5eiTTfwHvucFtOE71C9sA==}
 
   dargs@8.1.0:
     resolution: {integrity: sha512-wAV9QHOsNbwnWdNW2FYvE1P56wtgSbM+3SZcdGiWQILwVjACCXDCI3Ai8QlCjMDB8YK5zySiXZYBiwGmNY3lnw==}
@@ -6535,8 +6541,8 @@ packages:
     resolution: {integrity: sha512-+QBBXBCvifc56fsbuxZQ6Sic3wqqc3WWaqxs58gvJrcOuN83HGTCwz3oS5phzU9LthRNE9VrJCFCLUgHeeFnfA==}
     engines: {node: '>=18'}
 
-  uniffi-bindgen-react-native@https://codeload.github.com/jhugman/uniffi-bindgen-react-native/tar.gz/21702c20a277a622776505744b67d83fc0f48c8a:
-    resolution: {tarball: https://codeload.github.com/jhugman/uniffi-bindgen-react-native/tar.gz/21702c20a277a622776505744b67d83fc0f48c8a}
+  uniffi-bindgen-react-native@https://codeload.github.com/jhugman/uniffi-bindgen-react-native/tar.gz/6edb4727112fd864279ab59432163057e46f1ed7:
+    resolution: {tarball: https://codeload.github.com/jhugman/uniffi-bindgen-react-native/tar.gz/6edb4727112fd864279ab59432163057e46f1ed7}
     version: 0.30.0-1
     hasBin: true
 
@@ -10540,6 +10546,8 @@ snapshots:
 
   csstype@3.2.3: {}
 
+  daisyui@5.5.19: {}
+
   dargs@8.1.0: {}
 
   data-uri-to-buffer@6.0.2: {}
@@ -14527,7 +14535,7 @@ snapshots:
 
   unicorn-magic@0.3.0: {}
 
-  uniffi-bindgen-react-native@https://codeload.github.com/jhugman/uniffi-bindgen-react-native/tar.gz/21702c20a277a622776505744b67d83fc0f48c8a: {}
+  uniffi-bindgen-react-native@https://codeload.github.com/jhugman/uniffi-bindgen-react-native/tar.gz/6edb4727112fd864279ab59432163057e46f1ed7: {}
 
   unique-string@2.0.0:
     dependencies:
