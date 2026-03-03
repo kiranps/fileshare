@@ -1,6 +1,5 @@
 use super::helpers::*;
-use super::middleware::{prefix_middleware, auth_middleware};
-use std::sync::Arc;
+use super::middleware::{auth_middleware, log_response_body, prefix_middleware};
 use axum::body::Body;
 use axum::http::StatusCode;
 use axum::http::{Method, Request, Uri};
@@ -8,6 +7,7 @@ use axum::response::Response;
 use axum::{Router, middleware, routing::any};
 use std::path::Path;
 use std::string::String;
+use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::{error, info};
@@ -21,8 +21,12 @@ pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router 
                 .make_span_with(DefaultMakeSpan::new().level(tracing::Level::DEBUG))
                 .on_response(DefaultOnResponse::new().level(tracing::Level::DEBUG)),
         )
-        .layer(middleware::from_fn_with_state(auth.clone(), auth_middleware))
+        .layer(middleware::from_fn_with_state(
+            auth.clone(),
+            auth_middleware,
+        ))
         .layer(middleware::from_fn_with_state(base_path, prefix_middleware))
+    //.layer(middleware::from_fn(log_response_body))
 }
 
 async fn route_request(req: Request<Body>) -> Response<Body> {

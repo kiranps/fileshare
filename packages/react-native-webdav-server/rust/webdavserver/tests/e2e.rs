@@ -194,7 +194,7 @@ async fn propfile_depth_1() {
                 .into_owned()
         })
         .collect();
-    assert!(paths.iter().any(|p| p.contains("dir")));
+    assert!(paths.iter().any(|p| p.contains("dir1")));
     assert!(paths.iter().any(|p| p.contains("a.txt")));
     assert!(paths.iter().any(|p| p.contains("b.txt")));
 }
@@ -245,7 +245,7 @@ async fn propfile_depth_1_dir_name_has_space() {
     let body = res.text().await.unwrap();
     let items = parse_webdav_multistatus(&body).unwrap();
     let paths: Vec<String> = items.into_iter().map(|item| item.path).collect();
-    assert!(paths.iter().any(|p| p.contains("a.txt")));
+    assert!(paths.iter().any(|p| p.contains("c.txt")));
 }
 
 #[tokio::test]

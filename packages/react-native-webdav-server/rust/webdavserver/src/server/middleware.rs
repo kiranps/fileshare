@@ -1,10 +1,33 @@
+use axum::http::StatusCode;
 use axum::http::Uri;
 use axum::middleware::Next;
-use axum::{body::Body, extract::State, http::Request, response::Response};
-use std::sync::Arc;
-use axum::http::StatusCode;
-use base64::engine::general_purpose;
+use axum::{body::Body, body::Bytes, extract::State, http::Request, response::Response};
 use base64::Engine as _;
+use base64::engine::general_purpose;
+use http_body_util::BodyExt;
+use std::sync::Arc; // for collect()
+
+pub async fn log_response_body(req: Request<Body>, next: Next) -> Response {
+    let response = next.run(req).await;
+
+    let (parts, body) = response.into_parts();
+
+    // Collect full body
+    let bytes = body
+        .collect()
+        .await
+        .map(|collected| collected.to_bytes())
+        .unwrap_or_else(|_| Bytes::from(""));
+
+    if let Ok(body_str) = std::str::from_utf8(&bytes) {
+        tracing::info!("Response body: {}", body_str);
+    } else {
+        tracing::info!("Response body (non-utf8): {:?}", bytes);
+    }
+
+    // Reconstruct response
+    Response::from_parts(parts, Body::from(bytes))
+}
 
 // Constant-time equality to avoid leaking timing information
 fn constant_time_eq(a: &str, b: &str) -> bool {

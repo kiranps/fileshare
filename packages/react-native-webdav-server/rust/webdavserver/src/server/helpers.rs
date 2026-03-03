@@ -1,8 +1,20 @@
 use axum::http::Uri;
 use axum::{body::Body, response::Response};
-use percent_encoding::{NON_ALPHANUMERIC, percent_decode_str, utf8_percent_encode};
+use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, percent_decode_str, utf8_percent_encode};
 use std::collections::HashMap;
 use std::path::PathBuf;
+
+fn encode_href(path: &str) -> String {
+    /// Encode everything except RFC3986 unreserved
+    const HREF_ENCODE_SET: &AsciiSet = &NON_ALPHANUMERIC
+        .remove(b'-')
+        .remove(b'.')
+        .remove(b'_')
+        .remove(b'~')
+        .remove(b'/');
+
+    utf8_percent_encode(path, HREF_ENCODE_SET).to_string()
+}
 
 pub async fn file_metadata(
     uri: &Uri,
@@ -14,7 +26,7 @@ pub async fn file_metadata(
 
 pub fn propfind_response(uri: &str, meta: &std::fs::Metadata) -> String {
     let (modified, etag) = file_timestamps(meta);
-    let encoded_href = utf8_percent_encode(uri, NON_ALPHANUMERIC).to_string();
+    let encoded_href = encode_href(uri);
     let resourcetype = if meta.is_dir() { "<D:collection/>" } else { "" };
     let contentlength = if meta.is_dir() { 0 } else { meta.len() };
 

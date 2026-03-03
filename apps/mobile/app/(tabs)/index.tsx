@@ -39,11 +39,7 @@ export default function ServerScreen() {
 
   const toggleServer = () => {
     if (!isRunning) {
-      const params = {
-        basePath: settings.basePath,
-        port: settings.port,
-      };
-      start(params);
+      start();
     } else {
       stop();
     }
