@@ -1,9 +1,8 @@
 import React from "react";
-
 import type { JSX } from "react/jsx-runtime";
 
 export type FileItemProps = {
-  id: string; // intentionally unused in UI shell phase
+  id: string; // used as key/id only
   name: string;
   type: string;
   size?: string;
@@ -15,18 +14,19 @@ export type FileItemProps = {
 };
 
 export const FileItem: React.FC<FileItemProps> = ({
-  id, name, type, size, modified, icon, selected, onClick, onDoubleClick
+  name, type, size, modified, icon, selected, onClick, onDoubleClick
 }) => (
   <tr
-    className={`cursor-pointer ${selected ? "bg-primary text-primary-content" : "hover:bg-base-100"}`}
+    tabIndex={0} aria-selected={selected}
+    className={`cursor-pointer outline-none ${selected ? "bg-primary text-primary-content shadow" : "hover:bg-base-100"}`}
     onClick={onClick}
     onDoubleClick={onDoubleClick}
-    tabIndex={0} aria-selected={selected}
+    role="row"
   >
-    <td>{icon}</td>
-    <td className="font-medium">{name}</td>
-    <td>{type}</td>
-    <td>{size || "-"}</td>
-    <td>{modified || "-"}</td>
+    <td className="w-12 text-center" role="gridcell">{icon}</td>
+    <td className="font-medium" role="gridcell">{name}</td>
+    <td role="gridcell">{type}</td>
+    <td className="text-right" role="gridcell">{size || "-"}</td>
+    <td role="gridcell">{modified || "-"}</td>
   </tr>
 );
