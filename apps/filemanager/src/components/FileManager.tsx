@@ -93,34 +93,36 @@ export const FileManager: React.FC = () => {
   const handleItemClick = (id: string) => setSelectedId(id);
 
   return (
-    <div className="flex h-screen bg-base-100">
-      <Sidebar
-        shortcuts={sidebarShortcuts}
-        selectedShortcut={selectedShortcut}
-        onShortcutClick={handleShortcutClick}
+    <div className="flex flex-col h-screen bg-base-100">
+      {/* Navbar always on top */}
+      <Navbar
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        canGoUp={canGoUp}
+        onBack={() => {}}
+        onForward={() => {}}
+        onUp={() => {}}
+        onRefresh={() => {}}
+        breadcrumb={breadcrumb}
+        onBreadcrumbClick={handleBreadcrumbClick}
+        searchValue={searchValue}
+        onSearchChange={handleSearchChange}
       />
-      <main className="flex flex-col flex-1 overflow-hidden">
-        <Navbar
-          canGoBack={canGoBack}
-          canGoForward={canGoForward}
-          canGoUp={canGoUp}
-          onBack={() => {}}
-          onForward={() => {}}
-          onUp={() => {}}
-          onRefresh={() => {}}
-          breadcrumb={breadcrumb}
-          onBreadcrumbClick={handleBreadcrumbClick}
-          searchValue={searchValue}
-          onSearchChange={handleSearchChange}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar collapses to icons on small screens */}
+        <Sidebar
+          shortcuts={sidebarShortcuts}
+          selectedShortcut={selectedShortcut}
+          onShortcutClick={handleShortcutClick}
         />
-        <section className="flex-1 p-2 overflow-auto">
+        <main className="flex-1 p-2 overflow-auto">
           <FileList
             files={filteredFiles.map(f => ({ ...f, selected: f.id === selectedId, onClick: () => handleItemClick(f.id) }))}
             selectedId={selectedId}
             onItemClick={handleItemClick}
           />
-        </section>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };
