@@ -1,3 +1,6 @@
+---
+applyTo: '**'
+---
 # File Manager UI Shell — Context
 
 ---
