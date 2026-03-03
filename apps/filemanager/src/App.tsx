@@ -1,5 +1,8 @@
+import React from "react";
+import { FileManager } from "./components/FileManager";
+
 function App() {
-  return <>hello</>;
+  return <FileManager />;
 }
 
 export default App;
