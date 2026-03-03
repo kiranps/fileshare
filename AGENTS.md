@@ -119,6 +119,13 @@ This guide is for automated coding agents and human contributors. It enforces co
   pnpm test src/YourFile.test.tsx
   ```
 - Agents must ensure new features/bugfixes include tests
+ 
+---
+## 🧩 UI Components
+
+- Prefer using the daisyUI library for UI components to keep styling consistent and speed development; the repository already includes `daisyui` (see `apps/filemanager/package.json`) and the plugin is registered in `apps/filemanager/src/index.css`.
+- If a component cannot reasonably use daisyUI (third-party widget, performance constraints, platform limitations), document the exception and request a quick review from a maintainer.
+- Refer to the daisyUI documentation: https://daisyui.com/
 
 ---
 ## 🔗 References
