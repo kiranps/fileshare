@@ -1,191 +1,131 @@
 # AGENTS.md
 
-A comprehensive guide for coding agents and human maintainers in this repository. Applies to both JavaScript/TypeScript (React Native) and Rust (native modules), governed as a pnpm monorepo.
+A comprehensive guide for agentic bots (Copilot, Cursor, LLM-based automation) and human maintainers in this repository. Applies to JavaScript/TypeScript projects (React + Vite, pnpm workspace) and agent workflow protocols.
 
 ---
-
 ## 👥 Audience/Scope
-This guide is for both automated coding agents (Copilot, Cursor, LLM-based bots, CI) and human contributors. It ensures uniform coding standards, workflow interoperability, and reliable automation across JS/TS & Rust native modules.
+This guide is for automated coding agents and human contributors. It enforces coding standards, build/test protocols, and agent-friendly automation.
 
 ---
-
-## 🗂️ Monorepo Layout
-- **Root:** pnpm workspace, Node.js v22.20.0 (see `.nvmrc`).
-- **apps/mobile/** — React Native mobile app (Expo-managed)
-- **packages/react-native-webdav-server/** — JS/TS native module, also contains native Rust code under `rust/`
-- **Rust native modules:** `packages/react-native-webdav-server/rust/webdavserver`, `.../rust/httpserver`
+## 🗂️ Project Layout
+- **apps/filemanager/** — React + TypeScript + Vite web application
+- **src/** — Main source code (TSX/TS/JS)
+- **package.json** — Project scripts & dependencies
+- **eslint.config.js** — ESLint/lint rules
+- **tsconfig.json** — TypeScript config
 
 ---
+## 🚀 Build, Lint & Test Commands
 
-## 🚀 Build, Lint, & Test Commands
-
-### Workspace-level (run from root)
+### From `apps/filemanager/` directory:
 - **Install dependencies:**
   ```sh
   pnpm install
   ```
-- **Start mobile app (dev server):**
+- **Run dev server (HMR):**
   ```sh
-  pnpm run mobile:start
-  # or, more directly:
-  pnpm --filter mobile run start
+  pnpm dev
   ```
-- **Run mobile app on Android Emulator/Device:**
+- **Build (production):**
   ```sh
-  pnpm --filter mobile run android
+  pnpm build
   ```
-- **Build Rust native module (Android/FFI):**
+- **Lint (ESLint):**
   ```sh
-  pnpm run rust:build
-  # Underlying calls ubrn tool for Rust/Android build
+  pnpm lint
   ```
-- **Clean build artifacts:**
+- **Preview build:**
   ```sh
-  pnpm run rust:clean
+  pnpm preview
   ```
-
-### JS/TS Native Module (`packages/react-native-webdav-server`)
-- **Type checks:**
+- **Run single test:**
+  _This repo does not have tests by default; add testing via [Vitest](https://vitest.dev/) or [Jest](https://jestjs.io/)._
   ```sh
-  pnpm --filter react-native-webdav-server run typecheck
+  pnpm test src/components/YourComponent.test.tsx
+  # Or: pnpm vitest run src/YourFile.test.ts
   ```
-- **Unit tests (Jest):**
-  ```sh
-  pnpm --filter react-native-webdav-server run test
-  # Single test pattern:
-  pnpm --filter react-native-webdav-server run test -- <pattern>
-  ```
-- **Build (Bob tool):**
-  ```sh
-  pnpm --filter react-native-webdav-server run prepare
-  ```
-  
-### Rust Native Modules
-From either Rust source directory, e.g. `packages/react-native-webdav-server/rust/webdavserver`:
-- **Directory:** Always change to the correct Rust module directory before running commands (e.g. `cd packages/react-native-webdav-server/rust/webdavserver`).
-- **Build:**
-  ```sh
-  cargo build
-  ```
-- **Lint (Clippy):**
-  ```sh
-  cargo clippy --all-targets --all-features -- -D warnings
-  ```
-- **Format:**
-  ```sh
-  cargo fmt --all -- --check
-  ```
-- **Tests:**
-  ```sh
-  cargo test
-  # Single test:
-  cargo test <test_name>
-  ```
-- **Run a demo/example (e.g., start_server):**
-  ```sh
-  cargo run --example start_server
-  ```
-  - Ensure any required data/config files are present (refer to the `data/` or example documentation).
-  - If the command fails due to missing files/crates, check the directory or update dependencies via `cargo update`.
-  - Example output/usage may differ; consult `examples/start_server.rs` for custom arguments or environment variables.
-
 
 ---
+## 🎨 Code Style: JavaScript & TypeScript
 
-## 🎨 JavaScript/TypeScript Style Guide
+### Formatting
+- Indent: _2 spaces_, LF, UTF-8
+- Trim trailing whitespace; end with newline
+- Prefer EditorConfig/Prettier for formatting (if present)
 
-- **Formatting:**
-  - 2 spaces, LF, UTF-8, trim trailing whitespace, add final newline (see `.editorconfig`).
-- **TypeScript:**
-  - Always use strict typings (`strict`, `noImplicitReturns`, `noUncheckedIndexedAccess`, etc. are true).
-  - Disallow unused locals/params; require explicit typing for function params/returns if not inferrable.
-  - Use ES module syntax; alias `react-native-webdav-server` for import paths.
-- **Imports:**
-  - Prefer ES6 import/export, group built-ins, external, then local imports.
-  - Avoid deep/relative paths outside workspace scope.
-- **Naming:**
-  - camelCase for variables/functions.
-  - PascalCase for components, types, and classes.
-  - Prefer descriptive, explicit names.
-- **Error Handling:**
-  - Use try/catch for async/critical code.
-  - Never swallow errors silently; prefer rethrow or logging.
-  - Use error boundaries in React components as appropriate.
-- **Comments:**
-  - Use JSDoc/TSDoc for major classes/functions.
-  - Mark all TODO/FIXME with context.
-- **Testing:**
-  - All new features/bugfixes should include matching Jest tests.
+### Imports
+- Use ES module syntax: `import ... from ...`
+- Order imports: built-in, external, then local
+- Avoid deep relative or workspace-external paths
+- Use named imports; avoid default if possible
 
----
+### TypeScript
+- Use **strict** type checking (`strict`, `noImplicitAny`, `noUncheckedIndexedAccess`)
+- Explicitly type function params and returns unless trivial
+- Prefer interfaces/type aliases; avoid `any` or loose types
+- Disallow unused variables/params
 
-## 🦀 Rust Style Guide
+### Naming
+- **camelCase** for vars/functions
+- **PascalCase** for Components, Classes, Types
+- Prefer descriptive names; avoid single letters
 
-- **Formatting:**
-  - Follow default rustfmt conventions (indent 4 spaces, max line length default, trailing commas, etc.).
-  - Reformat using `cargo fmt --all` before commit/PR.
-- **Linting:**
-  - Address all warnings and clippy lints.
-  - Use `-D warnings` for strict code.
-- **Naming:**
-  - snake_case for variables, functions, files.
-  - PascalCase for types, structs, enums.
-  - UpperCamelCase for traits.
-- **Error Handling:**
-  - Prefer returning `Result<T, E>` for fallible APIs.
-  - Use `thiserror` for error enums.
-  - Avoid `.unwrap()` or `.expect()` except in tests/main quick prototypes.
-- **Documentation:**
-  - All public items (modules, functions, types) should include Rust doc comments (`///`).
-- **FFI:**
-  - Isolate unsafe code.
-  - Document JS<->Rust boundary behavior.
+### Error Handling
+- Use try/catch for critical async code
+- Do not silently swallow errors: always log/rethrow appropriately
+- Use React error boundaries for UI failures
+- Add actionable error/log messages
+
+### Comments & Docs
+- Use JSDoc/TSDoc for exported functions/types/classes
+- All TODO/FIXME must include context and date
+- Avoid commented-out code in production
 
 ---
-
-## 🤖 Agent/Automation/Workflow Rules
-
-### Rust webdavserver module auto-validation
-
-**Implementation Checklist:** See [`packages/react-native-webdav-server/rust/webdavserver/CHECKLIST.md`] for detailed protocol and feature requirements.
-
-- Whenever ANY file is modified in `packages/react-native-webdav-server/rust/webdavserver/` or its subdirectories:
-  - Switch working context or shell to this directory.
-  - Run the following commands in sequence:
-      - `cargo build` (compile check)
-      - `cargo test` (tests/coverage)
-      - `cargo run` (main binary, if exists)
-      - `cargo run --example start_server` (demo, if example present)
-  - Before running demo/example, verify existence of required `data/` or config files as needed.
-  - Capture and summarize all command outputs, errors, and results for agent/human review.
-- Recommended for CI, git hooks, or custom file-watcher scripts—ensure cross-platform compatibility.
-- Agents & contributors MUST follow this workflow after each file change to ensure module stability and catch regressions early.
-- For troubleshooting, review cargo command logs and update dependencies or configs as necessary if errors occur.
-
-
-- **Automated agents must:**
-  - Make deterministic, atomic file changes.
-  - Not edit auto-generated or lock files without explicit instruction.
-  - Respect .gitignore and project secrets policy.
-  - Follow conventional commits for commit messages.
-  - Prefer minimal-diff, small, single-purpose PRs/commits.
-  - Add comment blocks in PRs or code for non-obvious automation decisions.
-- **Before merge/PR:**
-  - All tests, type checks, and linters MUST pass.
-  - Ensure diff does not introduce style or config drift; defer to config files for conflicts.
-- **Refer to:**
-  - `.editorconfig`, each package’s tsconfig.json, package.json scripts, and Rust Cargo.toml.
+## 🧹 ESLint & Linting
+- Use recommended JS/TS + React Hooks rules
+- For production, expand configuration (see README for `typescript-eslint` type-checked, stylistic rules)
+  - Example:
+  ```js
+  extends: [
+    js.configs.recommended,
+    tseslint.configs.recommendedTypeChecked,
+    tseslint.configs.stylisticTypeChecked,
+    reactHooks.configs.flat.recommended,
+    reactRefresh.configs.vite,
+  ]
+  ```
+- Add `eslint-plugin-react-x` and `eslint-plugin-react-dom` for stricter React rules
+- Run lint before every commit (consider pre-commit hooks/CI)
+- Agents should always auto-fix when safe
 
 ---
+## 🤖 Agentic/Automation Rules
+- Make atomic, minimal, deterministic file changes
+- Do not edit lock or auto-generated files unless asked
+- Respect `.gitignore` and never expose secrets
+- Use conventional commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`
+- Test new code using provided scripts; must pass lint & typecheck
+- Do not push `.env`, secrets, or credential files
+- Quickly adapt (cancel/update tasks) with changing requirements
+- Document any ambiguous automation decisions with comments in PRs/code
 
+---
+## 📋 Testing (Recommended, Prototype)
+- Add tests using [Vitest](https://vitest.dev/) or [Jest](https://jestjs.io/)
+- Test coverage: components, hooks, utilities, error boundaries
+- Example single test file:
+  ```sh
+  pnpm test src/YourFile.test.tsx
+  ```
+- Agents must ensure new features/bugfixes include tests
+
+---
 ## 🔗 References
-- `pnpm-workspace.yaml`: workspace/project structure
-- `.editorconfig`: formatting base
-- Each package’s `package.json`, `tsconfig.json`: scripts, build/test/lint/typecheck
-- Rust modules’ `Cargo.toml`: build/test/lint dependencies
-- `CONTRIBUTING.md` in native module: workflow/PR/contributing expectations
-- For further agent updates, add automation instructions in `.github` or dedicated automation config (none present as of last update)
+- **README.md:** Expanding/configuring lint rules
+- [Vite Documentation](https://vitejs.dev/guide/)
+- [React TypeScript Cheatsheet](https://react-typescript-cheatsheet.netlify.app/)
+- [Vitest](https://vitest.dev/)
+- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 
----
-
-*End of AGENTS.md – maintain this file in sync with workspace rules and update when major config or process changes occur.*
+*End of AGENTS.md — Maintain and update with project/config changes.*
