@@ -17,7 +17,7 @@
 - [x] Table columns: Icon (lucide-react), Name, Type, Size, Modified
 - [x] Selectable file rows in FileList
 - [x] All components expose props/interfaces for actions (no implemented logic yet)
-- [ ] Zustand state reserved for future phase
+- [x] Zustand state store scaffolded for file manager UI shell (shortcuts, breadcrumb, files, selection, search, actions).
 - [x] Integrated DaisyUI responsive layout to FileManager for sidebar, navbar, file list; visual shell now adapts to screen size.
 - [x] Polished component styles for Sidebar, Navbar, FileList for UX and visual clarity with DaisyUI (active items, hover, spacing, color; improved ARIA).
 - [x] Add prop/callback stubs for future actions to FileManager (e.g. shortcut management, file operations) but leave unimplemented.
