@@ -3,6 +3,7 @@ use axum::{body::Body, response::Response};
 use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, percent_decode_str, utf8_percent_encode};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use urlencoding::decode;
 
 fn encode_href(path: &str) -> String {
     /// Encode everything except RFC3986 unreserved
@@ -26,7 +27,8 @@ pub async fn file_metadata(
 
 pub fn propfind_response(uri: &str, meta: &std::fs::Metadata) -> String {
     let (modified, etag) = file_timestamps(meta);
-    let encoded_href = encode_href(uri);
+    let decoded_uri = decode(uri).expect("invalid percent encoding").into_owned();
+    let encoded_href = encode_href(&decoded_uri);
     let resourcetype = if meta.is_dir() { "<D:collection/>" } else { "" };
     let contentlength = if meta.is_dir() { 0 } else { meta.len() };
 
@@ -68,8 +70,7 @@ pub fn multistatus(responses: Vec<String>) -> Response<Body> {
 
 pub fn resolve_path(uri: &Uri) -> PathBuf {
     let path: String = extract_base_path(uri);
-    let decoded = percent_decode_str(uri.path())
-        .decode_utf8()
+    let decoded = decode(uri.path())
         .expect("invalid percent encoding")
         .into_owned();
     PathBuf::from(path).join(decoded.trim_start_matches('/'))
@@ -77,10 +78,7 @@ pub fn resolve_path(uri: &Uri) -> PathBuf {
 
 pub fn absolute_destination_path(path: &str, uri: &Uri) -> PathBuf {
     let base_path: String = extract_base_path(uri);
-    let decoded = percent_decode_str(path)
-        .decode_utf8()
-        .expect("invalid percent encoding")
-        .into_owned();
+    let decoded = decode(path).expect("invalid percent encoding").into_owned();
     PathBuf::from(base_path).join(decoded.trim_start_matches('/'))
 }
 
