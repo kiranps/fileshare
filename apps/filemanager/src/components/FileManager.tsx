@@ -114,19 +114,6 @@ export const FileManager: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-base-100">
       {/* Navbar always on top */}
-      <Navbar
-        canGoBack={canGoBack}
-        canGoForward={canGoForward}
-        canGoUp={canGoUp}
-        onBack={() => {}}
-        onForward={() => {}}
-        onUp={() => {}}
-        onRefresh={() => {}}
-        breadcrumb={breadcrumb}
-        onBreadcrumbClick={handleBreadcrumbClick}
-        searchValue={searchValue}
-        onSearchChange={handleSearchChange}
-      />
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar collapses to icons on small screens */}
         <Sidebar
@@ -135,6 +122,19 @@ export const FileManager: React.FC = () => {
           onShortcutClick={handleShortcutClick}
         />
         <main className="flex-1 overflow-auto">
+          <Navbar
+            canGoBack={canGoBack}
+            canGoForward={canGoForward}
+            canGoUp={canGoUp}
+            onBack={() => {}}
+            onForward={() => {}}
+            onUp={() => {}}
+            onRefresh={() => {}}
+            breadcrumb={breadcrumb}
+            onBreadcrumbClick={handleBreadcrumbClick}
+            searchValue={searchValue}
+            onSearchChange={handleSearchChange}
+          />
           <FileList
             files={filteredFiles.map((f) => ({
               ...f,

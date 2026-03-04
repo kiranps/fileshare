@@ -17,7 +17,7 @@ export const FileList: React.FC<FileListProps> = ({
 }) => (
   <div className="overflow-auto">
     <table className="table w-full text-sm">
-      <thead className="bg-base-200 sticky top-0 z-20">
+      <thead className="sticky top-0 z-20">
         <tr>
           <th scope="col" className="w-12 text-center"></th>
           <th scope="col" className="font-semibold">
