@@ -1,62 +1,22 @@
-import React, { useState } from "react";
+import React from "react";
 import { Sidebar } from "./Sidebar";
-import type { SidebarShortcut, BreadcrumbSegment } from "../types";
 import { Navbar } from "./Navbar";
 import { FileList } from "./FileList";
-import { Home, FileText, Music, Film, Image } from "lucide-react";
+import { Home } from "lucide-react";
 import { useWebDAVPropfind } from "../hooks/useWebDAVPropfind";
 import { filesFromWebDAV } from "../utils/webdav_files";
-
-// Dummy shortcuts for sidebar
-const sidebarShortcuts: SidebarShortcut[] = [
-  { label: "Home", icon: <Home size={20} />, path: ["Home"] },
-  { label: "Documents", icon: <FileText size={20} />, path: ["Documents"] },
-  { label: "Music", icon: <Music size={20} />, path: ["Music"] },
-  { label: "Movies", icon: <Film size={20} />, path: ["Movies"] },
-  { label: "Pictures", icon: <Image size={20} />, path: ["Pictures"] },
-];
-
-// Dummy breadcrumb for navbar
-const initialBreadcrumb: BreadcrumbSegment[] = [
-  { label: "Home", path: ["Home"], icon: <Home size={16} /> },
-];
+import { useFileManagerStore } from "../store/useFileManagerStore";
 
 export const FileManager: React.FC = () => {
-  const [activePath, setActivePath] = useState("/");
-  const [selectedShortcut, setSelectedShortcut] = useState(
-    sidebarShortcuts[0].label,
-  );
-  const [breadcrumb, setBreadcrumb] =
-    useState<BreadcrumbSegment[]>(initialBreadcrumb);
-  const [searchValue, setSearchValue] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const {
+    activePath,
+    setActivePath,
+    setBreadcrumb,
+    selectedId,
+    setSelectedId,
+  } = useFileManagerStore();
   const canGoBack = false,
     canGoForward = false;
-
-  const handleShortcutClick = (path: string[]) => {
-    setSelectedShortcut(path[0]);
-    setBreadcrumb([
-      {
-        label: path[0],
-        path,
-        icon: sidebarShortcuts.find((sc) => sc.label === path[0])?.icon,
-      },
-    ]);
-    setSelectedId(null);
-    setSearchValue("");
-  };
-
-  const handleBreadcrumbClick = (path: string[]) => {
-    setBreadcrumb([
-      {
-        label: path[0],
-        path,
-        icon: sidebarShortcuts.find((sc) => sc.label === path[0])?.icon,
-      },
-    ]);
-  };
-
-  const handleSearchChange = (value: string) => setSearchValue(value);
 
   const handleItemClick = (id: string) => setSelectedId(id);
   const { data, isLoading, error } = useWebDAVPropfind(activePath);
@@ -69,11 +29,7 @@ export const FileManager: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-base-100">
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          shortcuts={sidebarShortcuts}
-          selectedShortcut={selectedShortcut}
-          onShortcutClick={handleShortcutClick}
-        />
+        <Sidebar />
         <main className="flex-1 overflow-auto">
           <Navbar
             canGoBack={canGoBack}
@@ -81,10 +37,6 @@ export const FileManager: React.FC = () => {
             onBack={() => {}}
             onForward={() => {}}
             onRefresh={() => {}}
-            breadcrumb={breadcrumb}
-            onBreadcrumbClick={handleBreadcrumbClick}
-            searchValue={searchValue}
-            onSearchChange={handleSearchChange}
           />
           {isLoading ? (
             <div className="p-8 text-center text-lg text-base-content/50">
@@ -97,18 +49,13 @@ export const FileManager: React.FC = () => {
           ) : (
             <FileList
               files={webdavFiles}
-              selectedId={selectedId}
-              onItemClick={handleItemClick}
               onItemDoubleClick={(id) => {
-                // if double-clicked item is a folder, navigate into it by
-                // updating activePath and resetting selection/search
                 const isFolder =
                   webdavFiles.find((f) => f.id === id)?.type === "Folder";
                 if (isFolder) {
                   setActivePath(id);
                   setSelectedId(null);
-                  setSearchValue("");
-                  // Update breadcrumb to show last segment
+                  useFileManagerStore.getState().setSearchValue("");
                   const segments = id.split(/\/+|\0/).filter(Boolean);
                   const label = segments.length
                     ? decodeURIComponent(segments[segments.length - 1])

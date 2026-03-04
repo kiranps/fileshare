@@ -1,18 +1,37 @@
 import React from "react";
 import type { SidebarShortcut } from "../types";
+import { useFileManagerStore } from "../store/useFileManagerStore";
+import { Home, FileText, Music, Film, Image } from "lucide-react";
 
+// Dummy shortcuts for sidebar
+const shortcuts: SidebarShortcut[] = [
+  { label: "Home", icon: <Home size={20} />, path: ["Home"] },
+  { label: "Documents", icon: <FileText size={20} />, path: ["Documents"] },
+  { label: "Music", icon: <Music size={20} />, path: ["Music"] },
+  { label: "Movies", icon: <Film size={20} />, path: ["Movies"] },
+  { label: "Pictures", icon: <Image size={20} />, path: ["Pictures"] },
+];
 
-export type SidebarProps = {
-  shortcuts: SidebarShortcut[];
-  selectedShortcut: string;
-  onShortcutClick: (path: string[]) => void;
-};
+export const Sidebar: React.FC = () => {
+  const selectedShortcut = useFileManagerStore((s) => s.selectedShortcut);
+  const setSelectedShortcut = useFileManagerStore((s) => s.setSelectedShortcut);
+  const setBreadcrumb = useFileManagerStore((s) => s.setBreadcrumb);
+  const setSelectedId = useFileManagerStore((s) => s.setSelectedId);
+  const setSearchValue = useFileManagerStore((s) => s.setSearchValue);
 
-export const Sidebar: React.FC<SidebarProps> = ({
-  shortcuts,
-  selectedShortcut,
-  onShortcutClick,
-}) => {
+  const handleShortcutClick = (path: string[]) => {
+    setSelectedShortcut(path[0]);
+    setBreadcrumb([
+      {
+        label: path[0],
+        path,
+        icon: shortcuts.find((sc) => sc.label === path[0])?.icon,
+      },
+    ]);
+    setSelectedId(null);
+    setSearchValue("");
+  };
+
   return (
     <aside
       className="w-56 bg-base-200 p-4 flex flex-col gap-2 border-r border-base-300 h-full min-w-[3.5rem]"
@@ -30,12 +49,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               tabIndex={0}
               onClick={(e) => {
                 e.preventDefault();
-                onShortcutClick(sc.path);
+                handleShortcutClick(sc.path);
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  onShortcutClick(sc.path);
+                  handleShortcutClick(sc.path);
                 }
               }}
               role="menuitem"
