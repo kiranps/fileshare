@@ -2,20 +2,38 @@ use super::helpers::*;
 use super::middleware::{auth_middleware, log_response_body, prefix_middleware};
 use axum::body::Body;
 use axum::http::StatusCode;
-use axum::http::{Method, Request, Uri};
+use axum::http::{HeaderName, Method, Request, Uri, header};
 use axum::response::Response;
 use axum::{Router, middleware, routing::any};
 use std::path::Path;
 use std::string::String;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::{error, info};
 
 pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router {
+    let propfind = Method::from_bytes(b"PROPFIND").unwrap();
+    let depth = HeaderName::from_static("depth");
+
     Router::new()
         .route("/", any(route_request))
         .route("/{*path}", any(route_request))
+        .layer(
+            CorsLayer::new()
+                // Echo the request Origin back as the allowed origin (supports credentials)
+                .allow_origin(tower_http::cors::AllowOrigin::mirror_request())
+                .allow_methods([propfind])
+                .allow_headers([
+                    header::AUTHORIZATION,
+                    header::CONTENT_TYPE,
+                    header::ACCEPT,
+                    header::ORIGIN,
+                    depth,
+                ])
+                .allow_credentials(true),
+        )
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::new().level(tracing::Level::DEBUG))

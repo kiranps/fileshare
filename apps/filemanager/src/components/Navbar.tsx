@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  RefreshCcw,
-  Search,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, RefreshCcw, Search } from "lucide-react";
 import type { JSX } from "react/jsx-runtime";
 
 export type BreadcrumbSegment = {
