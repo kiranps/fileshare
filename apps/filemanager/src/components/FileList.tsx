@@ -5,8 +5,7 @@ import { useFileManagerStore } from "../store/useFileManagerStore";
 
 export const FileList: React.FC<{
   files: FileItemProps[];
-  onItemDoubleClick?: (id: string) => void;
-}> = ({ files, onItemDoubleClick }) => {
+}> = ({ files }) => {
   const selectedId = useFileManagerStore((s) => s.selectedId);
   const setSelectedId = useFileManagerStore((s) => s.setSelectedId);
   return (
@@ -39,7 +38,7 @@ export const FileList: React.FC<{
                 {...file}
                 selected={selectedId === file.id}
                 onClick={() => setSelectedId(file.id)}
-                onDoubleClick={() => onItemDoubleClick?.(file.id)}
+                onDoubleClick={() => {}}
               />
             ))
           )}

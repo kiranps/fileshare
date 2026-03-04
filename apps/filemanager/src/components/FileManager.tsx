@@ -21,7 +21,6 @@ export const FileManager: React.FC = () => {
   const handleItemClick = (id: string) => setSelectedId(id);
   const { data, isLoading, error } = useWebDAVPropfind(activePath);
 
-  // Map and filter WebDAV data to FileItemProps
   const webdavFiles = data
     ? filesFromWebDAV(data, selectedId, handleItemClick)
     : [];
@@ -47,25 +46,7 @@ export const FileManager: React.FC = () => {
               Error loading files.
             </div>
           ) : (
-            <FileList
-              files={webdavFiles}
-              onItemDoubleClick={(id) => {
-                const isFolder =
-                  webdavFiles.find((f) => f.id === id)?.type === "Folder";
-                if (isFolder) {
-                  setActivePath(id);
-                  setSelectedId(null);
-                  useFileManagerStore.getState().setSearchValue("");
-                  const segments = id.split(/\/+|\0/).filter(Boolean);
-                  const label = segments.length
-                    ? decodeURIComponent(segments[segments.length - 1])
-                    : id;
-                  setBreadcrumb([
-                    { label, path: [label], icon: <Home size={16} /> },
-                  ]);
-                }
-              }}
-            />
+            <FileList files={webdavFiles} />
           )}
         </main>
       </div>
