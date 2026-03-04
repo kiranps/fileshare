@@ -66,28 +66,47 @@ const dummyFiles: FileItemProps[] = [
 ];
 
 export const FileManager: React.FC = () => {
-  const [selectedShortcut, setSelectedShortcut] = useState(sidebarShortcuts[0].label);
-  const [breadcrumb, setBreadcrumb] = useState<BreadcrumbSegment[]>(initialBreadcrumb);
+  const [selectedShortcut, setSelectedShortcut] = useState(
+    sidebarShortcuts[0].label,
+  );
+  const [breadcrumb, setBreadcrumb] =
+    useState<BreadcrumbSegment[]>(initialBreadcrumb);
   const [searchValue, setSearchValue] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Dummy control states for navbar
-  const canGoBack = false, canGoForward = false, canGoUp = false;
+  const canGoBack = false,
+    canGoForward = false,
+    canGoUp = false;
 
   const handleShortcutClick = (path: string[]) => {
     setSelectedShortcut(path[0]);
-    setBreadcrumb([{ label: path[0], path, icon: sidebarShortcuts.find(sc => sc.label === path[0])?.icon }]);
+    setBreadcrumb([
+      {
+        label: path[0],
+        path,
+        icon: sidebarShortcuts.find((sc) => sc.label === path[0])?.icon,
+      },
+    ]);
     setSelectedId(null);
     setSearchValue("");
   };
 
   const handleBreadcrumbClick = (path: string[]) => {
-    setBreadcrumb([{ label: path[0], path, icon: sidebarShortcuts.find(sc => sc.label === path[0])?.icon }]);
+    setBreadcrumb([
+      {
+        label: path[0],
+        path,
+        icon: sidebarShortcuts.find((sc) => sc.label === path[0])?.icon,
+      },
+    ]);
   };
 
   const handleSearchChange = (value: string) => setSearchValue(value);
 
   const filteredFiles = searchValue
-    ? dummyFiles.filter(f => f.name.toLowerCase().includes(searchValue.toLowerCase()))
+    ? dummyFiles.filter((f) =>
+        f.name.toLowerCase().includes(searchValue.toLowerCase()),
+      )
     : dummyFiles;
 
   const handleItemClick = (id: string) => setSelectedId(id);
@@ -115,9 +134,13 @@ export const FileManager: React.FC = () => {
           selectedShortcut={selectedShortcut}
           onShortcutClick={handleShortcutClick}
         />
-        <main className="flex-1 p-2 overflow-auto">
+        <main className="flex-1 overflow-auto">
           <FileList
-            files={filteredFiles.map(f => ({ ...f, selected: f.id === selectedId, onClick: () => handleItemClick(f.id) }))}
+            files={filteredFiles.map((f) => ({
+              ...f,
+              selected: f.id === selectedId,
+              onClick: () => handleItemClick(f.id),
+            }))}
             selectedId={selectedId}
             onItemClick={handleItemClick}
           />
