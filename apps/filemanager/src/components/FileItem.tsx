@@ -1,17 +1,6 @@
 import React from "react";
-import type { JSX } from "react/jsx-runtime";
+import type { FileItemProps } from "../types";
 
-export type FileItemProps = {
-  id: string; // used as key/id only
-  name: string;
-  type: string;
-  size?: string;
-  modified?: string;
-  icon: JSX.Element;
-  selected: boolean;
-  onClick: () => void;
-  onDoubleClick?: () => void;
-};
 
 export const FileItem: React.FC<FileItemProps> = ({
   name, type, size, modified, icon, selected, onClick, onDoubleClick

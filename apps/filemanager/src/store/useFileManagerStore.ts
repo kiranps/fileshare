@@ -1,7 +1,5 @@
 import { create } from 'zustand'
-import type { SidebarShortcut } from '../components/Sidebar'
-import type { BreadcrumbSegment } from '../components/Navbar'
-import type { FileItemProps } from '../components/FileItem'
+import type { SidebarShortcut, BreadcrumbSegment, FileItemProps } from '../types'
 
 interface FileManagerState {
   shortcuts: SidebarShortcut[];

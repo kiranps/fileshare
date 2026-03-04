@@ -1,12 +1,7 @@
 import React from "react";
 import { ArrowLeft, ArrowRight, RefreshCcw, Search } from "lucide-react";
-import type { JSX } from "react/jsx-runtime";
+import type { BreadcrumbSegment } from "../types";
 
-export type BreadcrumbSegment = {
-  label: string;
-  path: string[];
-  icon?: JSX.Element;
-};
 
 export type NavbarProps = {
   canGoBack: boolean;

@@ -1,11 +1,6 @@
 import React from "react";
-import type { JSX } from "react/jsx-runtime";
+import type { SidebarShortcut } from "../types";
 
-export type SidebarShortcut = {
-  label: string;
-  icon: JSX.Element;
-  path: string[];
-};
 
 export type SidebarProps = {
   shortcuts: SidebarShortcut[];

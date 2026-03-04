@@ -1,5 +1,5 @@
 import React from "react";
-import type { FileItemProps } from "./FileItem";
+import type { FileItemProps } from "../types";
 import { FileItem } from "./FileItem";
 
 export type FileListProps = {

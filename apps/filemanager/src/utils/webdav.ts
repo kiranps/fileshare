@@ -1,3 +1,4 @@
+// Utility for parsing a WebDAV PROPFIND XML response
 export function parseWebDAVPropfindResponse(xml: string) {
   const parser = new DOMParser();
   const dom = parser.parseFromString(xml, "application/xml");

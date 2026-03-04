@@ -1,6 +1,6 @@
-import { parseWebDAVPropfindResponse } from "./parseWebDAVPropfindResponse";
+// src/api/webdavPropfind.ts
+import { parseWebDAVPropfindResponse } from "../utils/webdav";
 
-// Configure WebDAV host and credentials here
 const WEBDAV_HOST = "http://192.168.29.216:8080";
 const WEBDAV_DEPTH = "1";
 
