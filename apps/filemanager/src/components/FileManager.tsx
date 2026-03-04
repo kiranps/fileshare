@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Sidebar } from "./Sidebar";
+import { SampleQuery } from './SampleQuery';
 import type { SidebarShortcut } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import type { BreadcrumbSegment } from "./Navbar";
@@ -75,8 +76,7 @@ export const FileManager: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Dummy control states for navbar
   const canGoBack = false,
-    canGoForward = false,
-    canGoUp = false;
+    canGoForward = false;
 
   const handleShortcutClick = (path: string[]) => {
     setSelectedShortcut(path[0]);
@@ -122,19 +122,17 @@ export const FileManager: React.FC = () => {
           onShortcutClick={handleShortcutClick}
         />
         <main className="flex-1 overflow-auto">
-          <Navbar
-            canGoBack={canGoBack}
-            canGoForward={canGoForward}
-            canGoUp={canGoUp}
-            onBack={() => {}}
-            onForward={() => {}}
-            onUp={() => {}}
-            onRefresh={() => {}}
-            breadcrumb={breadcrumb}
-            onBreadcrumbClick={handleBreadcrumbClick}
-            searchValue={searchValue}
-            onSearchChange={handleSearchChange}
-          />
+      <Navbar
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        onBack={() => {}}
+        onForward={() => {}}
+        onRefresh={() => {}}
+        breadcrumb={breadcrumb}
+        onBreadcrumbClick={handleBreadcrumbClick}
+        searchValue={searchValue}
+        onSearchChange={handleSearchChange}
+      />
           <FileList
             files={filteredFiles.map((f) => ({
               ...f,
@@ -144,6 +142,7 @@ export const FileManager: React.FC = () => {
             selectedId={selectedId}
             onItemClick={handleItemClick}
           />
+            <div className="mt-4"><SampleQuery /></div>
         </main>
       </div>
     </div>

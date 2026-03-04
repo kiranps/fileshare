@@ -2,7 +2,6 @@ import React from "react";
 import {
   ArrowLeft,
   ArrowRight,
-  ArrowUp,
   RefreshCcw,
   Search,
 } from "lucide-react";
@@ -17,10 +16,8 @@ export type BreadcrumbSegment = {
 export type NavbarProps = {
   canGoBack: boolean;
   canGoForward: boolean;
-  canGoUp: boolean;
   onBack: () => void;
   onForward: () => void;
-  onUp: () => void;
   onRefresh: () => void;
   breadcrumb: BreadcrumbSegment[];
   onBreadcrumbClick: (path: string[]) => void;
@@ -31,10 +28,8 @@ export type NavbarProps = {
 export const Navbar: React.FC<NavbarProps> = ({
   canGoBack,
   canGoForward,
-  canGoUp,
   onBack,
   onForward,
-  onUp,
   onRefresh,
   breadcrumb,
   onBreadcrumbClick,
