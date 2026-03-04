@@ -8,6 +8,12 @@ export const FileList: React.FC<{
 }> = ({ files }) => {
   const selectedId = useFileManagerStore((s) => s.selectedId);
   const setSelectedId = useFileManagerStore((s) => s.setSelectedId);
+  const setActivePath = useFileManagerStore((s) => s.setActivePath);
+
+  const handleDoubleClick = (fileId: string) => {
+    setActivePath(fileId);
+  };
+
   return (
     <div className="overflow-auto">
       <table className="table w-full text-sm">
@@ -38,7 +44,7 @@ export const FileList: React.FC<{
                 {...file}
                 selected={selectedId === file.id}
                 onClick={() => setSelectedId(file.id)}
-                onDoubleClick={() => {}}
+                onDoubleClick={() => handleDoubleClick(file.id)}
               />
             ))
           )}
