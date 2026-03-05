@@ -16,6 +16,8 @@ export const FileManager: React.FC = () => {
     ? filesFromWebDAV(data, selectedId, handleItemClick)
     : [];
 
+  const files = webdavFiles.filter((x) => !x.name.startsWith("."));
+
   return (
     <div className="flex flex-col h-screen bg-base-100">
       <div className="flex flex-1 overflow-hidden">
@@ -31,7 +33,7 @@ export const FileManager: React.FC = () => {
               Error loading files.
             </div>
           ) : (
-            <FileList files={webdavFiles} />
+            <FileList files={files} />
           )}
         </main>
       </div>

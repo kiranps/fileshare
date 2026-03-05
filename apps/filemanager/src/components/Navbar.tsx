@@ -3,9 +3,7 @@ import { ArrowLeft, ArrowRight, RefreshCcw, Search } from "lucide-react";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 
 export const Navbar: React.FC = () => {
-  const searchValue = useFileManagerStore((s) => s.searchValue);
   const activePath = useFileManagerStore((s) => s.activePath);
-  const setSearchValue = useFileManagerStore((s) => s.setSearchValue);
   const setActivePath = useFileManagerStore((s) => s.setActivePath);
 
   // Parse segments from activePath, removing leading/trailing slashes
@@ -14,9 +12,7 @@ export const Navbar: React.FC = () => {
     .split("/")
     .filter(Boolean);
 
-  // Generate all segment paths for breadcrumbs
   const breadcrumbData = segments.map((segment, i) => {
-    // Build path upto segment i
     const path = "/" + segments.slice(0, i + 1).join("/");
     return { label: segment, path };
   });
@@ -65,17 +61,6 @@ export const Navbar: React.FC = () => {
           </ul>
         </nav>
       </div>
-      <label className="input input-sm flex items-center gap-1 max-w-xs rounded bg-base-200 text-base-content">
-        <Search size={16} />
-        <input
-          type="text"
-          aria-label="Search files/folders"
-          placeholder="Search"
-          value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-          className="bg-transparent outline-none w-full text-base-content"
-        />
-      </label>
     </nav>
   );
 };
