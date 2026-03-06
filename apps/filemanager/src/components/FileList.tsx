@@ -62,10 +62,6 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
         valA = a.name.toLowerCase();
         valB = b.name.toLowerCase();
         break;
-      case "type":
-        valA = a.type.toLowerCase();
-        valB = b.type.toLowerCase();
-        break;
       case "size":
         // Size may be undefined or string; treat undefined as smallest
         valA = a.size ? parseInt(a.size, 10) : 0;
@@ -104,13 +100,6 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
               onClick={() => handleSort("name")}
             >
               Name <SortIcon />
-            </th>
-            <th
-              scope="col"
-              className="cursor-pointer select-none"
-              onClick={() => handleSort("type")}
-            >
-              Type <SortIcon />
             </th>
             <th
               scope="col"

@@ -36,7 +36,6 @@ export const FileItem: React.FC<
     <td className="font-medium" role="gridcell">
       {name}
     </td>
-    <td role="gridcell">{type}</td>
     <td className="text-right" role="gridcell">
       {size || "-"}
     </td>
