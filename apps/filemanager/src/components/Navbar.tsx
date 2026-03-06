@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowLeft, ArrowRight, RefreshCcw, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, RefreshCcw } from "lucide-react";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 
 export const Navbar: React.FC = () => {
@@ -44,8 +44,11 @@ export const Navbar: React.FC = () => {
         <RefreshCcw size={18} />
       </button>
       <div className="flex-1">
-        <nav className="breadcrumbs text-sm" aria-label="Breadcrumb">
-          <ul className="breadcrumbs">
+        <nav
+          className="breadcrumbs text-sm border border-base-300 px-3 bg-base-200"
+          aria-label="Breadcrumb"
+        >
+          <ul className="breadcrumbs py-0">
             <li>
               <a onClick={() => setActivePath("/")}>Home</a>
             </li>
