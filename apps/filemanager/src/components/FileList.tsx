@@ -10,8 +10,10 @@ export const FileList: React.FC<{
   const setSelectedId = useFileManagerStore((s) => s.setSelectedId);
   const setActivePath = useFileManagerStore((s) => s.setActivePath);
 
-  const handleDoubleClick = (fileId: string) => {
-    setActivePath(fileId);
+  const handleDoubleClick = (file: FileItemProps) => {
+    if (file.type == "Folder") {
+      setActivePath(file.id);
+    }
   };
 
   return (
@@ -44,7 +46,7 @@ export const FileList: React.FC<{
                 {...file}
                 selected={selectedId === file.id}
                 onClick={() => setSelectedId(file.id)}
-                onDoubleClick={() => handleDoubleClick(file.id)}
+                onDoubleClick={() => handleDoubleClick(file)}
               />
             ))
           )}

@@ -1,10 +1,17 @@
 import { Folder, FileText, Music, Film, Image } from "lucide-react";
 import type { FileItemProps } from "../types";
+import type { JSX } from "react/jsx-runtime";
 
-/**
- * Converts WebDAV data items into an array of FileItemProps, with icons and handlers.
- * @returns FileItemProps[]
- */
+const ICON_SIZE = 18;
+const icons = {
+  folder: <Folder size={ICON_SIZE} />,
+  file: <FileText size={ICON_SIZE} />,
+  pdf: <FileText size={ICON_SIZE} />,
+  image: <Image size={ICON_SIZE} />,
+  music: <Music size={ICON_SIZE} />,
+  film: <Film size={ICON_SIZE} />,
+};
+
 export function filesFromWebDAV(
   data: Array<{
     href: string;
@@ -12,103 +19,79 @@ export function filesFromWebDAV(
     contentType?: string;
     contentLength?: number;
     isCollection: boolean;
-    raw: any;
+    raw: unknown;
   }>,
   selectedId: string | null,
   handleItemClick: (id: string) => void,
   handleItemDoubleClick?: (id: string) => void,
-): FileItemProps[] {
+): { activeDirectory: FileItemProps; files: FileItemProps[] } {
   // Icon helpers
-  const icons = {
-    folder: <Folder size={18} />,
-    file: <FileText size={18} />,
-    pdf: <FileText size={18} />,
-    image: <Image size={18} />,
-    music: <Music size={18} />,
-    film: <Film size={18} />,
-  };
-  function getIcon(type: string, isCollection: boolean) {
+  function getIcon(contentType: string, isCollection: boolean): JSX.Element {
     if (isCollection) return icons.folder;
-    if (type.startsWith("image")) return icons.image;
-    if (type.startsWith("audio")) return icons.music;
-    if (type.startsWith("video")) return icons.film;
-    if (type === "application/pdf") return icons.pdf;
+    if (contentType.startsWith("image")) return icons.image;
+    if (contentType.startsWith("audio")) return icons.music;
+    if (contentType.startsWith("video")) return icons.film;
+    if (contentType === "application/pdf") return icons.pdf;
     return icons.file;
   }
-  function humanFileSize(size?: number) {
-    if (!size) return "-";
-    const i = size === 0 ? 0 : Math.floor(Math.log(size) / Math.log(1024));
-    return (
-      (size / Math.pow(1024, i)).toFixed(1) +
-      " " +
-      ["B", "KB", "MB", "GB", "TB"][i]
-    );
+  function humanFileSize(size?: number): string {
+    if (typeof size !== "number" || size < 0) return "-";
+    if (size === 0) return "0 B";
+    const i = Math.floor(Math.log(size) / Math.log(1024));
+    const rounded = (size / Math.pow(1024, i)).toFixed(1);
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    return `${rounded} ${units[i]}`;
   }
-  function basename(href: string) {
+  function basename(href: string): string {
     const segments = href.split(/\/+|^@/).filter(Boolean);
-    return segments.length
+    return segments.length > 0
       ? decodeURIComponent(segments[segments.length - 1])
       : href;
   }
-  // No reliable "modified" date in current response
-  return data
+
+  const EXT_IMAGE = ["jpg", "jpeg", "png", "gif", "bmp", "webp"];
+  const EXT_MUSIC = ["mp3", "wav", "ogg"];
+  const EXT_VIDEO = ["mp4", "avi", "mkv", "mov"];
+  const EXT_PDF = ["pdf"];
+  const EXT_TEXT = ["txt", "md", "rtf"];
+
+  const items: FileItemProps[] = data
     .filter((entry) => entry.href && basename(entry.href) !== "")
     .map((entry) => {
-      let ext = "";
       const name = entry.displayName || basename(entry.href);
-      if (!entry.isCollection && name.includes(".")) {
-        ext = name.split(".").pop()?.toLowerCase() ?? "";
-      }
+      const ext =
+        !entry.isCollection && name.includes(".")
+          ? (name.split(".").pop()?.toLowerCase() ?? "")
+          : "";
+
       let type = entry.isCollection ? "Folder" : entry.contentType || "File";
       if (!entry.isCollection && ext) {
-        if (["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(ext))
-          type = "Image";
-        else if (["mp3", "wav", "ogg"].includes(ext)) type = "Music";
-        else if (["mp4", "avi", "mkv", "mov"].includes(ext)) type = "Video";
-        else if (["pdf"].includes(ext)) type = "PDF";
-        else if (["txt", "md", "rtf"].includes(ext)) type = "Text";
+        if (EXT_IMAGE.includes(ext)) type = "Image";
+        else if (EXT_MUSIC.includes(ext)) type = "Music";
+        else if (EXT_VIDEO.includes(ext)) type = "Video";
+        else if (EXT_PDF.includes(ext)) type = "PDF";
+        else if (EXT_TEXT.includes(ext)) type = "Text";
       }
+
       return {
         id: entry.href,
         name,
         type,
         size: entry.isCollection ? "-" : humanFileSize(entry.contentLength),
-        modified: "-", // WebDAV prop parsing can be extended for real mod date
+        modified: "-", // extend for real mod date if available
         icon: getIcon(
           entry.contentType || type.toLowerCase(),
           entry.isCollection,
         ),
         selected: entry.href === selectedId,
         onClick: () => handleItemClick(entry.href),
-        onDoubleClick: entry.isCollection
-          ? () => handleItemDoubleClick?.(entry.href)
-          : undefined,
+        onDoubleClick:
+          entry.isCollection && typeof handleItemDoubleClick === "function"
+            ? () => handleItemDoubleClick(entry.href)
+            : undefined,
       };
     });
-}
 
-/**
- * Wrapper to split WebDAV file list into [activeDirectory, files]
- * - activeDirectory: The first FileItemProps in the list
- * - files: The rest of items
- *
- * If you want to change the logic for "activeDirectory" (e.g., based on isCollection, selectedId, etc.), update below.
- */
-export function getActiveDirectoryAndFiles(
-  data: Array<{
-    href: string;
-    displayName?: string;
-    contentType?: string;
-    contentLength?: number;
-    isCollection: boolean;
-    raw: any;
-  }>,
-  selectedId: string | null,
-  handleItemClick: (id: string) => void,
-  handleItemDoubleClick?: (id: string) => void,
-): [FileItemProps | null, FileItemProps[]] {
-  const files = filesFromWebDAV(data, selectedId, handleItemClick, handleItemDoubleClick);
-  if (files.length === 0) return [null, []];
-  const [activeDirectory, ...restFiles] = files;
-  return [activeDirectory, restFiles];
+  const [activeDirectory, ...files] = items;
+  return { activeDirectory, files };
 }

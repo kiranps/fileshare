@@ -13,7 +13,7 @@ export const FileManager: React.FC = () => {
   const { data, isLoading, error } = useWebDAVPropfind(activePath);
 
   const webdavFiles = data
-    ? filesFromWebDAV(data, selectedId, handleItemClick)
+    ? filesFromWebDAV(data, selectedId, handleItemClick).files
     : [];
 
   const files = webdavFiles.filter((x) => !x.name.startsWith("."));
