@@ -1,21 +1,82 @@
-import React from "react";
+import React, { useState } from "react";
 import type { FileItemProps } from "../types";
 import { FileItem } from "./FileItem";
 import { useFileManagerStore } from "../store/useFileManagerStore";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { ArrowDownUp } from "lucide-react";
 
-export const FileList: React.FC<{
-  files: FileItemProps[];
-}> = ({ files }) => {
+const SORTABLE_COLUMNS = ["name", "type", "size", "modified"] as const;
+type SortColumn = (typeof SORTABLE_COLUMNS)[number];
+type SortDirection = "asc" | "desc";
+
+const SortIcon = () => (
+  <span className="ml-2 align-middle inline-block text-sm text-base-content/60">
+    <ArrowDownUp size={16} className="inline" />
+  </span>
+);
+
+export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const selectedId = useFileManagerStore((s) => s.selectedId);
   const setSelectedId = useFileManagerStore((s) => s.setSelectedId);
   const navigate = useNavigate();
 
+  // Sorting state
+  const [sortColumn, setSortColumn] = useState<SortColumn>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
   const handleDoubleClick = (file: FileItemProps) => {
-    if (file.type == "Folder") {
+    if (file.type === "Folder") {
       navigate(file.id);
     }
   };
+
+  // Sorting handler
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  // Sorting logic
+  const sortedFiles = [...files].sort((a, b) => {
+    let valA, valB;
+    switch (sortColumn) {
+      case "name":
+        valA = a.name.toLowerCase();
+        valB = b.name.toLowerCase();
+        break;
+      case "type":
+        valA = a.type.toLowerCase();
+        valB = b.type.toLowerCase();
+        break;
+      case "size":
+        // Size may be undefined or string; treat undefined as smallest
+        valA = a.size ? parseInt(a.size, 10) : 0;
+        valB = b.size ? parseInt(b.size, 10) : 0;
+        break;
+      case "modified":
+        valA =
+          a.modified instanceof Date
+            ? a.modified.getTime()
+            : new Date(a.modified).getTime();
+        valB =
+          b.modified instanceof Date
+            ? b.modified.getTime()
+            : new Date(b.modified).getTime();
+        break;
+      default:
+        valA = 0;
+        valB = 0;
+    }
+    if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+    if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  // Icon rendering
 
   return (
     <div className="overflow-auto">
@@ -23,25 +84,45 @@ export const FileList: React.FC<{
         <thead className="sticky top-0 z-20">
           <tr>
             <th scope="col" className="w-12 text-center"></th>
-            <th scope="col" className="font-semibold">
-              Name
+            <th
+              scope="col"
+              className="font-semibold cursor-pointer select-none"
+              onClick={() => handleSort("name")}
+            >
+              Name <SortIcon />
             </th>
-            <th scope="col">Type</th>
-            <th scope="col" className="text-right">
-              Size
+            <th
+              scope="col"
+              className="cursor-pointer select-none"
+              onClick={() => handleSort("type")}
+            >
+              Type <SortIcon />
             </th>
-            <th scope="col">Modified</th>
+            <th
+              scope="col"
+              className="text-right cursor-pointer select-none"
+              onClick={() => handleSort("size")}
+            >
+              Size <SortIcon />
+            </th>
+            <th
+              scope="col"
+              className="cursor-pointer select-none"
+              onClick={() => handleSort("modified")}
+            >
+              Modified <SortIcon />
+            </th>
           </tr>
         </thead>
         <tbody>
-          {files.length === 0 ? (
+          {sortedFiles.length === 0 ? (
             <tr>
               <td colSpan={5} className="text-center text-base-content/50 py-8">
                 No files or folders found.
               </td>
             </tr>
           ) : (
-            files.map((file) => (
+            sortedFiles.map((file) => (
               <FileItem
                 key={file.id}
                 {...file}
