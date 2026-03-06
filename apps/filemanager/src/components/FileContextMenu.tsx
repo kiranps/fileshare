@@ -121,6 +121,7 @@ export function openFileContextMenu({
     { label: "Cut", value: "cut" },
     { label: "Copy", value: "copy" },
     { label: "Paste", value: "paste" },
+    { label: "Delete", value: "delete" },
   ];
 
   const div = document.createElement("div");

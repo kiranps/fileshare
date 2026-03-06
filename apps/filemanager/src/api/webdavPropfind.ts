@@ -37,3 +37,44 @@ export async function webdavPropfind(
   const data = parseWebDAVPropfindResponse(xml);
   return data;
 }
+
+export type WebDAVDeleteResult = {
+  path: string;
+  ok: boolean;
+  status: number;
+  response: Response;
+};
+
+/**
+ * Delete a resource via WebDAV.
+ * Returns status/result, throws on network or non-ok responses.
+ */
+export async function webdavDelete(
+  path: string,
+  options?: { signal?: AbortSignal },
+): Promise<WebDAVDeleteResult> {
+  const url = WEBDAV_HOST + path;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "DELETE",
+      signal: options?.signal,
+      credentials: "include",
+    });
+  } catch (error: any) {
+    throw new Error(
+      `WebDAV DELETE request failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  if (!response.ok) {
+    throw new Error(
+      `WebDAV DELETE failed: ${response.status} ${response.statusText}`,
+    );
+  }
+  return {
+    path,
+    ok: response.ok,
+    status: response.status,
+    response,
+  };
+}

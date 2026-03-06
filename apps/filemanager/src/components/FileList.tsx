@@ -5,6 +5,7 @@ import { openFileContextMenu } from "./FileContextMenu";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 import { useNavigate } from "react-router-dom";
 import { ArrowDownUp } from "lucide-react";
+import { useWebDAVDelete } from "../hooks/useWebDAVPropfind";
 
 const SORTABLE_COLUMNS = ["name", "type", "size", "modified"] as const;
 type SortColumn = (typeof SORTABLE_COLUMNS)[number];
@@ -20,6 +21,7 @@ const SortIcon = () => (
 export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const selectedId = useFileManagerStore((s) => s.selectedId);
   const setSelectedId = useFileManagerStore((s) => s.setSelectedId);
+  const deleteMutation = useWebDAVDelete();
   const navigate = useNavigate();
 
   // Sorting state
@@ -39,7 +41,13 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
       x: e.clientX,
       y: e.clientY,
       onAction: (action) => {
-        console.log(`Action '${action}' chosen for file:`, file);
+        switch (action) {
+          case "delete": {
+            console.log("delete", file.id);
+            deleteMutation.mutate({ path: file.id });
+            break;
+          }
+        }
       },
     });
   };
