@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, QueryClient } from "@tanstack/react-query";
 import type { UseQueryOptions } from "@tanstack/react-query";
 import { webdavPropfind } from "../api/webdavPropfind";
 
@@ -7,7 +7,7 @@ export function useWebDAVPropfind(
   queryOptions?: UseQueryOptions<any, Error, any>,
 ) {
   return useQuery({
-    queryKey: ["webdavPropfind", path],
+    queryKey: ["files", path],
     queryFn: () => webdavPropfind(path),
     ...queryOptions,
   });
