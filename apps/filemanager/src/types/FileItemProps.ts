@@ -5,7 +5,7 @@ export type FileItemProps = {
   name: string;
   type: string;
   size?: string;
-  modified?: string;
+  modified: Date;
   icon: JSX.Element;
   selected: boolean;
   onClick: () => void;

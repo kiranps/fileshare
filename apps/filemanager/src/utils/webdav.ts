@@ -1,4 +1,3 @@
-// Utility for parsing a WebDAV PROPFIND XML response
 export function parseWebDAVPropfindResponse(xml: string) {
   const parser = new DOMParser();
   const dom = parser.parseFromString(xml, "application/xml");
@@ -32,12 +31,25 @@ export function parseWebDAVPropfindResponse(xml: string) {
       "collection",
     )[0];
 
+    const getlastmodified = propNode?.getElementsByTagNameNS(
+      "*",
+      "getlastmodified",
+    )[0]?.textContent;
+    let lastModified: Date | undefined = undefined;
+    if (getlastmodified) {
+      const parsed = new Date(getlastmodified);
+      if (!isNaN(parsed.getTime())) {
+        lastModified = parsed;
+      }
+    }
+
     return {
       href,
       displayName,
       contentType,
       contentLength: contentLength ? Number(contentLength) : undefined,
       isCollection,
+      lastModified,
       raw: node,
     };
   });

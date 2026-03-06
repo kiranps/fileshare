@@ -1,12 +1,27 @@
 import React from "react";
 import { ArrowLeft, ArrowRight, RefreshCcw } from "lucide-react";
 import { useFileManagerStore } from "../store/useFileManagerStore";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Navbar: React.FC = () => {
-  const activePath = useFileManagerStore((s) => s.activePath);
-  const setActivePath = useFileManagerStore((s) => s.setActivePath);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
 
-  // Parse segments from activePath, removing leading/trailing slashes
+  const setActivePath = useFileManagerStore((s) => s.setActivePath);
+  const activePath = useFileManagerStore((s) => s.activePath);
+
+  React.useEffect(() => {
+    setActivePath(location.pathname);
+  }, [location.pathname]);
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({
+      queryKey: ["files"],
+    });
+  };
+
   const segments = activePath
     .replace(/^\/+|\/+$/g, "")
     .split("/")
@@ -23,21 +38,21 @@ export const Navbar: React.FC = () => {
       aria-label="File navigation"
     >
       <button
-        onClick={() => {}}
+        onClick={() => navigate(-1)}
         aria-label="Back"
         className="btn btn-sm btn-ghost text-base-content hover:bg-base-200 focus:ring-primary"
       >
         <ArrowLeft size={18} />
       </button>
       <button
-        onClick={() => {}}
+        onClick={() => navigate(1)}
         aria-label="Forward"
         className="btn btn-sm btn-ghost text-base-content hover:bg-base-200 focus:ring-primary"
       >
         <ArrowRight size={18} />
       </button>
       <button
-        onClick={() => {}}
+        onClick={() => handleRefresh()}
         aria-label="Refresh"
         className="btn btn-sm btn-ghost text-base-content hover:bg-base-200 focus:ring-primary"
       >
@@ -50,14 +65,14 @@ export const Navbar: React.FC = () => {
         >
           <ul className="breadcrumbs py-0">
             <li>
-              <a onClick={() => setActivePath("/")}>Home</a>
+              <a onClick={() => navigate("/")}>Home</a>
             </li>
             {breadcrumbData.map((seg, idx) => (
               <li key={seg.path}>
                 {idx === breadcrumbData.length - 1 ? (
                   <span>{seg.label}</span>
                 ) : (
-                  <a onClick={() => setActivePath(seg.path)}>{seg.label}</a>
+                  <a onClick={() => navigate(seg.path)}>{seg.label}</a>
                 )}
               </li>
             ))}

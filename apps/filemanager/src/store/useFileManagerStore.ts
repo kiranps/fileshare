@@ -9,7 +9,7 @@ interface FileManagerState {
 }
 
 export const useFileManagerStore = create<FileManagerState>((set) => ({
-  activePath: "/",
+  activePath: typeof window !== "undefined" ? window.location.pathname : "/",
   showHiddleFiles: false,
   selectedId: null,
   setActivePath: (path) => set({ activePath: path }),

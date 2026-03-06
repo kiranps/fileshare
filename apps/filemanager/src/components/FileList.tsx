@@ -2,17 +2,18 @@ import React from "react";
 import type { FileItemProps } from "../types";
 import { FileItem } from "./FileItem";
 import { useFileManagerStore } from "../store/useFileManagerStore";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export const FileList: React.FC<{
   files: FileItemProps[];
 }> = ({ files }) => {
   const selectedId = useFileManagerStore((s) => s.selectedId);
   const setSelectedId = useFileManagerStore((s) => s.setSelectedId);
-  const setActivePath = useFileManagerStore((s) => s.setActivePath);
+  const navigate = useNavigate();
 
   const handleDoubleClick = (file: FileItemProps) => {
     if (file.type == "Folder") {
-      setActivePath(file.id);
+      navigate(file.id);
     }
   };
 

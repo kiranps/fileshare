@@ -19,6 +19,7 @@ export function filesFromWebDAV(
     contentType?: string;
     contentLength?: number;
     isCollection: boolean;
+    lastModified: Date;
     raw: unknown;
   }>,
   selectedId: string | null,
@@ -78,7 +79,7 @@ export function filesFromWebDAV(
         name,
         type,
         size: entry.isCollection ? "-" : humanFileSize(entry.contentLength),
-        modified: "-", // extend for real mod date if available
+        modified: entry.lastModified,
         icon: getIcon(
           entry.contentType || type.toLowerCase(),
           entry.isCollection,
