@@ -1,8 +1,16 @@
 import React from "react";
 import { format } from "date-fns";
-import type { FileItemProps } from "../types";
+import type { FileItemProps } from "../types/FileItemProps";
 
-export const FileItem: React.FC<FileItemProps> = ({
+export const FileItem: React.FC<
+  FileItemProps & {
+    onClick?: () => void;
+    onDoubleClick?: () => void;
+    onRightClick?: (
+      e: React.MouseEvent<HTMLTableRowElement, MouseEvent>,
+    ) => void;
+  }
+> = ({
   name,
   type,
   size,
@@ -11,6 +19,7 @@ export const FileItem: React.FC<FileItemProps> = ({
   selected,
   onClick,
   onDoubleClick,
+  onRightClick,
 }) => (
   <tr
     tabIndex={0}
@@ -18,6 +27,7 @@ export const FileItem: React.FC<FileItemProps> = ({
     className={`cursor-pointer outline-none ${selected ? "bg-primary text-primary-content shadow" : "hover:bg-base-100"}`}
     onClick={onClick}
     onDoubleClick={onDoubleClick}
+    onContextMenu={onRightClick}
     role="row"
   >
     <td className="w-12 text-center" role="gridcell">
@@ -30,6 +40,8 @@ export const FileItem: React.FC<FileItemProps> = ({
     <td className="text-right" role="gridcell">
       {size || "-"}
     </td>
-    <td role="gridcell">{modified ? format(modified, "yyyy-MM-dd HH:mm:ss") : "-"}</td>
+    <td role="gridcell">
+      {modified ? format(modified, "yyyy-MM-dd HH:mm:ss") : "-"}
+    </td>
   </tr>
 );

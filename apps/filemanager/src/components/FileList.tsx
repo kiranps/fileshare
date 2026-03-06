@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import type { FileItemProps } from "../types";
+import type { FileItemProps } from "../types/FileItemProps";
 import { FileItem } from "./FileItem";
+import { openFileContextMenu } from "./FileContextMenu";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 import { useNavigate } from "react-router-dom";
 import { ArrowDownUp } from "lucide-react";
@@ -8,6 +9,7 @@ import { ArrowDownUp } from "lucide-react";
 const SORTABLE_COLUMNS = ["name", "type", "size", "modified"] as const;
 type SortColumn = (typeof SORTABLE_COLUMNS)[number];
 type SortDirection = "asc" | "desc";
+type MouseEvent = React.MouseEvent<HTMLTableRowElement, MouseEvent>;
 
 const SortIcon = () => (
   <span className="ml-2 align-middle inline-block text-sm text-base-content/60">
@@ -28,6 +30,18 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
     if (file.type === "Folder") {
       navigate(file.id);
     }
+  };
+
+  const handleRightClick = (e: MouseEvent, file: FileItemProps) => {
+    e.preventDefault();
+    setSelectedId(file.id);
+    openFileContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      onAction: (action) => {
+        console.log(`Action '${action}' chosen for file:`, file);
+      },
+    });
   };
 
   // Sorting handler
@@ -129,6 +143,7 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
                 selected={selectedId === file.id}
                 onClick={() => setSelectedId(file.id)}
                 onDoubleClick={() => handleDoubleClick(file)}
+                onRightClick={(e) => handleRightClick(e, file)}
               />
             ))
           )}

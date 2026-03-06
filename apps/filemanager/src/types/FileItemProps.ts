@@ -8,6 +8,6 @@ export type FileItemProps = {
   modified: Date;
   icon: JSX.Element;
   selected: boolean;
-  onClick: () => void;
+  onClick?: (e: React.MouseEvent<HTMLTableRowElement, MouseEvent>) => void;
   onDoubleClick?: () => void;
 };
