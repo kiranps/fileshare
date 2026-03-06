@@ -24,7 +24,7 @@ pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router 
             CorsLayer::new()
                 // Echo the request Origin back as the allowed origin (supports credentials)
                 .allow_origin(tower_http::cors::AllowOrigin::mirror_request())
-                .allow_methods([propfind])
+                .allow_methods([propfind, Method::DELETE])
                 .allow_headers([
                     header::AUTHORIZATION,
                     header::CONTENT_TYPE,
