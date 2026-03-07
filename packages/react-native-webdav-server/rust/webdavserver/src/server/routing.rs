@@ -17,6 +17,7 @@ pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router 
     let propfind = Method::from_bytes(b"PROPFIND").unwrap();
     let move_file = Method::from_bytes(b"MOVE").unwrap();
     let copy_file = Method::from_bytes(b"COPY").unwrap();
+    let make_dir = Method::from_bytes(b"MKCOL").unwrap();
     let depth = HeaderName::from_static("depth");
     let destination = HeaderName::from_static("destination");
     let overwrite = HeaderName::from_static("overwrite");
@@ -28,7 +29,7 @@ pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router 
             CorsLayer::new()
                 // Echo the request Origin back as the allowed origin (supports credentials)
                 .allow_origin(tower_http::cors::AllowOrigin::mirror_request())
-                .allow_methods([propfind, copy_file, move_file, Method::DELETE])
+                .allow_methods([propfind, copy_file, move_file, make_dir, Method::DELETE])
                 .allow_headers([
                     header::AUTHORIZATION,
                     header::CONTENT_TYPE,
