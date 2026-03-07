@@ -45,10 +45,6 @@ export type WebDAVDeleteResult = {
   response: Response;
 };
 
-/**
- * Delete a resource via WebDAV.
- * Returns status/result, throws on network or non-ok responses.
- */
 export async function webdavDelete(
   path: string,
   options?: { signal?: AbortSignal },
@@ -73,6 +69,96 @@ export async function webdavDelete(
   }
   return {
     path,
+    ok: response.ok,
+    status: response.status,
+    response,
+  };
+}
+
+export type WebDAVMoveResult = {
+  from: string;
+  to: string;
+  ok: boolean;
+  status: number;
+  response: Response;
+};
+
+export async function webdavMove(
+  fromPath: string,
+  toPath: string,
+  overwrite = false,
+  options?: { signal?: AbortSignal },
+): Promise<WebDAVMoveResult> {
+  const url = WEBDAV_HOST + fromPath;
+  const destinationUrl = WEBDAV_HOST + toPath;
+
+  const headers: Record<string, string> = {
+    Destination: destinationUrl,
+    Overwrite: overwrite ? "T" : "F",
+  };
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "MOVE",
+      headers,
+      signal: options?.signal,
+      credentials: "include",
+    });
+  } catch (error: any) {
+    throw new Error(
+      `WebDAV MOVE request failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  if (!response.ok) {
+    throw new Error(
+      `WebDAV MOVE failed: ${response.status} ${response.statusText}`,
+    );
+  }
+  return {
+    from: fromPath,
+    to: toPath,
+    ok: response.ok,
+    status: response.status,
+    response,
+  };
+}
+
+export async function webdavCopy(
+  fromPath: string,
+  toPath: string,
+  overwrite = false,
+  options?: { signal?: AbortSignal },
+): Promise<WebDAVMoveResult> {
+  const url = WEBDAV_HOST + fromPath;
+  const destinationUrl = WEBDAV_HOST + toPath;
+
+  const headers: Record<string, string> = {
+    Destination: destinationUrl,
+    Overwrite: overwrite ? "T" : "F",
+  };
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "COPY",
+      headers,
+      signal: options?.signal,
+      credentials: "include",
+    });
+  } catch (error: any) {
+    throw new Error(
+      `WebDAV COPY request failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  if (!response.ok) {
+    throw new Error(
+      `WebDAV COPY failed: ${response.status} ${response.statusText}`,
+    );
+  }
+  return {
+    from: fromPath,
+    to: toPath,
     ok: response.ok,
     status: response.status,
     response,

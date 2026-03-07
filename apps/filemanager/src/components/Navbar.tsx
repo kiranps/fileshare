@@ -34,7 +34,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <nav
-      className="flex items-center px-4 py-2 bg-base-100 border-y border-base-300 gap-2"
+      className="fixed top-0 left-56 right-0 flex items-center px-4 py-2 bg-base-100 border-y border-base-300 gap-2"
       aria-label="File navigation"
     >
       <button
@@ -58,9 +58,9 @@ export const Navbar: React.FC = () => {
       >
         <RefreshCcw size={18} />
       </button>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <nav
-          className="breadcrumbs text-sm border border-base-300 px-3 bg-base-200"
+          className="breadcrumbs text-sm border border-base-300 px-3 bg-base-200 overflow-x-auto"
           aria-label="Breadcrumb"
         >
           <ul className="breadcrumbs py-0">

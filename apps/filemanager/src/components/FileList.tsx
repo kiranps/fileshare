@@ -5,12 +5,20 @@ import { openFileContextMenu } from "./FileContextMenu";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 import { useNavigate } from "react-router-dom";
 import { ArrowDownUp } from "lucide-react";
-import { useWebDAVDelete } from "../hooks/useWebDAVPropfind";
+import {
+  useWebDAVDelete,
+  useWebDAVMove,
+  useWebDAVCopy,
+} from "../hooks/useWebDAVPropfind";
 
 const SORTABLE_COLUMNS = ["name", "type", "size", "modified"] as const;
 type SortColumn = (typeof SORTABLE_COLUMNS)[number];
 type SortDirection = "asc" | "desc";
-type MouseEvent = React.MouseEvent<HTMLTableRowElement, MouseEvent>;
+type MouseEvent = React.MouseEvent;
+type ClipboardState = {
+  path: string;
+  operation: "cut" | "copy";
+} | null;
 
 const SortIcon = () => (
   <span className="ml-2 align-middle inline-block text-sm text-base-content/60">
@@ -21,8 +29,14 @@ const SortIcon = () => (
 export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const selectedId = useFileManagerStore((s) => s.selectedId);
   const setSelectedId = useFileManagerStore((s) => s.setSelectedId);
+  const activePath = useFileManagerStore((s) => s.activePath);
   const deleteMutation = useWebDAVDelete();
+  const moveMutation = useWebDAVMove();
+  const copyMutation = useWebDAVCopy();
   const navigate = useNavigate();
+
+  // cut
+  const [clipboard, setClipboard] = useState<ClipboardState>(null);
 
   // Sorting state
   const [sortColumn, setSortColumn] = useState<SortColumn>("name");
@@ -34,18 +48,55 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
     }
   };
 
-  const handleRightClick = (e: MouseEvent, file: FileItemProps) => {
+  const handleRightClick = (e: MouseEvent, file?: FileItemProps) => {
     e.preventDefault();
-    setSelectedId(file.id);
+    e.stopPropagation();
+
+    const menuActions = clipboard
+      ? [{ label: "Paste", value: "paste" }]
+      : [
+          { label: "Cut", value: "cut" },
+          { label: "Copy", value: "copy" },
+          { label: "Delete", value: "delete" },
+        ];
+
     openFileContextMenu({
       x: e.clientX,
       y: e.clientY,
+      actions: menuActions,
       onAction: (action) => {
+        console.log(file);
         switch (action) {
           case "delete": {
-            console.log("delete", file.id);
-            deleteMutation.mutate({ path: file.id });
+            deleteMutation.mutate(file!.id);
             break;
+          }
+          case "cut": {
+            setClipboard({ path: file!.id, operation: "cut" });
+            break;
+          }
+          case "copy": {
+            setClipboard({ path: file!.id, operation: "copy" });
+            break;
+          }
+          case "paste": {
+            switch (clipboard?.operation) {
+              case "cut": {
+                moveMutation.mutate({
+                  fromPath: clipboard!.path,
+                  toPath: activePath,
+                });
+                break;
+              }
+              case "copy": {
+                copyMutation.mutate({
+                  fromPath: clipboard!.path,
+                  toPath: activePath,
+                });
+                break;
+              }
+            }
+            setClipboard(null);
           }
         }
       },
@@ -97,9 +148,12 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   // Icon rendering
 
   return (
-    <div className="overflow-auto">
-      <table className="table w-full text-sm">
-        <thead className="sticky top-0 z-20">
+    <div
+      className="fixed h-full left-56 right-0 top-14 bottom-0 pb-20 overflow-auto"
+      onContextMenu={(e) => handleRightClick(e)}
+    >
+      <table className="table text-sm">
+        <thead className="sticky top-0 z-20 bg-white">
           <tr>
             <th scope="col" className="w-12 text-center"></th>
             <th
