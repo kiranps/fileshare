@@ -12,6 +12,28 @@ import {
   useWebDAVMkcol,
 } from "../hooks/useWebDAVPropfind";
 
+function basename(path: string): string {
+  return path.replace(/\/+$/, "").split("/").pop() ?? "";
+}
+
+function dirname(path: string): string {
+  const clean = path.replace(/\/+$/, "");
+  const parts = clean.split("/");
+  parts.pop();
+  return parts.join("/") || "/";
+}
+
+function normalizePath(path: string): string {
+  let result = path.replace(/\/+/g, "/");
+  result = result.startsWith("/") ? result : "/" + result;
+  if (result.length > 1 && result.endsWith("/")) result = result.slice(0, -1);
+  return result;
+}
+
+function joinPath(...parts: string[]): string {
+  return normalizePath(parts.join("/").replace(/\/+/g, "/"));
+}
+
 const SORTABLE_COLUMNS = ["name", "type", "size", "modified"] as const;
 type SortColumn = (typeof SORTABLE_COLUMNS)[number];
 type SortDirection = "asc" | "desc";
@@ -119,9 +141,6 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
     }
   };
 
-  function basename(path: string): string {
-    return path.split("/").filter(Boolean).pop() || "";
-  }
   const handleRightClick = (e: MouseEvent, file?: FileItemProps) => {
     e.preventDefault();
     e.stopPropagation();
@@ -131,14 +150,14 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
           const filename = basename(clipboard!.path);
           moveMutation.mutate({
             fromPath: clipboard!.path,
-            toPath: activePath + filename,
+            toPath: joinPath(activePath, filename),
           });
           break;
         }
         case "copy": {
           copyMutation.mutate({
             fromPath: clipboard!.path,
-            toPath: activePath,
+            toPath: normalizePath(activePath),
           });
           break;
         }
@@ -264,12 +283,7 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const handleModalSubmit = () => {
     if (!inputValue.trim()) return;
     if (modalType === "new_folder") {
-      let normalizedPath = activePath.endsWith("/")
-        ? activePath
-        : activePath + "/";
-      if (!normalizedPath.startsWith("/"))
-        normalizedPath = "/" + normalizedPath;
-      const newFolderPath = normalizedPath + inputValue.trim();
+      const newFolderPath = joinPath(activePath, inputValue.trim());
       mkdirMutation.mutate(newFolderPath, {
         onSuccess: () => {
           setModalType(null);
@@ -278,22 +292,7 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
       });
     } else if (modalType === "rename" && renameTarget) {
       const fromPath = renameTarget.id;
-      const isFolder = renameTarget.type === "Folder";
-      let cleanPath = fromPath;
-      if (isFolder && cleanPath.endsWith("/") && cleanPath.length > 1) {
-        cleanPath = cleanPath.slice(0, -1);
-      }
-      const lastSlash = cleanPath.lastIndexOf("/");
-      const parentDir =
-        lastSlash === 0 ? "/" : cleanPath.slice(0, lastSlash + 1);
-      let name = inputValue.trim();
-      if (!name || name.includes("/")) {
-        return;
-      }
-      console.log(parentDir);
-      let destPath = parentDir + name;
-      if (isFolder) destPath += "/";
-      console.log(destPath);
+      const destPath = joinPath(dirname(fromPath), inputValue.trim());
       moveMutation.mutate(
         {
           fromPath,

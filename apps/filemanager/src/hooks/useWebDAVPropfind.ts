@@ -65,12 +65,7 @@ export function useWebDAVCopy() {
       toPath: string;
       overwrite?: boolean;
     }) => {
-      let parts = fromPath.split("/").filter(Boolean);
-      const itemName = parts[parts.length - 1];
-      let normalizedTo = toPath.endsWith("/") ? toPath : toPath + "/";
-      if (!normalizedTo.startsWith("/")) normalizedTo = "/" + normalizedTo;
-      const destinationPath = normalizedTo + itemName;
-      return webdavCopy(fromPath, destinationPath, overwrite ?? false);
+      return webdavCopy(fromPath, toPath, overwrite ?? false);
     },
     onSuccess: (data, _variables) => {
       const toParts = data.to.split("/").filter(Boolean);

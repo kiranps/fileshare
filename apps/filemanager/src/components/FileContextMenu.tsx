@@ -116,16 +116,9 @@ export function openFileContextMenu({
 }: {
   x: number;
   y: number;
-  actions?: Array<{ label: string; value: string }>;
+  actions: Array<{ label: string; value: string; disabled?: boolean }>;
   onAction: (action: string) => void;
 }) {
-  const menuActions = actions || [
-    { label: "Cut", value: "cut" },
-    { label: "Copy", value: "copy" },
-    { label: "Paste", value: "paste" },
-    { label: "Delete", value: "delete" },
-  ];
-
   const div = document.createElement("div");
   document.body.appendChild(div);
 
@@ -139,7 +132,7 @@ export function openFileContextMenu({
     <FileContextMenu
       x={x}
       y={y}
-      actions={menuActions}
+      actions={actions}
       visible={true}
       onAction={(action) => {
         onAction(action);
