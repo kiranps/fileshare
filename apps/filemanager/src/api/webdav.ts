@@ -164,3 +164,40 @@ export async function webdavCopy(
     response,
   };
 }
+
+export type WebDAVMkcolResult = {
+  path: string;
+  ok: boolean;
+  status: number;
+  response: Response;
+};
+
+export async function webdavMkcol(
+  path: string,
+  options?: { signal?: AbortSignal },
+): Promise<WebDAVMkcolResult> {
+  const url = WEBDAV_HOST + path;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "MKCOL",
+      signal: options?.signal,
+      credentials: "include",
+    });
+  } catch (error: any) {
+    throw new Error(
+      `WebDAV MKCOL request failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  if (!(response.status === 201 || response.status === 200)) {
+    throw new Error(
+      `WebDAV MKCOL failed: ${response.status} ${response.statusText}`,
+    );
+  }
+  return {
+    path,
+    ok: response.status === 201 || response.status === 200,
+    status: response.status,
+    response,
+  };
+}

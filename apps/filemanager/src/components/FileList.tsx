@@ -9,6 +9,7 @@ import {
   useWebDAVDelete,
   useWebDAVMove,
   useWebDAVCopy,
+  useWebDAVMkcol,
 } from "../hooks/useWebDAVPropfind";
 
 const SORTABLE_COLUMNS = ["name", "type", "size", "modified"] as const;
@@ -33,6 +34,7 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const deleteMutation = useWebDAVDelete();
   const moveMutation = useWebDAVMove();
   const copyMutation = useWebDAVCopy();
+  const mkdirMutation = useWebDAVMkcol();
   const navigate = useNavigate();
 
   // cut
@@ -41,6 +43,10 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   // Sorting state
   const [sortColumn, setSortColumn] = useState<SortColumn>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  // New folder modal state
+  const [newFolderModalOpen, setNewFolderModalOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
 
   const handleDoubleClick = (file: FileItemProps) => {
     if (file.type === "Folder") {
@@ -51,56 +57,82 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const handleRightClick = (e: MouseEvent, file?: FileItemProps) => {
     e.preventDefault();
     e.stopPropagation();
+    if (file) {
+      const menuActions = clipboard
+        ? [{ label: "Paste", value: "paste" }]
+        : [
+            { label: "Cut", value: "cut" },
+            { label: "Copy", value: "copy" },
+            { label: "Delete", value: "delete" },
+          ];
 
-    const menuActions = clipboard
-      ? [{ label: "Paste", value: "paste" }]
-      : [
-          { label: "Cut", value: "cut" },
-          { label: "Copy", value: "copy" },
-          { label: "Delete", value: "delete" },
-        ];
-
-    openFileContextMenu({
-      x: e.clientX,
-      y: e.clientY,
-      actions: menuActions,
-      onAction: (action) => {
-        console.log(file);
-        switch (action) {
-          case "delete": {
-            deleteMutation.mutate(file!.id);
-            break;
-          }
-          case "cut": {
-            setClipboard({ path: file!.id, operation: "cut" });
-            break;
-          }
-          case "copy": {
-            setClipboard({ path: file!.id, operation: "copy" });
-            break;
-          }
-          case "paste": {
-            switch (clipboard?.operation) {
-              case "cut": {
-                moveMutation.mutate({
-                  fromPath: clipboard!.path,
-                  toPath: activePath,
-                });
-                break;
-              }
-              case "copy": {
-                copyMutation.mutate({
-                  fromPath: clipboard!.path,
-                  toPath: activePath,
-                });
-                break;
-              }
+      openFileContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        actions: menuActions,
+        onAction: (action) => {
+          switch (action) {
+            case "delete": {
+              deleteMutation.mutate(file!.id);
+              break;
             }
-            setClipboard(null);
+            case "cut": {
+              setClipboard({ path: file!.id, operation: "cut" });
+              break;
+            }
+            case "copy": {
+              setClipboard({ path: file!.id, operation: "copy" });
+              break;
+            }
+            case "paste": {
+              switch (clipboard?.operation) {
+                case "cut": {
+                  moveMutation.mutate({
+                    fromPath: clipboard!.path,
+                    toPath: activePath,
+                  });
+                  break;
+                }
+                case "copy": {
+                  copyMutation.mutate({
+                    fromPath: clipboard!.path,
+                    toPath: activePath,
+                  });
+                  break;
+                }
+              }
+              setClipboard(null);
+            }
           }
-        }
-      },
-    });
+        },
+      });
+    } else {
+      const menuActions = clipboard
+        ? [
+            { label: "New Folder", value: "new_folder" },
+            { label: "Paste", value: "paste" },
+          ]
+        : [
+            { label: "New Folder", value: "new_folder" },
+            { label: "Paste", value: "paste", disabled: true },
+            { label: "Cut", value: "cut" },
+            { label: "Copy", value: "copy" },
+          ];
+
+      openFileContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        actions: menuActions,
+        onAction: (action) => {
+          switch (action) {
+            case "new_folder": {
+              setNewFolderModalOpen(true);
+              break;
+            }
+          }
+        },
+      });
+    }
   };
 
   // Sorting handler
@@ -145,7 +177,28 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
     return 0;
   });
 
-  // Icon rendering
+  // Modal create handler
+  const handleCreateFolder = () => {
+    if (!newFolderName.trim()) return;
+    let normalizedPath = activePath.endsWith("/")
+      ? activePath
+      : activePath + "/";
+    if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+    const newFolderPath = normalizedPath + newFolderName;
+    mkdirMutation.mutate(newFolderPath, {
+      onSuccess: () => {
+        setNewFolderModalOpen(false);
+        setNewFolderName("");
+      },
+      onError: () => {},
+    });
+  };
+
+  // Modal close handler
+  const handleCloseModal = () => {
+    setNewFolderModalOpen(false);
+    setNewFolderName("");
+  };
 
   return (
     <div
@@ -200,6 +253,50 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
           )}
         </tbody>
       </table>
+      {newFolderModalOpen && (
+        <dialog className="modal" open>
+          <div className="modal-box">
+            <h3 className="font-bold text-lg mb-4">New Folder</h3>
+            <input
+              type="text"
+              className="input input-bordered w-full mb-4"
+              placeholder="folder name"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              autoFocus
+            />
+            {mkdirMutation.isPending && (
+              <div className="my-2 text-primary">Creating...</div>
+            )}
+            {mkdirMutation.isError && (
+              <div className="my-2 text-error">
+                Error: Failed to create folder
+              </div>
+            )}
+            <div className="modal-action">
+              <button
+                className="btn btn-primary"
+                onClick={handleCreateFolder}
+                disabled={mkdirMutation.isPending || !newFolderName.trim()}
+              >
+                Create
+              </button>
+              <button
+                className="btn"
+                onClick={handleCloseModal}
+                disabled={mkdirMutation.isPending}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <form
+            method="dialog"
+            className="modal-backdrop"
+            onClick={handleCloseModal}
+          />
+        </dialog>
+      )}
     </div>
   );
 };

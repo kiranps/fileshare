@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client"; // For mounting/unmounting progra
 interface FileContextMenuProps {
   x: number;
   y: number;
-  actions: Array<{ label: string; value: string }>;
+  actions: Array<{ label: string; value: string; disabled?: boolean }>;
   visible: boolean;
   onAction: (action: string) => void;
   onClose: () => void;
@@ -94,7 +94,9 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
         <button
           key={action.value}
           type="button"
-          className="menu-item px-4 py-2 w-full text-left hover:bg-base-200"
+          className={`menu-item px-4 py-2 w-full text-left hover:bg-base-200 ${
+            action.disabled && "pointer-events-none text-gray-400"
+          }`}
           onClick={() => onAction(action.value)}
         >
           {action.label}
