@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { webdavPropfind, webdavDelete } from "../api/webdavPropfind";
+import { webdavPropfind, webdavDelete } from "../api/webdav";
 
 export function useWebDAVPropfind(path: string) {
   return useQuery({
