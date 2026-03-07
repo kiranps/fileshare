@@ -21,11 +21,77 @@ type ClipboardState = {
   operation: "cut" | "copy";
 } | null;
 
+type InputModalProps = {
+  open: boolean;
+  title: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  submitLabel?: string;
+  isLoading?: boolean;
+  isError?: boolean;
+  errorText?: string;
+};
+
 const SortIcon = () => (
   <span className="ml-2 align-middle inline-block text-sm text-base-content/60">
     <ArrowDownUp size={16} className="inline" />
   </span>
 );
+
+const InputModal: React.FC<InputModalProps> = ({
+  open,
+  title,
+  label,
+  placeholder,
+  value,
+  onChange,
+  onSubmit,
+  onCancel,
+  submitLabel = "Create",
+  isLoading,
+  isError,
+  errorText,
+}) =>
+  open ? (
+    <dialog className="modal" open>
+      <div className="modal-box">
+        <h3 className="font-bold text-lg mb-4">{title}</h3>
+        <label className="form-control w-full mb-4">
+          <span className="label-text mb-1">{label}</span>
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            placeholder={placeholder}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            autoFocus
+            disabled={isLoading}
+          />
+        </label>
+        {isLoading && <div className="my-2 text-primary">Please wait...</div>}
+        {isError && (
+          <div className="my-2 text-error">{errorText || "Error occurred"}</div>
+        )}
+        <div className="modal-action">
+          <button
+            className="btn btn-primary"
+            onClick={onSubmit}
+            disabled={isLoading || !value.trim()}
+          >
+            {submitLabel}
+          </button>
+          <button className="btn" onClick={onCancel} disabled={isLoading}>
+            Cancel
+          </button>
+        </div>
+      </div>
+      <form method="dialog" className="modal-backdrop" onClick={onCancel} />
+    </dialog>
+  ) : null;
 
 export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const selectedId = useFileManagerStore((s) => s.selectedId);
@@ -37,16 +103,15 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const mkdirMutation = useWebDAVMkcol();
   const navigate = useNavigate();
 
-  // cut
   const [clipboard, setClipboard] = useState<ClipboardState>(null);
-
-  // Sorting state
   const [sortColumn, setSortColumn] = useState<SortColumn>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
-  // New folder modal state
-  const [newFolderModalOpen, setNewFolderModalOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
+  const [modalType, setModalType] = useState<null | "new_folder" | "rename">(
+    null,
+  );
+  const [inputValue, setInputValue] = useState("");
+  const [renameTarget, setRenameTarget] = useState<FileItemProps | null>(null);
 
   const handleDoubleClick = (file: FileItemProps) => {
     if (file.type === "Folder") {
@@ -54,16 +119,19 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
     }
   };
 
+  function basename(path: string): string {
+    return path.split("/").filter(Boolean).pop() || "";
+  }
   const handleRightClick = (e: MouseEvent, file?: FileItemProps) => {
     e.preventDefault();
     e.stopPropagation();
-
     const handlePaste = () => {
       switch (clipboard?.operation) {
         case "cut": {
+          const filename = basename(clipboard!.path);
           moveMutation.mutate({
             fromPath: clipboard!.path,
-            toPath: activePath,
+            toPath: activePath + filename,
           });
           break;
         }
@@ -88,13 +156,18 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
             { label: "Copy", value: "copy" },
             { label: "Delete", value: "delete" },
           ];
-
       openFileContextMenu({
         x: e.clientX,
         y: e.clientY,
         actions: menuActions,
         onAction: (action) => {
           switch (action) {
+            case "rename": {
+              setRenameTarget(file);
+              setInputValue(file.name || "");
+              setModalType("rename");
+              break;
+            }
             case "delete": {
               deleteMutation.mutate(file!.id);
               break;
@@ -126,7 +199,6 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
             { label: "Select All", value: "select_all" },
             { label: "Properties", value: "properties" },
           ];
-
       openFileContextMenu({
         x: e.clientX,
         y: e.clientY,
@@ -134,7 +206,8 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
         onAction: (action) => {
           switch (action) {
             case "new_folder": {
-              setNewFolderModalOpen(true);
+              setModalType("new_folder");
+              setInputValue("");
               break;
             }
             case "paste": {
@@ -147,7 +220,6 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
     }
   };
 
-  // Sorting handler
   const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -166,7 +238,6 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
         valB = b.name.toLowerCase();
         break;
       case "size":
-        // Size may be undefined or string; treat undefined as smallest
         valA = a.size ? parseInt(a.size, 10) : 0;
         valB = b.size ? parseInt(b.size, 10) : 0;
         break;
@@ -189,28 +260,71 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
     return 0;
   });
 
-  // Modal create handler
-  const handleCreateFolder = () => {
-    if (!newFolderName.trim()) return;
-    let normalizedPath = activePath.endsWith("/")
-      ? activePath
-      : activePath + "/";
-    if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
-    const newFolderPath = normalizedPath + newFolderName;
-    mkdirMutation.mutate(newFolderPath, {
-      onSuccess: () => {
-        setNewFolderModalOpen(false);
-        setNewFolderName("");
-      },
-      onError: () => {},
-    });
+  // Modal submit handler
+  const handleModalSubmit = () => {
+    if (!inputValue.trim()) return;
+    if (modalType === "new_folder") {
+      let normalizedPath = activePath.endsWith("/")
+        ? activePath
+        : activePath + "/";
+      if (!normalizedPath.startsWith("/"))
+        normalizedPath = "/" + normalizedPath;
+      const newFolderPath = normalizedPath + inputValue.trim();
+      mkdirMutation.mutate(newFolderPath, {
+        onSuccess: () => {
+          setModalType(null);
+          setInputValue("");
+        },
+      });
+    } else if (modalType === "rename" && renameTarget) {
+      const fromPath = renameTarget.id;
+      const isFolder = renameTarget.type === "Folder";
+      let cleanPath = fromPath;
+      if (isFolder && cleanPath.endsWith("/") && cleanPath.length > 1) {
+        cleanPath = cleanPath.slice(0, -1);
+      }
+      const lastSlash = cleanPath.lastIndexOf("/");
+      const parentDir =
+        lastSlash === 0 ? "/" : cleanPath.slice(0, lastSlash + 1);
+      let name = inputValue.trim();
+      if (!name || name.includes("/")) {
+        return;
+      }
+      console.log(parentDir);
+      let destPath = parentDir + name;
+      if (isFolder) destPath += "/";
+      console.log(destPath);
+      moveMutation.mutate(
+        {
+          fromPath,
+          toPath: destPath,
+          overwrite: true,
+        },
+        {
+          onSuccess: () => {
+            setModalType(null);
+            setInputValue("");
+            setRenameTarget(null);
+          },
+        },
+      );
+    }
   };
 
-  // Modal close handler
   const handleCloseModal = () => {
-    setNewFolderModalOpen(false);
-    setNewFolderName("");
+    setModalType(null);
+    setInputValue("");
+    setRenameTarget(null);
   };
+
+  const isModalOpen = modalType !== null;
+  const isLoading =
+    modalType === "rename" ? moveMutation.isPending : mkdirMutation.isPending;
+  const isError =
+    modalType === "rename" ? moveMutation.isError : mkdirMutation.isError;
+  const errorText = (
+    modalType === "rename" ? moveMutation.error : mkdirMutation.error
+  )?.message;
 
   return (
     <div
@@ -265,50 +379,26 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
           )}
         </tbody>
       </table>
-      {newFolderModalOpen && (
-        <dialog className="modal" open>
-          <div className="modal-box">
-            <h3 className="font-bold text-lg mb-4">New Folder</h3>
-            <input
-              type="text"
-              className="input input-bordered w-full mb-4"
-              placeholder="folder name"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              autoFocus
-            />
-            {mkdirMutation.isPending && (
-              <div className="my-2 text-primary">Creating...</div>
-            )}
-            {mkdirMutation.isError && (
-              <div className="my-2 text-error">
-                Error: Failed to create folder
-              </div>
-            )}
-            <div className="modal-action">
-              <button
-                className="btn btn-primary"
-                onClick={handleCreateFolder}
-                disabled={mkdirMutation.isPending || !newFolderName.trim()}
-              >
-                Create
-              </button>
-              <button
-                className="btn"
-                onClick={handleCloseModal}
-                disabled={mkdirMutation.isPending}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-          <form
-            method="dialog"
-            className="modal-backdrop"
-            onClick={handleCloseModal}
-          />
-        </dialog>
-      )}
+
+      {/* Modal for New Folder or Rename, daisyUI style */}
+      <InputModal
+        open={isModalOpen}
+        title={modalType === "rename" ? "Rename" : "New Folder"}
+        label={modalType === "rename" ? "New name" : "Folder name"}
+        placeholder={
+          modalType === "rename" && renameTarget
+            ? renameTarget.name
+            : "folder name"
+        }
+        value={inputValue}
+        onChange={setInputValue}
+        onSubmit={handleModalSubmit}
+        onCancel={handleCloseModal}
+        submitLabel={modalType === "rename" ? "Rename" : "Create"}
+        isLoading={isLoading}
+        isError={isError}
+        errorText={errorText}
+      />
     </div>
   );
 };

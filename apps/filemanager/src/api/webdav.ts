@@ -90,7 +90,7 @@ export async function webdavMove(
   options?: { signal?: AbortSignal },
 ): Promise<WebDAVMoveResult> {
   const url = WEBDAV_HOST + fromPath;
-  const destinationUrl = WEBDAV_HOST + toPath;
+  const destinationUrl = toPath;
 
   const headers: Record<string, string> = {
     Destination: destinationUrl,
