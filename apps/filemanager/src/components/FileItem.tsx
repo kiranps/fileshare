@@ -24,7 +24,7 @@ export const FileItem: React.FC<
   <tr
     tabIndex={0}
     aria-selected={selected}
-    className={`cursor-pointer outline-none ${selected ? "bg-primary text-primary-content shadow" : "hover:bg-base-100"}`}
+    className={`cursor-pointer outline-none ${selected ? "bg-primary text-primary-content hove:none" : "hover:bg-base-200"}`}
     onClick={onClick}
     onDoubleClick={onDoubleClick}
     onContextMenu={onRightClick}

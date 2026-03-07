@@ -57,10 +57,33 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const handleRightClick = (e: MouseEvent, file?: FileItemProps) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const handlePaste = () => {
+      switch (clipboard?.operation) {
+        case "cut": {
+          moveMutation.mutate({
+            fromPath: clipboard!.path,
+            toPath: activePath,
+          });
+          break;
+        }
+        case "copy": {
+          copyMutation.mutate({
+            fromPath: clipboard!.path,
+            toPath: activePath,
+          });
+          break;
+        }
+      }
+      setClipboard(null);
+    };
+
     if (file) {
       const menuActions = clipboard
         ? [{ label: "Paste", value: "paste" }]
         : [
+            { label: "Rename", value: "rename" },
+            { label: "Download", value: "download" },
             { label: "Cut", value: "cut" },
             { label: "Copy", value: "copy" },
             { label: "Delete", value: "delete" },
@@ -85,23 +108,8 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
               break;
             }
             case "paste": {
-              switch (clipboard?.operation) {
-                case "cut": {
-                  moveMutation.mutate({
-                    fromPath: clipboard!.path,
-                    toPath: activePath,
-                  });
-                  break;
-                }
-                case "copy": {
-                  copyMutation.mutate({
-                    fromPath: clipboard!.path,
-                    toPath: activePath,
-                  });
-                  break;
-                }
-              }
-              setClipboard(null);
+              handlePaste();
+              break;
             }
           }
         },
@@ -114,9 +122,9 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
           ]
         : [
             { label: "New Folder", value: "new_folder" },
-            { label: "Paste", value: "paste", disabled: true },
-            { label: "Cut", value: "cut" },
-            { label: "Copy", value: "copy" },
+            { label: "Upload", value: "cut" },
+            { label: "Select All", value: "select_all" },
+            { label: "Properties", value: "properties" },
           ];
 
       openFileContextMenu({
@@ -127,6 +135,10 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
           switch (action) {
             case "new_folder": {
               setNewFolderModalOpen(true);
+              break;
+            }
+            case "paste": {
+              handlePaste();
               break;
             }
           }

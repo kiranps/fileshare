@@ -86,7 +86,7 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
         zIndex: 5000,
         minWidth: 140,
       }}
-      className="menu bg-base-100 border border-base-300 shadow fixed"
+      className="menu bg-base-100 px-0 border border-base-300 shadow fixed"
       aria-label="File context menu"
       tabIndex={0}
     >
