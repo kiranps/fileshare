@@ -2,6 +2,7 @@ use super::helpers::*;
 use super::middleware::{auth_middleware, log_response_body, prefix_middleware};
 use axum::body::Body;
 use axum::http::StatusCode;
+use axum::http::header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE};
 use axum::http::{HeaderName, Method, Request, Uri, header};
 use axum::response::Response;
 use axum::{Router, middleware, routing::any};
@@ -12,12 +13,14 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::{error, info};
+use url::form_urlencoded;
 
 pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router {
     let propfind = Method::from_bytes(b"PROPFIND").unwrap();
     let move_file = Method::from_bytes(b"MOVE").unwrap();
     let copy_file = Method::from_bytes(b"COPY").unwrap();
     let make_dir = Method::from_bytes(b"MKCOL").unwrap();
+    let download = Method::from_bytes(b"DOWNLOAD").unwrap();
     let depth = HeaderName::from_static("depth");
     let destination = HeaderName::from_static("destination");
     let overwrite = HeaderName::from_static("overwrite");
@@ -34,6 +37,7 @@ pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router 
                     copy_file,
                     move_file,
                     make_dir,
+                    download,
                     Method::DELETE,
                     Method::GET,
                 ])
@@ -90,9 +94,21 @@ fn options_response() -> Response<Body> {
         .unwrap()
 }
 
+fn has_download(uri: &Uri) -> bool {
+    uri.query()
+        .map(|q| form_urlencoded::parse(q.as_bytes()).any(|(k, v)| k == "download" && v == "true"))
+        .unwrap_or(false)
+}
+
 async fn serve_file(req: Request<Body>) -> Response<Body> {
     match file_metadata(req.uri()).await {
-        Ok((path, meta)) if meta.is_file() => read_file(req.uri()).await,
+        Ok((path, meta)) if meta.is_file() => {
+            if has_download(req.uri()) {
+                download_file(req.uri()).await
+            } else {
+                read_file(req.uri()).await
+            }
+        }
         Ok(_) => forbidden("Cannot GET a directory"),
         Err(e) => e,
     }
@@ -119,6 +135,33 @@ async fn read_file(uri: &Uri) -> Response<Body> {
     Response::builder()
         .status(StatusCode::OK)
         .header("Content-Length", buf.len())
+        .body(Body::from(buf))
+        .unwrap()
+}
+
+async fn download_file(uri: &Uri) -> Response<Body> {
+    let path = resolve_path(uri);
+    let mut file = tokio::fs::File::open(&path)
+        .await
+        .map_err(|_| not_found())
+        .unwrap();
+    let mut buf = Vec::new();
+    if file.read_to_end(&mut buf).await.is_err() {
+        return server_error();
+    }
+    let filename = path
+        .file_name()
+        .and_then(|f| f.to_str())
+        .unwrap_or("download");
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, "application/octet-stream")
+        .header(CONTENT_LENGTH, buf.len().to_string())
+        .header(
+            CONTENT_DISPOSITION,
+            format!("attachment; filename=\"{}\"", filename),
+        )
         .body(Body::from(buf))
         .unwrap()
 }
