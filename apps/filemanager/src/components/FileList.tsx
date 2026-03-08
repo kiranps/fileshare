@@ -10,8 +10,9 @@ import {
   useWebDAVMove,
   useWebDAVCopy,
   useWebDAVMkcol,
-  useWebDAVGet,
 } from "../hooks/useWebDAVPropfind";
+
+import { downloadFile } from "../api/webdav";
 
 function basename(path: string): string {
   return path.replace(/\/+$/, "").split("/").pop() ?? "";
@@ -135,25 +136,6 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const [inputValue, setInputValue] = useState("");
   const [renameTarget, setRenameTarget] = useState<FileItemProps | null>(null);
 
-  // --- File download integration ---
-  const [downloadTarget, setDownloadTarget] = useState<{
-    path: string;
-    name: string;
-  } | null>(null);
-
-  const downloadQuery = useWebDAVGet(
-    downloadTarget?.path || "",
-    downloadTarget?.name || "",
-    undefined,
-  );
-
-  React.useEffect(() => {
-    if (downloadTarget && (downloadQuery.isSuccess || downloadQuery.isError)) {
-      setDownloadTarget(null);
-    }
-  }, [downloadTarget, downloadQuery.isSuccess, downloadQuery.isError]);
-  // --- End file download integration ---
-
   const handleDoubleClick = (file: FileItemProps) => {
     if (file.type === "Folder") {
       navigate(file.id);
@@ -219,7 +201,7 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
               break;
             }
             case "download": {
-              setDownloadTarget({ path: file!.id, name: file!.name });
+              downloadFile(file.id);
               break;
             }
             case "paste": {

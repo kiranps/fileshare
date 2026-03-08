@@ -15,8 +15,8 @@ const icons = {
 export function filesFromWebDAV(
   data: Array<{
     href: string;
-    displayName?: string;
-    contentType?: string;
+    displayName: string;
+    contentType: string;
     contentLength?: number;
     isCollection: boolean;
     lastModified: Date;
