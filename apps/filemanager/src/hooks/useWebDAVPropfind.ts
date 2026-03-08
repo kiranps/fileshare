@@ -5,6 +5,7 @@ import {
   webdavMove,
   webdavCopy,
   webdavMkcol,
+  webdavGet,
 } from "../api/webdav";
 
 export function useWebDAVPropfind(path: string) {
@@ -92,4 +93,45 @@ export function useWebDAVMkcol() {
       queryClient.invalidateQueries({ queryKey: ["files", parentPath] });
     },
   });
+}
+
+import { useEffect } from "react";
+
+/**
+ * useWebDAVGet - Triggers file download (Blob) as soon as fetched.
+ * Does not return file data, only query state.
+ *
+ * @param path WebDAV file path
+ * @param filename filename for download (eg. "file.txt")
+ * @param options Optional { signal?: AbortSignal }
+ * @returns { isLoading, error, isError, isSuccess, ... } (no data)
+ */
+export function useWebDAVGet(
+  path: string,
+  filename: string,
+  options?: { signal?: AbortSignal }
+) {
+  const query = useQuery({
+    queryKey: ["file-download", path],
+    queryFn: () => webdavGet(path, options),
+    enabled: !!path, // only trigger if path provided
+  });
+
+  useEffect(() => {
+    if (query.isSuccess && query.data && query.data.blob) {
+      const blob = query.data.blob;
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename || "download";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    }
+  }, [query.isSuccess, query.data, filename]);
+
+  // Only expose query state, hide data
+  const { data, ...rest } = query;
+  return rest;
 }

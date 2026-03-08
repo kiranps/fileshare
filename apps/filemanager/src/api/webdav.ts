@@ -1,6 +1,32 @@
 // src/api/webdavPropfind.ts
 import { parseWebDAVPropfindResponse } from "../utils/webdav";
 
+export async function webdavGet(
+  path: string,
+  options?: { signal?: AbortSignal },
+): Promise<{ blob: Blob; response: Response }> {
+  const url = WEBDAV_HOST + path;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "GET",
+      signal: options?.signal,
+      credentials: "include",
+    });
+  } catch (error: any) {
+    throw new Error(
+      `WebDAV GET request failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  if (!response.ok) {
+    throw new Error(
+      `WebDAV GET failed: ${response.status} ${response.statusText}`,
+    );
+  }
+  const blob = await response.blob();
+  return { blob, response };
+}
+
 const WEBDAV_HOST = "http://192.168.29.216:8080";
 const WEBDAV_DEPTH = "1";
 

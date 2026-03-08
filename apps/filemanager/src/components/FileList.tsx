@@ -10,6 +10,7 @@ import {
   useWebDAVMove,
   useWebDAVCopy,
   useWebDAVMkcol,
+  useWebDAVGet,
 } from "../hooks/useWebDAVPropfind";
 
 function basename(path: string): string {
@@ -34,8 +35,7 @@ function joinPath(...parts: string[]): string {
   return normalizePath(parts.join("/").replace(/\/+/g, "/"));
 }
 
-const SORTABLE_COLUMNS = ["name", "type", "size", "modified"] as const;
-type SortColumn = (typeof SORTABLE_COLUMNS)[number];
+type SortColumn = "name" | "type" | "size" | "modified";
 type SortDirection = "asc" | "desc";
 type MouseEvent = React.MouseEvent;
 type ClipboardState = {
@@ -135,6 +135,25 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const [inputValue, setInputValue] = useState("");
   const [renameTarget, setRenameTarget] = useState<FileItemProps | null>(null);
 
+  // --- File download integration ---
+  const [downloadTarget, setDownloadTarget] = useState<{
+    path: string;
+    name: string;
+  } | null>(null);
+
+  const downloadQuery = useWebDAVGet(
+    downloadTarget?.path || "",
+    downloadTarget?.name || "",
+    undefined,
+  );
+
+  React.useEffect(() => {
+    if (downloadTarget && (downloadQuery.isSuccess || downloadQuery.isError)) {
+      setDownloadTarget(null);
+    }
+  }, [downloadTarget, downloadQuery.isSuccess, downloadQuery.isError]);
+  // --- End file download integration ---
+
   const handleDoubleClick = (file: FileItemProps) => {
     if (file.type === "Folder") {
       navigate(file.id);
@@ -197,6 +216,10 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
             }
             case "copy": {
               setClipboard({ path: file!.id, operation: "copy" });
+              break;
+            }
+            case "download": {
+              setDownloadTarget({ path: file!.id, name: file!.name });
               break;
             }
             case "paste": {
