@@ -4,7 +4,7 @@ import type { FileItemProps } from "../types/FileItemProps";
 
 export const FileItem: React.FC<
   FileItemProps & {
-    onClick?: () => void;
+    onClick?: (e: React.MouseEvent<HTMLTableRowElement, MouseEvent>) => void;
     onDoubleClick?: () => void;
     onRightClick?: (
       e: React.MouseEvent<HTMLTableRowElement, MouseEvent>,
@@ -12,7 +12,6 @@ export const FileItem: React.FC<
   }
 > = ({
   name,
-  type,
   size,
   modified,
   icon,
@@ -23,7 +22,6 @@ export const FileItem: React.FC<
 }) => (
   <tr
     tabIndex={0}
-    aria-selected={selected}
     className={`cursor-pointer outline-none ${selected ? "bg-primary text-primary-content hove:none" : "hover:bg-base-200"}`}
     onClick={onClick}
     onDoubleClick={onDoubleClick}

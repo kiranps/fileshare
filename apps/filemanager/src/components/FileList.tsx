@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { FileItemProps } from "../types/FileItemProps";
 import { FileItem } from "./FileItem";
 import { openFileContextMenu } from "./FileContextMenu";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 import { useNavigate } from "react-router-dom";
 import { ArrowDownUp } from "lucide-react";
+import InputModal from "./FileListModal";
 import {
   useWebDAVDelete,
   useWebDAVMove,
@@ -17,7 +18,6 @@ import { downloadFile } from "../api/webdav";
 import {
   basename,
   dirname,
-  normalizePath,
   joinPath,
   openFilePicker,
   openFolderPicker,
@@ -32,81 +32,15 @@ type ClipboardState = {
   operation: "cut" | "copy";
 } | null;
 
-type InputModalProps = {
-  open: boolean;
-  title: string;
-  label: string;
-  placeholder: string;
-  value: string;
-  onChange: (v: string) => void;
-  onSubmit: () => void;
-  onCancel: () => void;
-  submitLabel?: string;
-  isLoading?: boolean;
-  isError?: boolean;
-  errorText?: string;
-};
-
 const SortIcon = () => (
   <span className="ml-2 align-middle inline-block text-sm text-base-content/60">
     <ArrowDownUp size={16} className="inline" />
   </span>
 );
 
-const InputModal: React.FC<InputModalProps> = ({
-  open,
-  title,
-  label,
-  placeholder,
-  value,
-  onChange,
-  onSubmit,
-  onCancel,
-  submitLabel = "Create",
-  isLoading,
-  isError,
-  errorText,
-}) =>
-  open ? (
-    <dialog className="modal" open>
-      <div className="modal-box">
-        <h3 className="font-bold text-lg mb-4">{title}</h3>
-        <label className="form-control w-full mb-4">
-          <span className="label-text mb-1">{label}</span>
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            placeholder={placeholder}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            autoFocus
-            disabled={isLoading}
-          />
-        </label>
-        {isLoading && <div className="my-2 text-primary">Please wait...</div>}
-        {isError && (
-          <div className="my-2 text-error">{errorText || "Error occurred"}</div>
-        )}
-        <div className="modal-action">
-          <button
-            className="btn btn-primary"
-            onClick={onSubmit}
-            disabled={isLoading || !value.trim()}
-          >
-            {submitLabel}
-          </button>
-          <button className="btn" onClick={onCancel} disabled={isLoading}>
-            Cancel
-          </button>
-        </div>
-      </div>
-      <form method="dialog" className="modal-backdrop" onClick={onCancel} />
-    </dialog>
-  ) : null;
-
 export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
-  const selectedId = useFileManagerStore((s) => s.selectedId);
-  const setSelectedId = useFileManagerStore((s) => s.setSelectedId);
+  // selectionClipboard is local to the FileList component
+  const [selectionClipboard, setSelectionClipboard] = useState<string[]>([]);
   const activePath = useFileManagerStore((s) => s.activePath);
   const deleteMutation = useWebDAVDelete();
   const moveMutation = useWebDAVMove();
@@ -115,7 +49,7 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const putMutation = useWebDAVPut();
   const navigate = useNavigate();
 
-  const [clipboard, setClipboard] = useState<ClipboardState>(null);
+  const [clipboard, setClipboard] = useState<string[]>([]);
   const [sortColumn, setSortColumn] = useState<SortColumn>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
@@ -124,6 +58,15 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   );
   const [inputValue, setInputValue] = useState("");
   const [renameTarget, setRenameTarget] = useState<FileItemProps | null>(null);
+  const [activeAction, setActiveAction] = useState<"cut" | "copy" | null>(null);
+
+  useEffect(() => {
+    const handleClick = () => setSelectionClipboard([]);
+    document.addEventListener("click", handleClick);
+    return () => {
+      document.removeEventListener("click", handleClick);
+    };
+  }, []);
 
   const handleDoubleClick = (file: FileItemProps) => {
     if (file.type === "Folder") {
@@ -135,37 +78,47 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
     e.preventDefault();
     e.stopPropagation();
     const handlePaste = () => {
-      switch (clipboard?.operation) {
+      switch (activeAction) {
         case "cut": {
-          const filename = basename(clipboard!.path);
-          moveMutation.mutate({
-            fromPath: clipboard!.path,
-            toPath: joinPath(activePath, filename),
+          console.log(clipboard);
+          clipboard.forEach((p) => {
+            const filename = basename(p);
+            moveMutation.mutate({
+              fromPath: p,
+              toPath: joinPath(activePath, filename),
+            });
           });
           break;
         }
         case "copy": {
-          copyMutation.mutate({
-            fromPath: clipboard!.path,
-            toPath: normalizePath(activePath),
+          clipboard.forEach((p) => {
+            const filename = basename(p);
+            copyMutation.mutate({
+              fromPath: p,
+              toPath: joinPath(activePath, filename),
+            });
           });
           break;
         }
       }
-      setClipboard(null);
+      setClipboard([]);
     };
 
     if (file) {
-      setSelectedId(file.id);
-      const menuActions = clipboard
-        ? [{ label: "Paste", value: "paste" }]
-        : [
-            { label: "Rename", value: "rename" },
-            { label: "Download", value: "download" },
-            { label: "Cut", value: "cut" },
-            { label: "Copy", value: "copy" },
-            { label: "Delete", value: "delete" },
-          ];
+      // when right-clicking a file, make it the only selection
+      if (!selectionClipboard.includes(file.id)) {
+        setSelectionClipboard([file.id]);
+      }
+      const menuActions =
+        clipboard.length > 0
+          ? [{ label: "Paste", value: "paste" }]
+          : [
+              { label: "Rename", value: "rename" },
+              { label: "Download", value: "download" },
+              { label: "Cut", value: "cut" },
+              { label: "Copy", value: "copy" },
+              { label: "Delete", value: "delete" },
+            ];
       openFileContextMenu({
         x: e.clientX,
         y: e.clientY,
@@ -183,11 +136,13 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
               break;
             }
             case "cut": {
-              setClipboard({ path: file!.id, operation: "cut" });
+              setClipboard(selectionClipboard);
+              setActiveAction("cut");
               break;
             }
             case "copy": {
-              setClipboard({ path: file!.id, operation: "copy" });
+              setClipboard(selectionClipboard);
+              setActiveAction("copy");
               break;
             }
             case "download": {
@@ -202,18 +157,19 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
         },
       });
     } else {
-      const menuActions = clipboard
-        ? [
-            { label: "New Folder", value: "new_folder" },
-            { label: "Paste", value: "paste" },
-          ]
-        : [
-            { label: "New Folder", value: "new_folder" },
-            { label: "File Upload", value: "file_upload" },
-            { label: "Folder Upload", value: "folder_upload" },
-            { label: "Select All", value: "select_all" },
-            { label: "Properties", value: "properties" },
-          ];
+      const menuActions =
+        clipboard.length > 0
+          ? [
+              { label: "New Folder", value: "new_folder" },
+              { label: "Paste", value: "paste" },
+            ]
+          : [
+              { label: "New Folder", value: "new_folder" },
+              { label: "File Upload", value: "file_upload" },
+              { label: "Folder Upload", value: "folder_upload" },
+              { label: "Select All", value: "select_all" },
+              { label: "Properties", value: "properties" },
+            ];
       openFileContextMenu({
         x: e.clientX,
         y: e.clientY,
@@ -337,6 +293,27 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
     }
   };
 
+  const handleItemClick = (e: MouseEvent, file: FileItemProps) => {
+    e.stopPropagation();
+    const isCtrl = e.ctrlKey;
+    const current = selectionClipboard ?? [];
+    if (isCtrl) {
+      // toggle presence
+      if (current.includes(file.id)) {
+        setSelectionClipboard(current.filter((id) => id !== file.id));
+      } else {
+        setSelectionClipboard([...current, file.id]);
+      }
+    } else {
+      // without ctrl: if already sole selected, clear; otherwise select only this
+      if (current.length === 1 && current[0] === file.id) {
+        setSelectionClipboard([]);
+      } else {
+        setSelectionClipboard([file.id]);
+      }
+    }
+  };
+
   const handleCloseModal = () => {
     setModalType(null);
     setInputValue("");
@@ -356,6 +333,12 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
     <div
       className="fixed h-full left-56 right-0 top-14 bottom-0 pb-20 overflow-auto"
       onContextMenu={(e) => handleRightClick(e)}
+      onClick={(e) => {
+        // clicking outside of items clears multi-selection when ctrl isn't pressed
+        if (!(e as MouseEvent).ctrlKey) {
+          setSelectionClipboard([]);
+        }
+      }}
     >
       <table className="table text-sm">
         <thead className="sticky top-0 z-20 bg-white">
@@ -396,8 +379,8 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
               <FileItem
                 key={file.id}
                 {...file}
-                selected={selectedId === file.id}
-                onClick={() => setSelectedId(file.id)}
+                selected={selectionClipboard.includes(file.id)}
+                onClick={(e) => handleItemClick(e, file)}
                 onDoubleClick={() => handleDoubleClick(file)}
                 onRightClick={(e) => handleRightClick(e, file)}
               />

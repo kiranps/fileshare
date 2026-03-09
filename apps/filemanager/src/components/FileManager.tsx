@@ -7,14 +7,14 @@ import { filesFromWebDAV } from "../utils/webdav_files";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 
 export const FileManager: React.FC = () => {
-  const { activePath, selectedId, setSelectedId } = useFileManagerStore();
+  const { activePath } = useFileManagerStore();
 
-  const handleItemClick = (id: string) => setSelectedId(id);
+  // FileManager no longer manages selection; FileList manages selection locally via useState
+  const handleItemClick = (id: string) => {};
   const { data, isLoading, error } = useWebDAVPropfind(activePath);
 
-  const webdavFiles = data
-    ? filesFromWebDAV(data, selectedId, handleItemClick).files
-    : [];
+  // pass an empty array for selected ids; FileList will manage selection locally
+  const webdavFiles = data ? filesFromWebDAV(data, [], () => {}).files : [];
 
   const files = webdavFiles.filter((x) => !x.name.startsWith("."));
 

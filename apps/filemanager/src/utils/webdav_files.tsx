@@ -22,7 +22,7 @@ export function filesFromWebDAV(
     lastModified: Date;
     raw: unknown;
   }>,
-  selectedId: string | null,
+  selectedIds: string[],
   handleItemClick: (id: string) => void,
   handleItemDoubleClick?: (id: string) => void,
 ): { activeDirectory: FileItemProps; files: FileItemProps[] } {
@@ -84,7 +84,7 @@ export function filesFromWebDAV(
           entry.contentType || type.toLowerCase(),
           entry.isCollection,
         ),
-        selected: entry.href === selectedId,
+        selected: selectedIds ? selectedIds.includes(entry.href) : false,
         onClick: () => handleItemClick(entry.href),
         onDoubleClick:
           entry.isCollection && typeof handleItemDoubleClick === "function"
