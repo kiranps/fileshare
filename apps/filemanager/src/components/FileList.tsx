@@ -27,10 +27,7 @@ import {
 type SortColumn = "name" | "type" | "size" | "modified";
 type SortDirection = "asc" | "desc";
 type MouseEvent = React.MouseEvent;
-type ClipboardState = {
-  path: string;
-  operation: "cut" | "copy";
-} | null;
+// clipboard state for cut/copy operations is used only for copy/cut/paste
 
 const SortIcon = () => (
   <span className="ml-2 align-middle inline-block text-sm text-base-content/60">
@@ -42,6 +39,7 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   // selectionClipboard is local to the FileList component
   const [selectionClipboard, setSelectionClipboard] = useState<string[]>([]);
   const activePath = useFileManagerStore((s) => s.activePath);
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
   const deleteMutation = useWebDAVDelete();
   const moveMutation = useWebDAVMove();
   const copyMutation = useWebDAVCopy();
@@ -296,7 +294,28 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const handleItemClick = (e: MouseEvent, file: FileItemProps) => {
     e.stopPropagation();
     const isCtrl = e.ctrlKey;
-    const current = selectionClipboard ?? [];
+    const isShift = e.shiftKey;
+    const current = selectionClipboard;
+    const index = sortedFiles.findIndex((f) => f.id === file.id);
+
+    if (isShift) {
+      // range selection from lastClickedIndex (or first selected) to this index
+      let anchor = lastClickedIndex;
+      if (anchor === null) {
+        const firstSelected = sortedFiles.findIndex((f) =>
+          current.includes(f.id),
+        );
+        anchor = firstSelected !== -1 ? firstSelected : index;
+      }
+      const start = Math.min(anchor, index);
+      const end = Math.max(anchor, index);
+      const idsInRange = sortedFiles.slice(start, end + 1).map((f) => f.id);
+      // replace selection with the range
+      setSelectionClipboard(idsInRange);
+      setLastClickedIndex(index);
+      return;
+    }
+
     if (isCtrl) {
       // toggle presence
       if (current.includes(file.id)) {
@@ -304,13 +323,17 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
       } else {
         setSelectionClipboard([...current, file.id]);
       }
+      setLastClickedIndex(index);
+      return;
+    }
+
+    // neither ctrl nor shift: replace selection with this item or clear if already sole
+    if (current.length === 1 && current[0] === file.id) {
+      setSelectionClipboard([]);
+      setLastClickedIndex(null);
     } else {
-      // without ctrl: if already sole selected, clear; otherwise select only this
-      if (current.length === 1 && current[0] === file.id) {
-        setSelectionClipboard([]);
-      } else {
-        setSelectionClipboard([file.id]);
-      }
+      setSelectionClipboard([file.id]);
+      setLastClickedIndex(index);
     }
   };
 
