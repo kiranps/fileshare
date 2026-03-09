@@ -156,6 +156,7 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
     };
 
     if (file) {
+      setSelectedId(file.id);
       const menuActions = clipboard
         ? [{ label: "Paste", value: "paste" }]
         : [
