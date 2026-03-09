@@ -234,6 +234,12 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
 
   // Sorting logic
   const sortedFiles = [...files].sort((a, b) => {
+    // When sorting by name, list folders before files. For other columns keep natural order.
+    if (sortColumn === "name" && a.type !== b.type) {
+      if (a.type === "Folder") return -1;
+      if (b.type === "Folder") return 1;
+    }
+
     let valA, valB;
     switch (sortColumn) {
       case "name":
