@@ -6,18 +6,17 @@ use axum::http::header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE};
 use axum::http::{HeaderName, Method, Request, Uri, header};
 use axum::response::Response;
 use axum::{Router, middleware, routing::any};
-use std::io::{Cursor, Read, Write};
+use std::io::{Read, Write};
 use std::path::Path;
 use std::string::String;
 use std::sync::Arc;
+use tokio::io::duplex;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio_util::io::ReaderStream;
+use tokio_util::io::{ReaderStream, SyncIoBridge};
 use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::{error, info};
 use url::form_urlencoded;
-use walkdir::WalkDir;
-use zip::write::FileOptions;
 
 pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router {
     let propfind = Method::from_bytes(b"PROPFIND").unwrap();
@@ -131,18 +130,25 @@ async fn serve_file_head(req: Request<Body>) -> Response<Body> {
 
 async fn read_file(uri: &Uri) -> Response<Body> {
     let path = resolve_path(uri);
-    let mut file = tokio::fs::File::open(path)
-        .await
-        .map_err(|_| not_found())
-        .unwrap();
-    let mut buf = Vec::new();
-    if file.read_to_end(&mut buf).await.is_err() {
-        return server_error();
-    }
+    let file = match tokio::fs::File::open(&path).await {
+        Ok(f) => f,
+        Err(_) => return not_found(),
+    };
+
+    let metadata = match file.metadata().await {
+        Ok(m) => m,
+        Err(_) => return server_error(),
+    };
+    let filename = path
+        .file_name()
+        .and_then(|f| f.to_str())
+        .unwrap_or("download");
+    let stream = ReaderStream::new(file);
+    let body = axum::body::Body::from_stream(stream);
     Response::builder()
         .status(StatusCode::OK)
-        .header("Content-Length", buf.len())
-        .body(Body::from(buf))
+        .header(CONTENT_LENGTH, metadata.len().to_string())
+        .body(body)
         .unwrap()
 }
 
@@ -189,60 +195,58 @@ async fn download_folder(uri: &Uri) -> Response<Body> {
     if !meta.is_dir() {
         return forbidden("Cannot download a file as a folder");
     }
+
+    // pipe between zip writer and HTTP stream
+    let (tx, rx) = duplex(1024 * 1024); // 1 MB
+
     // Build zip archive on a blocking thread using walkdir (synchronous IO)
     let root_path = path.clone();
-    let join_res =
-        tokio::task::spawn_blocking(move || -> Result<(Vec<u8>, String), std::io::Error> {
-            let buffer = Cursor::new(Vec::new());
-            let mut zip = zip::ZipWriter::new(buffer);
-            let options =
-                FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+    let zip_root = root_path.clone();
 
-            let walkdir = WalkDir::new(&root_path);
+    tokio::task::spawn_blocking(move || {
+        use walkdir::WalkDir;
+        use zip::write::FileOptions;
 
-            for entry in walkdir.into_iter().filter_map(|e| e.ok()) {
-                let path = entry.path();
-                let name = path.strip_prefix(&root_path).unwrap();
+        let writer = SyncIoBridge::new(tx);
+        let mut zip = zip::ZipWriter::new_stream(writer);
 
-                if path.is_file() {
-                    zip.start_file(name.to_string_lossy(), options)?;
+        let options: FileOptions<'_, ()> =
+            FileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
-                    let mut f = std::fs::File::open(path)?;
-                    let mut file_buffer = Vec::new();
-                    f.read_to_end(&mut file_buffer)?;
+        for entry in WalkDir::new(&zip_root).into_iter().flatten() {
+            let path = entry.path();
+            let name = path.strip_prefix(&zip_root).unwrap();
 
-                    zip.write_all(&file_buffer)?;
-                } else if !name.as_os_str().is_empty() {
-                    zip.add_directory(name.to_string_lossy(), options)?;
+            if path.is_file() {
+                zip.start_file(name.to_string_lossy(), options).ok();
+
+                if let Ok(mut f) = std::fs::File::open(path) {
+                    let _ = std::io::copy(&mut f, &mut zip);
                 }
+            } else if !name.as_os_str().is_empty() {
+                let _ = zip.add_directory(name.to_string_lossy(), options);
             }
+        }
 
-            let buffer = zip.finish()?;
+        let _ = zip.finish();
+    });
 
-            let filename = root_path
-                .file_name()
-                .and_then(|f| f.to_str())
-                .map(|s| format!("{}.zip", s))
-                .unwrap_or_else(|| "download.zip".to_string());
+    let stream = ReaderStream::new(rx);
 
-            Ok((buffer.into_inner(), filename))
-        })
-        .await;
-
-    let (bytes, filename) = match join_res {
-        Ok(Ok((b, name))) => (b, name),
-        _ => return server_error(),
-    };
+    let filename = root_path
+        .file_name()
+        .and_then(|f| f.to_str())
+        .map(|s| format!("{}.zip", s))
+        .unwrap_or_else(|| "download.zip".to_string());
 
     Response::builder()
         .status(StatusCode::OK)
         .header(CONTENT_TYPE, "application/zip")
-        .header(CONTENT_LENGTH, bytes.len().to_string())
         .header(
             CONTENT_DISPOSITION,
             format!("attachment; filename=\"{}\"", filename),
         )
-        .body(Body::from(bytes))
+        .body(Body::from_stream(stream))
         .unwrap()
 }
 
