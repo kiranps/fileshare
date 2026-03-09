@@ -43,6 +43,7 @@ pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router 
                     Method::OPTIONS,
                     Method::DELETE,
                     Method::GET,
+                    Method::PUT,
                 ])
                 .allow_headers([
                     header::AUTHORIZATION,
