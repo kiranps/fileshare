@@ -30,6 +30,7 @@ url = "2.5.8"
 percent-encoding = "2.3.2"
 zip = "0.6.5"
 walkdir = "2.5.0"
+tokio-util = "0.7.18"
 
 
 [lib]

@@ -11,6 +11,7 @@ use std::path::Path;
 use std::string::String;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio_util::io::ReaderStream;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::{error, info};
@@ -147,28 +148,33 @@ async fn read_file(uri: &Uri) -> Response<Body> {
 
 async fn download_file(uri: &Uri) -> Response<Body> {
     let path = resolve_path(uri);
-    let mut file = tokio::fs::File::open(&path)
-        .await
-        .map_err(|_| not_found())
-        .unwrap();
-    let mut buf = Vec::new();
-    if file.read_to_end(&mut buf).await.is_err() {
-        return server_error();
-    }
+
+    let file = match tokio::fs::File::open(&path).await {
+        Ok(f) => f,
+        Err(_) => return not_found(),
+    };
+
+    let metadata = match file.metadata().await {
+        Ok(m) => m,
+        Err(_) => return server_error(),
+    };
     let filename = path
         .file_name()
         .and_then(|f| f.to_str())
         .unwrap_or("download");
 
+    let stream = ReaderStream::new(file);
+    let body = axum::body::Body::from_stream(stream);
+
     Response::builder()
         .status(StatusCode::OK)
         .header(CONTENT_TYPE, "application/octet-stream")
-        .header(CONTENT_LENGTH, buf.len().to_string())
+        .header(CONTENT_LENGTH, metadata.len().to_string())
         .header(
             CONTENT_DISPOSITION,
             format!("attachment; filename=\"{}\"", filename),
         )
-        .body(Body::from(buf))
+        .body(body)
         .unwrap()
 }
 
