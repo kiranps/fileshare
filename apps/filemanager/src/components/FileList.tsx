@@ -13,28 +13,7 @@ import {
 } from "../hooks/useWebDAVPropfind";
 
 import { downloadFile } from "../api/webdav";
-
-function basename(path: string): string {
-  return path.replace(/\/+$/, "").split("/").pop() ?? "";
-}
-
-function dirname(path: string): string {
-  const clean = path.replace(/\/+$/, "");
-  const parts = clean.split("/");
-  parts.pop();
-  return parts.join("/") || "/";
-}
-
-function normalizePath(path: string): string {
-  let result = path.replace(/\/+/g, "/");
-  result = result.startsWith("/") ? result : "/" + result;
-  if (result.length > 1 && result.endsWith("/")) result = result.slice(0, -1);
-  return result;
-}
-
-function joinPath(...parts: string[]): string {
-  return normalizePath(parts.join("/").replace(/\/+/g, "/"));
-}
+import { basename, dirname, normalizePath, joinPath } from "../utils/files";
 
 type SortColumn = "name" | "type" | "size" | "modified";
 type SortDirection = "asc" | "desc";
