@@ -1,5 +1,6 @@
 // src/api/webdavPropfind.ts
 import { parseWebDAVPropfindResponse } from "../utils/webdav";
+import { encodePath } from "../utils/files";
 
 const WEBDAV_HOST = "http://localhost:8080";
 const WEBDAV_DEPTH = "1";
@@ -27,7 +28,7 @@ export async function webdavPropfind(
     contentType: string;
     contentLength?: number;
     isCollection: boolean;
-    lastModified: Date;
+    lastModified: Date | undefined;
     raw: any;
   }>
 > {
@@ -190,7 +191,7 @@ export async function webdavMkcol(
   path: string,
   options?: { signal?: AbortSignal },
 ): Promise<WebDAVMkcolResult> {
-  const url = WEBDAV_HOST + path;
+  const url = WEBDAV_HOST + encodePath(path);
   let response: Response;
   try {
     response = await fetch(url, {
@@ -211,6 +212,51 @@ export async function webdavMkcol(
   return {
     path,
     ok: response.status === 201 || response.status === 200,
+    status: response.status,
+    response,
+  };
+}
+
+export type WebDAVPutResult = {
+  path: string;
+  ok: boolean;
+  status: number;
+  response: Response;
+};
+
+export async function webdavPut(
+  path: string,
+  body: File,
+  options?: { signal?: AbortSignal; contentType?: string },
+): Promise<WebDAVPutResult> {
+  const url = WEBDAV_HOST + path;
+  const headers: Record<string, string> = {};
+  if (options?.contentType) headers["Content-Type"] = options.contentType;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "PUT",
+      headers,
+      body,
+      signal: options?.signal,
+      credentials: "include",
+    });
+  } catch (error: any) {
+    throw new Error(
+      `WebDAV PUT request failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `WebDAV PUT failed: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  return {
+    path,
+    ok: response.ok,
     status: response.status,
     response,
   };

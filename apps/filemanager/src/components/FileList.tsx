@@ -10,10 +10,19 @@ import {
   useWebDAVMove,
   useWebDAVCopy,
   useWebDAVMkcol,
+  useWebDAVPut,
 } from "../hooks/useWebDAVPropfind";
 
 import { downloadFile } from "../api/webdav";
-import { basename, dirname, normalizePath, joinPath } from "../utils/files";
+import {
+  basename,
+  dirname,
+  normalizePath,
+  joinPath,
+  openFilePicker,
+  openFolderPicker,
+  collectDirs,
+} from "../utils/files";
 
 type SortColumn = "name" | "type" | "size" | "modified";
 type SortDirection = "asc" | "desc";
@@ -103,6 +112,7 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
   const moveMutation = useWebDAVMove();
   const copyMutation = useWebDAVCopy();
   const mkdirMutation = useWebDAVMkcol();
+  const putMutation = useWebDAVPut();
   const navigate = useNavigate();
 
   const [clipboard, setClipboard] = useState<ClipboardState>(null);
@@ -198,7 +208,8 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
           ]
         : [
             { label: "New Folder", value: "new_folder" },
-            { label: "Upload", value: "cut" },
+            { label: "File Upload", value: "file_upload" },
+            { label: "Folder Upload", value: "folder_upload" },
             { label: "Select All", value: "select_all" },
             { label: "Properties", value: "properties" },
           ];
@@ -206,7 +217,7 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
         x: e.clientX,
         y: e.clientY,
         actions: menuActions,
-        onAction: (action) => {
+        onAction: async (action) => {
           switch (action) {
             case "new_folder": {
               setModalType("new_folder");
@@ -215,6 +226,31 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
             }
             case "paste": {
               handlePaste();
+              break;
+            }
+            case "file_upload": {
+              const files = await openFilePicker();
+              files.forEach((file) => {
+                putMutation.mutate({
+                  path: joinPath(activePath, file.name),
+                  file,
+                });
+              });
+              break;
+            }
+            case "folder_upload": {
+              const files = await openFolderPicker();
+              const folders = collectDirs(files);
+              folders.forEach((folder) => {
+                const folderPath = joinPath(activePath, folder);
+                mkdirMutation.mutate(folderPath);
+              });
+              files.forEach((file) => {
+                putMutation.mutate({
+                  path: joinPath(activePath, file.webkitRelativePath),
+                  file,
+                });
+              });
               break;
             }
           }
@@ -271,9 +307,9 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
 
   // Modal submit handler
   const handleModalSubmit = () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue) return;
     if (modalType === "new_folder") {
-      const newFolderPath = joinPath(activePath, inputValue.trim());
+      const newFolderPath = joinPath(activePath, inputValue);
       mkdirMutation.mutate(newFolderPath, {
         onSuccess: () => {
           setModalType(null);
@@ -282,7 +318,7 @@ export const FileList: React.FC<{ files: FileItemProps[] }> = ({ files }) => {
       });
     } else if (modalType === "rename" && renameTarget) {
       const fromPath = renameTarget.id;
-      const destPath = joinPath(dirname(fromPath), inputValue.trim());
+      const destPath = joinPath(dirname(fromPath), inputValue);
       moveMutation.mutate(
         {
           fromPath,

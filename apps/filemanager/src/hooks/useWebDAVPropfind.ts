@@ -5,6 +5,7 @@ import {
   webdavMove,
   webdavCopy,
   webdavMkcol,
+  webdavPut,
 } from "../api/webdav";
 
 export function useWebDAVPropfind(path: string) {
@@ -90,6 +91,21 @@ export function useWebDAVMkcol() {
         return "/" + parts.join("/");
       })();
       queryClient.invalidateQueries({ queryKey: ["files", parentPath] });
+    },
+  });
+}
+
+export function useWebDAVPut() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ path, file }: { path: string; file: File }) => {
+      return webdavPut(path, file);
+    },
+    onSuccess: (_data, variables: any) => {
+      const parts = (variables as any).path.split("/").filter(Boolean);
+      parts.pop();
+      const parent = "/" + parts.join("/");
+      queryClient.invalidateQueries({ queryKey: ["files", parent] });
     },
   });
 }

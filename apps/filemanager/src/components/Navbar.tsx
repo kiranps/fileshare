@@ -29,7 +29,7 @@ export const Navbar: React.FC = () => {
 
   const breadcrumbData = segments.map((segment, i) => {
     const path = "/" + segments.slice(0, i + 1).join("/");
-    return { label: segment, path };
+    return { label: decodeURIComponent(segment), path };
   });
 
   return (
