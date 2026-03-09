@@ -6,15 +6,16 @@ use axum::http::header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE};
 use axum::http::{HeaderName, Method, Request, Uri, header};
 use axum::response::Response;
 use axum::{Router, middleware, routing::any};
-use std::io::{Cursor, Write};
+use std::io::{Cursor, Read, Write};
 use std::path::Path;
 use std::string::String;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::{error, info};
 use url::form_urlencoded;
+use walkdir::WalkDir;
 use zip::write::FileOptions;
 
 pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router {
@@ -182,76 +183,50 @@ async fn download_folder(uri: &Uri) -> Response<Body> {
     if !meta.is_dir() {
         return forbidden("Cannot download a file as a folder");
     }
-
-    // Prepare an in-memory zip archive
-    let mut buffer = Cursor::new(Vec::new());
-    let mut zip = zip::ZipWriter::new(&mut buffer);
-    let options = FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-
-    // Walk directory stack manually using async read_dir
-    // Use a PathBuf for relative path to avoid duplicating path components
-    let mut stack: Vec<(std::path::PathBuf, std::path::PathBuf)> = Vec::new();
+    // Build zip archive on a blocking thread using walkdir (synchronous IO)
     let root_path = path.clone();
-    stack.push((path.clone(), std::path::PathBuf::new()));
+    let join_res =
+        tokio::task::spawn_blocking(move || -> Result<(Vec<u8>, String), std::io::Error> {
+            let buffer = Cursor::new(Vec::new());
+            let mut zip = zip::ZipWriter::new(buffer);
+            let options =
+                FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
-    while let Some((cur_path, rel_path)) = stack.pop() {
-        let mut entries = match tokio::fs::read_dir(&cur_path).await {
-            Ok(e) => e,
-            Err(_) => return server_error(),
-        };
+            let walkdir = WalkDir::new(&root_path);
 
-        while let Ok(Some(entry)) = entries.next_entry().await {
-            let file_type = match entry.file_type().await {
-                Ok(ft) => ft,
-                Err(_) => continue,
-            };
+            for entry in walkdir.into_iter().filter_map(|e| e.ok()) {
+                let path = entry.path();
+                let name = path.strip_prefix(&root_path).unwrap();
 
-            let entry_name = entry.file_name();
-            let mut entry_rel_path = rel_path.clone();
-            entry_rel_path.push(&entry_name);
-            // Normalize to forward slashes for zip entries
-            let entry_rel = entry_rel_path.to_string_lossy().replace("\\", "/");
+                if path.is_file() {
+                    zip.start_file(name.to_string_lossy(), options)?;
 
-            if file_type.is_dir() {
-                // Add directory entry and push to stack
-                let dir_name = format!("{}/", entry_rel);
-                if zip.add_directory(dir_name.as_str(), options).is_err() {
-                    return server_error();
-                }
-                stack.push((entry.path(), entry_rel_path));
-            } else {
-                // Read file contents asynchronously then write into zip
-                let mut f = match tokio::fs::File::open(entry.path()).await {
-                    Ok(f) => f,
-                    Err(_) => continue,
-                };
-                let mut buf = Vec::new();
-                if f.read_to_end(&mut buf).await.is_err() {
-                    return server_error();
-                }
-                if zip.start_file(entry_rel.as_str(), options).is_err() {
-                    return server_error();
-                }
-                if zip.write_all(&buf).is_err() {
-                    return server_error();
+                    let mut f = std::fs::File::open(path)?;
+                    let mut file_buffer = Vec::new();
+                    f.read_to_end(&mut file_buffer)?;
+
+                    zip.write_all(&file_buffer)?;
+                } else if !name.as_os_str().is_empty() {
+                    zip.add_directory(name.to_string_lossy(), options)?;
                 }
             }
-        }
-    }
 
-    if zip.finish().is_err() {
-        return server_error();
-    }
-    // Drop the ZipWriter to release the mutable borrow on `buffer` before taking ownership
-    drop(zip);
+            let buffer = zip.finish()?;
 
-    let bytes = buffer.into_inner();
-    // Use the last component of the root path as filename if available
-    let filename = root_path
-        .file_name()
-        .and_then(|f| f.to_str())
-        .map(|s| format!("{}.zip", s))
-        .unwrap_or_else(|| "download.zip".to_string());
+            let filename = root_path
+                .file_name()
+                .and_then(|f| f.to_str())
+                .map(|s| format!("{}.zip", s))
+                .unwrap_or_else(|| "download.zip".to_string());
+
+            Ok((buffer.into_inner(), filename))
+        })
+        .await;
+
+    let (bytes, filename) = match join_res {
+        Ok(Ok((b, name))) => (b, name),
+        _ => return server_error(),
+    };
 
     Response::builder()
         .status(StatusCode::OK)
