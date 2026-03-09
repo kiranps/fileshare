@@ -1,5 +1,5 @@
 use super::helpers::*;
-use super::middleware::{auth_middleware, log_response_body, prefix_middleware};
+use super::middleware::{add_webdav_headers, auth_middleware, prefix_middleware};
 use axum::body::Body;
 use axum::http::StatusCode;
 use axum::http::header::{CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE};
@@ -33,7 +33,6 @@ pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router 
         .route("/{*path}", any(route_request))
         .layer(
             CorsLayer::new()
-                // Echo the request Origin back as the allowed origin (supports credentials)
                 .allow_origin(tower_http::cors::AllowOrigin::mirror_request())
                 .allow_methods([
                     propfind,
@@ -41,6 +40,7 @@ pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router 
                     move_file,
                     make_dir,
                     download,
+                    Method::OPTIONS,
                     Method::DELETE,
                     Method::GET,
                 ])
@@ -55,6 +55,7 @@ pub fn router(base_path: String, auth: Arc<Option<(String, String)>>) -> Router 
                 ])
                 .allow_credentials(true),
         )
+        .layer(middleware::from_fn(add_webdav_headers))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::new().level(tracing::Level::DEBUG))
@@ -86,7 +87,7 @@ async fn route_request(req: Request<Body>) -> Response<Body> {
 
 fn options_response() -> Response<Body> {
     Response::builder()
-        .status(StatusCode::OK)
+        .status(StatusCode::NO_CONTENT)
         .header("DAV", "1")
         .header(
             "Allow",
@@ -139,10 +140,6 @@ async fn read_file(uri: &Uri) -> Response<Body> {
         Ok(m) => m,
         Err(_) => return server_error(),
     };
-    let filename = path
-        .file_name()
-        .and_then(|f| f.to_str())
-        .unwrap_or("download");
     let stream = ReaderStream::new(file);
     let body = axum::body::Body::from_stream(stream);
     Response::builder()

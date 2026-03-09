@@ -1,5 +1,6 @@
 use axum::http::StatusCode;
 use axum::http::Uri;
+use axum::http::{HeaderValue, Method};
 use axum::middleware::Next;
 use axum::{body::Body, body::Bytes, extract::State, http::Request, response::Response};
 use base64::Engine as _;
@@ -39,6 +40,27 @@ fn constant_time_eq(a: &str, b: &str) -> bool {
         res |= x ^ y;
     }
     res == 0
+}
+
+pub async fn add_webdav_headers(req: Request<axum::body::Body>, next: Next) -> Response {
+    let is_options = req.method() == Method::OPTIONS;
+
+    let mut res = next.run(req).await;
+
+    if is_options {
+        let headers = res.headers_mut();
+
+        headers.insert("DAV", HeaderValue::from_static("1, 2"));
+        headers.insert(
+            "Allow",
+            HeaderValue::from_static(
+                "OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, MKCOL, COPY, MOVE",
+            ),
+        );
+        headers.insert("MS-Author-Via", HeaderValue::from_static("DAV"));
+    }
+
+    res
 }
 
 pub async fn prefix_middleware(
