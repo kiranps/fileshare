@@ -1,11 +1,16 @@
 {
-  "version": "1",
-  "language": { "jsx": "react-jsx", "ts": { "enabled": true } },
-  "files": { "include": ["src/**/*.{ts,tsx,js,jsx}"], "exclude": ["dist", "node_modules"] },
-  "checks": {
-    "enabled": true,
-    "syntax": "error",
-    "type": "error"
-  },
-  "formatter": { "lineWidth": 120 }
+	"$schema": "https://json.schemastore.org/biome",
+	"root": true,
+	"files": {
+		"includes": ["src/**/*.{ts,tsx,js,jsx}", "!!**/dist", "!!**/node_modules"]
+	},
+	"formatter": {
+		"lineWidth": 120
+	},
+	"linter": {
+		"enabled": true
+	},
+	"javascript": {
+		"jsxRuntime": "reactClassic"
+	}
 }
