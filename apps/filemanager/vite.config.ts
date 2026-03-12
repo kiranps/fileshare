@@ -4,15 +4,19 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    tailwindcss(),
-    react({
-      babel: {
-        plugins: [["babel-plugin-react-compiler"]],
-      },
-    }),
-  ],
-  resolve: {
-    dedupe: ["react", "react-dom"],
-  },
+    plugins: [
+        tailwindcss(),
+        react({
+            babel: {
+                plugins: [["babel-plugin-react-compiler"]],
+            },
+        }),
+    ],
+    server: {
+        host: true,
+        allowedHosts: true,
+    },
+    resolve: {
+        dedupe: ["react", "react-dom"],
+    },
 });
