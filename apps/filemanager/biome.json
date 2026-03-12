@@ -1,0 +1,11 @@
+{
+  "version": "1",
+  "language": { "jsx": "react-jsx", "ts": { "enabled": true } },
+  "files": { "include": ["src/**/*.{ts,tsx,js,jsx}"], "exclude": ["dist", "node_modules"] },
+  "checks": {
+    "enabled": true,
+    "syntax": "error",
+    "type": "error"
+  },
+  "formatter": { "lineWidth": 120 }
+}
