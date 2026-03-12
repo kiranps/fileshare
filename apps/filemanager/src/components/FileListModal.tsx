@@ -1,3 +1,5 @@
+import type { FC } from "react";
+
 type InputModalProps = {
   open: boolean;
   title: string;
@@ -13,7 +15,7 @@ type InputModalProps = {
   errorText?: string;
 };
 
-const InputModal: React.FC<InputModalProps> = ({
+const InputModal: FC<InputModalProps> = ({
   open,
   title,
   label,
@@ -39,28 +41,41 @@ const InputModal: React.FC<InputModalProps> = ({
             placeholder={placeholder}
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && value.trim()) onSubmit();
+            }}
             autoFocus
             disabled={isLoading}
           />
         </label>
         {isLoading && <div className="my-2 text-primary">Please wait...</div>}
         {isError && (
-          <div className="my-2 text-error">{errorText || "Error occurred"}</div>
+          <div className="my-2 text-error">{errorText ?? "Error occurred"}</div>
         )}
         <div className="modal-action">
           <button
+            type="button"
             className="btn btn-primary"
             onClick={onSubmit}
             disabled={isLoading || !value.trim()}
           >
             {submitLabel}
           </button>
-          <button className="btn" onClick={onCancel} disabled={isLoading}>
+          <button type="button" className="btn" onClick={onCancel} disabled={isLoading}>
             Cancel
           </button>
         </div>
       </div>
-      <form method="dialog" className="modal-backdrop" onClick={onCancel} />
+      {/* Backdrop: dismiss on click or keyboard activation */}
+      <button
+        type="button"
+        className="modal-backdrop"
+        onClick={onCancel}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onCancel();
+        }}
+        aria-label="Close modal"
+      />
     </dialog>
   ) : null;
 

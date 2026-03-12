@@ -1,44 +1,24 @@
-import React from "react";
+import type { FC } from "react";
 import { format } from "date-fns";
-import type { FileItemProps } from "../types/FileItemProps";
+import type { FileItemProps } from "../types";
 
-export const FileItem: React.FC<
+export const FileItem: FC<
   FileItemProps & {
-    onClick?: (e: React.MouseEvent<HTMLTableRowElement, MouseEvent>) => void;
+    onClick?: (e: React.MouseEvent<HTMLTableRowElement>) => void;
     onDoubleClick?: () => void;
-    onRightClick?: (
-      e: React.MouseEvent<HTMLTableRowElement, MouseEvent>,
-    ) => void;
+    onRightClick?: (e: React.MouseEvent<HTMLTableRowElement>) => void;
   }
-> = ({
-  name,
-  size,
-  modified,
-  icon,
-  selected,
-  onClick,
-  onDoubleClick,
-  onRightClick,
-}) => (
+> = ({ name, size, modified, icon, selected, onClick, onDoubleClick, onRightClick }) => (
   <tr
     tabIndex={0}
-    className={`cursor-pointer outline-none ${selected ? "bg-primary text-primary-content hove:none" : "hover:bg-base-200"}`}
+    className={`cursor-pointer outline-none ${selected ? "bg-primary text-primary-content" : "hover:bg-base-200"}`}
     onClick={onClick}
     onDoubleClick={onDoubleClick}
     onContextMenu={onRightClick}
-    role="row"
   >
-    <td className="w-12 text-center" role="gridcell">
-      {icon}
-    </td>
-    <td className="font-medium" role="gridcell">
-      {name}
-    </td>
-    <td className="text-right" role="gridcell">
-      {size || "-"}
-    </td>
-    <td role="gridcell">
-      {modified ? format(modified, "yyyy-MM-dd HH:mm:ss") : "-"}
-    </td>
+    <td className="w-12 text-center">{icon}</td>
+    <td className="font-medium">{name}</td>
+    <td className="text-right">{size ?? "-"}</td>
+    <td>{modified ? format(modified, "yyyy-MM-dd HH:mm:ss") : "-"}</td>
   </tr>
 );

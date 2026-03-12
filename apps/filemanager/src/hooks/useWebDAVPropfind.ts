@@ -7,6 +7,7 @@ import {
   webdavMkcol,
   webdavPut,
 } from "../api/webdav";
+import { dirname } from "../utils/files";
 
 export function useWebDAVPropfind(path: string) {
   return useQuery({
@@ -18,14 +19,9 @@ export function useWebDAVPropfind(path: string) {
 export function useWebDAVDelete() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (path: string) => {
-      return webdavDelete(path);
-    },
-    onSuccess: (data, _variables) => {
-      const deletedPath = data.path;
-      const pathParts = deletedPath.split("/").filter(Boolean);
-      pathParts.pop();
-      const parentPath = "/" + pathParts.join("/");
+    mutationFn: (path: string) => webdavDelete(path),
+    onSuccess: (data) => {
+      const parentPath = dirname(data.path);
       queryClient.invalidateQueries({ queryKey: ["files", parentPath] });
     },
   });
@@ -34,7 +30,7 @@ export function useWebDAVDelete() {
 export function useWebDAVMove() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       fromPath,
       toPath,
       overwrite,
@@ -42,14 +38,10 @@ export function useWebDAVMove() {
       fromPath: string;
       toPath: string;
       overwrite?: boolean;
-    }) => {
-      return webdavMove(fromPath, toPath, overwrite ?? false);
-    },
-    onSuccess: (data, _variables) => {
-      const toParts = data.to.split("/").filter(Boolean);
-      toParts.pop();
-      const toParent = "/" + toParts.join("/");
-      queryClient.invalidateQueries({ queryKey: ["files", toParent] });
+    }) => webdavMove(fromPath, toPath, overwrite ?? false),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["files", dirname(data.from)] });
+      queryClient.invalidateQueries({ queryKey: ["files", dirname(data.to)] });
     },
   });
 }
@@ -57,7 +49,7 @@ export function useWebDAVMove() {
 export function useWebDAVCopy() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       fromPath,
       toPath,
       overwrite,
@@ -65,14 +57,10 @@ export function useWebDAVCopy() {
       fromPath: string;
       toPath: string;
       overwrite?: boolean;
-    }) => {
-      return webdavCopy(fromPath, toPath, overwrite ?? false);
-    },
-    onSuccess: (data, _variables) => {
-      const toParts = data.to.split("/").filter(Boolean);
-      toParts.pop();
-      const toParent = "/" + toParts.join("/");
-      queryClient.invalidateQueries({ queryKey: ["files", toParent] });
+    }) => webdavCopy(fromPath, toPath, overwrite ?? false),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["files", dirname(data.from)] });
+      queryClient.invalidateQueries({ queryKey: ["files", dirname(data.to)] });
     },
   });
 }
@@ -80,16 +68,9 @@ export function useWebDAVCopy() {
 export function useWebDAVMkcol() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (path: string) => {
-      return webdavMkcol(path);
-    },
-    onSuccess: (data, _variables) => {
-      // Invalidate the parent dir listing
-      const parentPath = (() => {
-        const parts = data.path.split("/").filter(Boolean);
-        parts.pop(); // remove new directory name
-        return "/" + parts.join("/");
-      })();
+    mutationFn: (path: string) => webdavMkcol(path),
+    onSuccess: (data) => {
+      const parentPath = dirname(data.path);
       queryClient.invalidateQueries({ queryKey: ["files", parentPath] });
     },
   });
@@ -98,14 +79,11 @@ export function useWebDAVMkcol() {
 export function useWebDAVPut() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ path, file }: { path: string; file: File }) => {
-      return webdavPut(path, file);
-    },
-    onSuccess: (_data, variables: any) => {
-      const parts = (variables as any).path.split("/").filter(Boolean);
-      parts.pop();
-      const parent = "/" + parts.join("/");
-      queryClient.invalidateQueries({ queryKey: ["files", parent] });
+    mutationFn: ({ path, file }: { path: string; file: File }) =>
+      webdavPut(path, file),
+    onSuccess: (_data, variables) => {
+      const parentPath = dirname(variables.path);
+      queryClient.invalidateQueries({ queryKey: ["files", parentPath] });
     },
   });
 }

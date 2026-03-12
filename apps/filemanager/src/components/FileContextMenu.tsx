@@ -1,46 +1,32 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { FC } from "react";
 import { createPortal } from "react-dom";
-import { createRoot } from "react-dom/client"; // For mounting/unmounting programmatically
+
+export interface ContextMenuAction {
+  label: string;
+  value: string;
+  disabled?: boolean;
+}
 
 interface FileContextMenuProps {
   x: number;
   y: number;
-  actions: Array<{ label: string; value: string; disabled?: boolean }>;
+  actions: ContextMenuAction[];
   visible: boolean;
   onAction: (action: string) => void;
   onClose: () => void;
 }
 
-// Edge/corner detection utility
-function getMenuPosition({
-  x,
-  y,
-  menuWidth,
-  menuHeight,
-}: {
-  x: number;
-  y: number;
-  menuWidth: number;
-  menuHeight: number;
-}) {
-  const buffer = 8; // margin from edge
-  let left = x;
-  let top = y;
-  const winW = window.innerWidth;
-  const winH = window.innerHeight;
-
-  if (left + menuWidth + buffer > winW) {
-    left = winW - menuWidth - buffer;
-  }
-  if (top + menuHeight + buffer > winH) {
-    top = winH - menuHeight - buffer;
-  }
-  left = Math.max(buffer, left);
-  top = Math.max(buffer, top);
-  return { left, top };
+/** Repositions a menu to stay within the viewport bounds. */
+function clampToViewport(x: number, y: number, width: number, height: number) {
+  const buffer = 8;
+  return {
+    left: Math.max(buffer, Math.min(x, window.innerWidth - width - buffer)),
+    top: Math.max(buffer, Math.min(y, window.innerHeight - height - buffer)),
+  };
 }
 
-export const FileContextMenu: React.FC<FileContextMenuProps> = ({
+export const FileContextMenu: FC<FileContextMenuProps> = ({
   x,
   y,
   actions,
@@ -48,101 +34,58 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onAction,
   onClose,
 }) => {
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [computedPosition, setComputedPosition] = React.useState<{
-    left: number;
-    top: number;
-  }>({ left: x, top: y });
+  const menuRef = useRef<HTMLUListElement>(null);
+  const [position, setPosition] = useState({ left: x, top: y });
 
+  // Adjust position once the menu is rendered so we know its dimensions.
   useEffect(() => {
     if (visible && menuRef.current) {
-      const menu = menuRef.current;
-      const menuWidth = menu.offsetWidth;
-      const menuHeight = menu.offsetHeight;
-      setComputedPosition(getMenuPosition({ x, y, menuWidth, menuHeight }));
+      const { offsetWidth, offsetHeight } = menuRef.current;
+      setPosition(clampToViewport(x, y, offsetWidth, offsetHeight));
     }
   }, [visible, x, y]);
 
-  // Hide on outside click
+  // Dismiss on outside click.
   useEffect(() => {
     if (!visible) return;
-    function handleClick(e: MouseEvent) {
+    const handleMouseDown = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
       }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    };
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
   }, [visible, onClose]);
 
   if (!visible) return null;
 
   return createPortal(
-    <div
+    <ul
       ref={menuRef}
       style={{
-        left: computedPosition.left,
-        top: computedPosition.top,
+        left: position.left,
+        top: position.top,
         zIndex: 5000,
         minWidth: 140,
+        position: "fixed",
       }}
-      className="menu bg-base-100 px-0 border border-base-300 shadow fixed"
-      aria-label="File context menu"
-      tabIndex={0}
+      className="menu bg-base-100 px-0 border border-base-300 shadow"
     >
       {actions.map((action) => (
-        <button
-          key={action.value}
-          type="button"
-          className={`menu-item px-4 py-2 w-full text-left hover:bg-base-200 ${
-            action.disabled && "pointer-events-none text-gray-400"
-          }`}
-          onClick={() => onAction(action.value)}
-        >
-          {action.label}
-        </button>
+        <li key={action.value}>
+          <button
+            type="button"
+            className={`px-4 py-2 w-full text-left hover:bg-base-200 ${
+              action.disabled ? "pointer-events-none text-gray-400" : ""
+            }`}
+            onClick={() => onAction(action.value)}
+            disabled={action.disabled}
+          >
+            {action.label}
+          </button>
+        </li>
       ))}
-    </div>,
+    </ul>,
     document.body,
   );
 };
-
-// Utility function to programmatically open the menu
-export function openFileContextMenu({
-  x,
-  y,
-  actions,
-  onAction,
-}: {
-  x: number;
-  y: number;
-  actions: Array<{ label: string; value: string; disabled?: boolean }>;
-  onAction: (action: string) => void;
-}) {
-  const div = document.createElement("div");
-  document.body.appendChild(div);
-
-  const close = () => {
-    root.unmount();
-    div.remove();
-  };
-
-  const root = createRoot(div);
-  root.render(
-    <FileContextMenu
-      x={x}
-      y={y}
-      actions={actions}
-      visible={true}
-      onAction={(action) => {
-        onAction(action);
-        close();
-      }}
-      onClose={close}
-    />,
-  );
-
-  return close;
-}
-
-// Usage: openFileContextMenu({ x, y, onAction: (action) => { ... } });

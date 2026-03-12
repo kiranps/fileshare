@@ -1,14 +1,14 @@
 export function basename(path: string): string {
   return (
     path
-      .replace(/\/\/+$/, "")
+      .replace(/\/+$/, "")
       .split("/")
       .pop() ?? ""
   );
 }
 
 export function dirname(path: string): string {
-  const clean = path.replace(/\/\/+$/, "");
+  const clean = path.replace(/\/+$/, "");
   const parts = clean.split("/");
   parts.pop();
   return parts.join("/") || "/";
@@ -46,7 +46,7 @@ export function openFolderPicker(): Promise<File[]> {
     input.type = "file";
     input.multiple = true;
 
-    (input as any).webkitdirectory = true;
+    Object.assign(input, { webkitdirectory: true });
 
     input.addEventListener("change", () => {
       const files = input.files ? Array.from(input.files) : [];

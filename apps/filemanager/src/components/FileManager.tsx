@@ -1,4 +1,4 @@
-import React from "react";
+import type { FC } from "react";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import { FileList } from "./FileList";
@@ -6,17 +6,13 @@ import { useWebDAVPropfind } from "../hooks/useWebDAVPropfind";
 import { filesFromWebDAV } from "../utils/webdav_files";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 
-export const FileManager: React.FC = () => {
+export const FileManager: FC = () => {
   const { activePath } = useFileManagerStore();
-
-  // FileManager no longer manages selection; FileList manages selection locally via useState
-  const handleItemClick = (id: string) => {};
   const { data, isLoading, error } = useWebDAVPropfind(activePath);
 
-  // pass an empty array for selected ids; FileList will manage selection locally
-  const webdavFiles = data ? filesFromWebDAV(data, [], () => {}).files : [];
-
-  const files = webdavFiles.filter((x) => !x.name.startsWith("."));
+  const files = data
+    ? filesFromWebDAV(data).files.filter((f) => !f.name.startsWith("."))
+    : [];
 
   return (
     <div className="flex flex-col h-screen bg-base-100">
