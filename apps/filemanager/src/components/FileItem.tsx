@@ -27,7 +27,7 @@ export const FileItem: FC<
 	>
 		<td className="w-12 text-center">{icon}</td>
 		<td className="font-medium">{urlDecodeSafe(name)}</td>
-		<td className="text-right">{humanFileSize(size) ?? "-"}</td>
+		<td className="text-right">{size ? humanFileSize(size) : "-"}</td>
 		<td>{modified ? format(modified, "yyyy-MM-dd HH:mm:ss") : "-"}</td>
 	</tr>
 );
