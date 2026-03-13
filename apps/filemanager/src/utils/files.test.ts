@@ -201,15 +201,13 @@ describe("openFilePicker", () => {
 	it("should resolve with empty array when no files selected", async () => {
 		const promise = openFilePicker();
 
-		const inputs = document.querySelectorAll('input[type="file"]');
-		const input = inputs[inputs.length - 1] as HTMLInputElement;
-
-		Object.defineProperty(input, "files", {
+		// Manipulate createdInput just as in the first test
+		Object.defineProperty(createdInput, "files", {
 			value: null,
 			writable: false,
 		});
 
-		input.dispatchEvent(new Event("change"));
+		createdInput.dispatchEvent(new Event("change"));
 
 		const result = await promise;
 		expect(result).toEqual([]);
