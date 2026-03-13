@@ -2,7 +2,7 @@
 	"$schema": "https://json.schemastore.org/biome",
 	"root": true,
 	"files": {
-		"includes": ["src/**/*.{ts,tsx,js,jsx}", "!!**/dist", "!!**/node_modules"]
+		"includes": ["src/**/*.{ts,tsx,js,jsx}", "*.{app.json,ts,js,json}", "!!**/dist", "!!**/node_modules"]
 	},
 	"formatter": {
 		"lineWidth": 120

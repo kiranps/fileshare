@@ -1,18 +1,18 @@
+import { downloadFile } from "@api/webdav";
+import { FileItem } from "@components/FileItem";
+import InputModal from "@components/FileListModal";
+import { useFileClipboard } from "@hooks/useFileClipboard";
+import { useFileSelection } from "@hooks/useFileSelection";
+import { useFileSort } from "@hooks/useFileSort";
+import { useWebDAVDelete, useWebDAVMkcol, useWebDAVMove, useWebDAVPut } from "@hooks/useWebDAVPropfind";
+import { useFileManagerStore } from "@store/useFileManagerStore";
+import type { FileItemProps } from "@types/FileItemProps";
+import { collectDirs, dirname, joinPath, openFilePicker, openFolderPicker } from "@utils/files";
+import { openFileContextMenu } from "@utils/openContextMenu";
 import { ArrowDownUp } from "lucide-react";
 import type { FC } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { downloadFile } from "../api/webdav";
-import { useFileClipboard } from "../hooks/useFileClipboard";
-import { useFileSelection } from "../hooks/useFileSelection";
-import { useFileSort } from "../hooks/useFileSort";
-import { useWebDAVDelete, useWebDAVMkcol, useWebDAVMove, useWebDAVPut } from "../hooks/useWebDAVPropfind";
-import { useFileManagerStore } from "../store/useFileManagerStore";
-import type { FileItemProps } from "../types";
-import { collectDirs, dirname, joinPath, openFilePicker, openFolderPicker } from "../utils/files";
-import { openFileContextMenu } from "../utils/openContextMenu";
-import { FileItem } from "./FileItem";
-import InputModal from "./FileListModal";
 
 type ModalType = "new_folder" | "rename";
 

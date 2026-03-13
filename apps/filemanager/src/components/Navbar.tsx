@@ -1,9 +1,9 @@
+import { useFileManagerStore } from "@store/useFileManagerStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, RefreshCcw } from "lucide-react";
 import type { FC } from "react";
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useFileManagerStore } from "../store/useFileManagerStore";
 
 export const Navbar: FC = () => {
 	const navigate = useNavigate();

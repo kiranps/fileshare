@@ -1,10 +1,10 @@
+import { FileList } from "@components/FileList";
+import { Navbar } from "@components/Navbar";
+import { Sidebar } from "@components/Sidebar";
+import { useWebDAVPropfind } from "@hooks/useWebDAVPropfind";
+import { useFileManagerStore } from "@store/useFileManagerStore";
+import { filesFromWebDAV } from "@utils/webdav_files";
 import type { FC } from "react";
-import { useWebDAVPropfind } from "../hooks/useWebDAVPropfind";
-import { useFileManagerStore } from "../store/useFileManagerStore";
-import { filesFromWebDAV } from "../utils/webdav_files";
-import { FileList } from "./FileList";
-import { Navbar } from "./Navbar";
-import { Sidebar } from "./Sidebar";
 
 export const FileManager: FC = () => {
 	const { activePath } = useFileManagerStore();

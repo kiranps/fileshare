@@ -1,8 +1,8 @@
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useFileManagerStore } from "../store/useFileManagerStore";
-import { render } from "../test/test-utils";
-import { Navbar } from "./Navbar";
+import { useFileManagerStore } from "@store/useFileManagerStore";
+import { render } from "@test/test-utils";
+import { Navbar } from "@components/Navbar";
 
 // Mock react-router-dom navigate and location
 const mockNavigate = vi.fn();
