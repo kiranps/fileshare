@@ -2,7 +2,5 @@ packages:
   - apps/*
   - packages/*
 
-nodeLinker: hoisted
-
 onlyBuiltDependencies:
   - "uniffi-bindgen-react-native"
