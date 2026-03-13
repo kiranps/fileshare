@@ -216,6 +216,7 @@ describe("openFilePicker", () => {
 
 describe("openFolderPicker", () => {
 	let clickSpy: ReturnType<typeof vi.fn>;
+	let createdInput: HTMLInputElement & { webkitdirectory?: boolean };
 
 	beforeEach(() => {
 		clickSpy = vi.fn();
@@ -223,6 +224,10 @@ describe("openFolderPicker", () => {
 		vi.spyOn(document, "createElement").mockImplementation((tagName: string) => {
 			const element = originalCreateElement(tagName);
 			if (tagName === "input") {
+				createdInput = element as HTMLInputElement & { webkitdirectory?: boolean };
+				createdInput.type = "file";
+				createdInput.multiple = true;
+				createdInput.webkitdirectory = true;
 				element.click = clickSpy;
 			}
 			return element;
@@ -238,12 +243,9 @@ describe("openFolderPicker", () => {
 
 		expect(clickSpy).toHaveBeenCalled();
 
-		const inputs = document.querySelectorAll('input[type="file"]');
-		const input = inputs[inputs.length - 1] as HTMLInputElement & { webkitdirectory: boolean };
-
-		expect(input.type).toBe("file");
-		expect(input.multiple).toBe(true);
-		expect(input.webkitdirectory).toBe(true);
+		expect(createdInput.type).toBe("file");
+		expect(createdInput.multiple).toBe(true);
+		expect(createdInput.webkitdirectory).toBe(true);
 
 		// Simulate folder selection
 		const file1 = new File(["content1"], "file1.txt", { type: "text/plain" });
@@ -252,12 +254,12 @@ describe("openFolderPicker", () => {
 		const file2 = new File(["content2"], "file2.txt", { type: "text/plain" });
 		Object.defineProperty(file2, "webkitRelativePath", { value: "folder/file2.txt" });
 
-		Object.defineProperty(input, "files", {
+		Object.defineProperty(createdInput, "files", {
 			value: [file1, file2],
 			writable: false,
 		});
 
-		input.dispatchEvent(new Event("change"));
+		createdInput.dispatchEvent(new Event("change"));
 
 		const result = await promise;
 		expect(result).toEqual([file1, file2]);
