@@ -1,3 +1,4 @@
+import Sentry from "./sentry";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
@@ -15,10 +16,12 @@ export const queryClient = new QueryClient({
 
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
-		<BrowserRouter>
-			<QueryClientProvider client={queryClient}>
-				<App />
-			</QueryClientProvider>
-		</BrowserRouter>
+		<Sentry.ErrorBoundary fallback={<p>Something went wrong</p>}>
+			<BrowserRouter>
+				<QueryClientProvider client={queryClient}>
+					<App />
+				</QueryClientProvider>
+			</BrowserRouter>
+		</Sentry.ErrorBoundary>
 	</StrictMode>,
 );
