@@ -4,10 +4,6 @@ import type { FileItemProps } from "../types";
 export type SortColumn = "name" | "size" | "modified";
 export type SortDirection = "asc" | "desc";
 
-/**
- * Manages sort state and returns a sorted copy of the provided file list.
- * Folders are always listed before files when sorting by name.
- */
 export function useFileSort(files: FileItemProps[]) {
 	const [sortColumn, setSortColumn] = useState<SortColumn>("name");
 	const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -21,37 +17,41 @@ export function useFileSort(files: FileItemProps[]) {
 		}
 	};
 
-	const sortedFiles = [...files].sort((a, b) => {
-		// When sorting by name, list folders before files.
-		if (sortColumn === "name" && a.type !== b.type) {
-			if (a.type === "Folder") return -1;
-			if (b.type === "Folder") return 1;
-		}
+	const sortedFiles = (() => {
+		// split folders and regular files so folders are always first
+		const folders = files.filter((f) => f.type === "Folder");
+		const regularFiles = files.filter((f) => f.type !== "Folder");
 
-		let valA: string | number;
-		let valB: string | number;
+		const getComparator = (col: typeof sortColumn, dir: typeof sortDirection) => {
+			const multiplier = dir === "asc" ? 1 : -1;
+			if (col === "name") {
+				return (a: FileItemProps, b: FileItemProps) =>
+					multiplier * a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+			}
+			if (col === "size") {
+				return (a: FileItemProps, b: FileItemProps) => {
+					const aSize = typeof a.size === "number" ? a.size : 0;
+					const bSize = typeof b.size === "number" ? b.size : 0;
+					if (aSize === bSize) return 0;
+					return multiplier * (aSize < bSize ? -1 : 1);
+				};
+			}
+			// modified
+			return (a: FileItemProps, b: FileItemProps) => {
+				const aTime = a.modified instanceof Date ? a.modified.getTime() : new Date(a.modified).getTime();
+				const bTime = b.modified instanceof Date ? b.modified.getTime() : new Date(b.modified).getTime();
+				if (aTime === bTime) return 0;
+				return multiplier * (aTime < bTime ? -1 : 1);
+			};
+		};
 
-		switch (sortColumn) {
-			case "name":
-				valA = a.name.toLowerCase();
-				valB = b.name.toLowerCase();
-				break;
-			case "size":
-				valA = a.size ? parseInt(a.size, 10) : 0;
-				valB = b.size ? parseInt(b.size, 10) : 0;
-				break;
-			case "modified":
-				valA = a.modified instanceof Date ? a.modified.getTime() : new Date(a.modified).getTime();
-				valB = b.modified instanceof Date ? b.modified.getTime() : new Date(b.modified).getTime();
-				break;
-			default:
-				return 0;
-		}
+		const comparator = getComparator(sortColumn, sortDirection);
 
-		if (valA < valB) return sortDirection === "asc" ? -1 : 1;
-		if (valA > valB) return sortDirection === "asc" ? 1 : -1;
-		return 0;
-	});
+		const sortedFolders = [...folders].sort(comparator);
+		const sortedRegularFiles = [...regularFiles].sort(comparator);
+
+		return [...sortedFolders, ...sortedRegularFiles];
+	})();
 
 	return { sortedFiles, sortColumn, sortDirection, handleSort };
 }

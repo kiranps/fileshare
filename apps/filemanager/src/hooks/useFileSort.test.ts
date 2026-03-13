@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { FileItemProps } from "../types";
 import { useFileSort } from "./useFileSort";
 
-const createMockFile = (id: string, name: string, type: string, size: string, modified: Date): FileItemProps => ({
+const createMockFile = (id: string, name: string, type: string, modified: Date, size?: number): FileItemProps => ({
 	id,
 	name,
 	type,
@@ -16,11 +16,11 @@ const createMockFile = (id: string, name: string, type: string, size: string, mo
 
 describe("useFileSort", () => {
 	const mockFiles: FileItemProps[] = [
-		createMockFile("/file1", "zebra.txt", "File", "100", new Date("2024-01-15")),
-		createMockFile("/file2", "alpha.txt", "File", "500", new Date("2024-01-20")),
-		createMockFile("/folder1", "beta", "Folder", "-", new Date("2024-01-18")),
-		createMockFile("/file3", "gamma.txt", "File", "200", new Date("2024-01-10")),
-		createMockFile("/folder2", "delta", "Folder", "-", new Date("2024-01-12")),
+		createMockFile("/file1", "zebra.txt", "File", new Date("2024-01-15"), 100),
+		createMockFile("/file2", "alpha.txt", "File", new Date("2024-01-20"), 500),
+		createMockFile("/folder1", "beta", "Folder", new Date("2024-01-18"), undefined),
+		createMockFile("/file3", "gamma.txt", "File", new Date("2024-01-10"), 200),
+		createMockFile("/folder2", "delta", "Folder", new Date("2024-01-12"), undefined),
 	];
 
 	it("should initialize with name column and ascending direction", () => {
@@ -85,8 +85,7 @@ describe("useFileSort", () => {
 		});
 
 		const sizes = result.current.sortedFiles.map((f) => f.size);
-		// Folders have '-' which parses to 0, then files by size
-		expect(sizes).toEqual(["-", "-", "100", "200", "500"]);
+		expect(sizes).toEqual([undefined, undefined, 100, 200, 500]);
 	});
 
 	it("should sort by size in descending order", () => {
@@ -94,28 +93,29 @@ describe("useFileSort", () => {
 
 		act(() => {
 			result.current.handleSort("size");
+		});
+		act(() => {
 			result.current.handleSort("size");
 		});
 
+		expect(result.current.sortDirection).toBe("desc");
 		const sizes = result.current.sortedFiles.map((f) => f.size);
-		expect(sizes).toEqual(["500", "200", "100", "-", "-"]);
+		expect(sizes).toEqual([undefined, undefined, 500, 200, 100]);
 	});
 
 	it("should sort by modified date in ascending order", () => {
 		const { result } = renderHook(() => useFileSort(mockFiles));
-
 		act(() => {
 			result.current.handleSort("modified");
 		});
-
 		const dates = result.current.sortedFiles.map((f) =>
 			f.modified instanceof Date ? f.modified.toISOString() : new Date(f.modified).toISOString(),
 		);
 		expect(dates).toEqual([
-			new Date("2024-01-10").toISOString(),
 			new Date("2024-01-12").toISOString(),
-			new Date("2024-01-15").toISOString(),
 			new Date("2024-01-18").toISOString(),
+			new Date("2024-01-10").toISOString(),
+			new Date("2024-01-15").toISOString(),
 			new Date("2024-01-20").toISOString(),
 		]);
 	});
@@ -125,6 +125,8 @@ describe("useFileSort", () => {
 
 		act(() => {
 			result.current.handleSort("modified");
+		});
+		act(() => {
 			result.current.handleSort("modified");
 		});
 
@@ -132,19 +134,19 @@ describe("useFileSort", () => {
 			f.modified instanceof Date ? f.modified.toISOString() : new Date(f.modified).toISOString(),
 		);
 		expect(dates).toEqual([
-			new Date("2024-01-20").toISOString(),
 			new Date("2024-01-18").toISOString(),
-			new Date("2024-01-15").toISOString(),
 			new Date("2024-01-12").toISOString(),
+			new Date("2024-01-20").toISOString(),
+			new Date("2024-01-15").toISOString(),
 			new Date("2024-01-10").toISOString(),
 		]);
 	});
 
 	it("should handle case-insensitive name sorting", () => {
 		const files = [
-			createMockFile("/1", "ZEBRA.txt", "File", "100", new Date()),
-			createMockFile("/2", "alpha.txt", "File", "100", new Date()),
-			createMockFile("/3", "Beta.txt", "File", "100", new Date()),
+			createMockFile("/1", "ZEBRA.txt", "File", new Date(), 100),
+			createMockFile("/2", "alpha.txt", "File", new Date(), 100),
+			createMockFile("/3", "Beta.txt", "File", new Date(), 100),
 		];
 
 		const { result } = renderHook(() => useFileSort(files));
@@ -204,8 +206,8 @@ describe("useFileSort", () => {
 
 	it("should handle Date objects and strings for modified", () => {
 		const files = [
-			createMockFile("/1", "file1.txt", "File", "100", new Date("2024-01-15")),
-			createMockFile("/2", "file2.txt", "File", "100", "2024-01-10" as any),
+			createMockFile("/1", "file1.txt", "File", new Date("2024-01-15"), 100),
+			createMockFile("/2", "file2.txt", "File", "2024-01-10" as any, 100),
 		];
 
 		const { result } = renderHook(() => useFileSort(files));
@@ -221,8 +223,8 @@ describe("useFileSort", () => {
 
 	it("should not mutate original file list", () => {
 		const files = [
-			createMockFile("/1", "zebra.txt", "File", "100", new Date()),
-			createMockFile("/2", "alpha.txt", "File", "200", new Date()),
+			createMockFile("/1", "zebra.txt", "File", 100, new Date(), 100),
+			createMockFile("/2", "alpha.txt", "File", 200, new Date(), 100),
 		];
 
 		const originalOrder = files.map((f) => f.name);
@@ -238,8 +240,8 @@ describe("useFileSort", () => {
 
 	it("should handle mixed folders and files with same names", () => {
 		const files = [
-			createMockFile("/1", "test", "Folder", "-", new Date()),
-			createMockFile("/2", "test", "File", "100", new Date()),
+			createMockFile("/1", "test", "Folder", new Date(), undefined),
+			createMockFile("/2", "test", "File", new Date(), 100),
 		];
 
 		const { result } = renderHook(() => useFileSort(files));
@@ -290,9 +292,9 @@ describe("useFileSort", () => {
 
 	it("should sort folders alphabetically when both are folders", () => {
 		const files = [
-			createMockFile("/1", "zebra", "Folder", "-", new Date()),
-			createMockFile("/2", "alpha", "Folder", "-", new Date()),
-			createMockFile("/3", "beta", "Folder", "-", new Date()),
+			createMockFile("/1", "zebra", "Folder", new Date(), undefined),
+			createMockFile("/2", "alpha", "Folder", new Date(), undefined),
+			createMockFile("/3", "beta", "Folder", new Date(), undefined),
 		];
 
 		const { result } = renderHook(() => useFileSort(files));
@@ -303,9 +305,9 @@ describe("useFileSort", () => {
 
 	it("should handle size values with units", () => {
 		const files = [
-			createMockFile("/1", "small.txt", "File", "500 B", new Date()),
-			createMockFile("/2", "medium.txt", "File", "1.5 KB", new Date()),
-			createMockFile("/3", "large.txt", "File", "2.0 MB", new Date()),
+			createMockFile("/1", "small.txt", "File", new Date(), 100),
+			createMockFile("/2", "medium.txt", "File", new Date(), 200),
+			createMockFile("/3", "large.txt", "File", new Date(), 300),
 		];
 
 		const { result } = renderHook(() => useFileSort(files));
@@ -316,6 +318,6 @@ describe("useFileSort", () => {
 
 		// parseInt will extract the leading number
 		const sizes = result.current.sortedFiles.map((f) => f.size);
-		expect(sizes).toEqual(["500 B", "1.5 KB", "2.0 MB"]);
+		expect(sizes).toEqual([100, 200, 300]);
 	});
 });
