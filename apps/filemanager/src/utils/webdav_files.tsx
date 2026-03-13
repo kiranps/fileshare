@@ -60,7 +60,7 @@ export function filesFromWebDAV(data: WebDAVEntry[]): {
 	files: FileItemProps[];
 } {
 	const items: FileItemProps[] = data
-		.filter((entry) => entry.href && basename(entry.href) !== "")
+		.filter((entry) => entry.href)
 		.map((entry) => {
 			const name = entry.displayName ?? basename(entry.href);
 			const ext = !entry.isCollection && name.includes(".") ? (name.split(".").pop()?.toLowerCase() ?? "") : "";

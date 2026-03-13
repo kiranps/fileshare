@@ -8,7 +8,7 @@ const WEBDAV_DEPTH = "1";
 export function downloadFile(path: string) {
 	const a = document.createElement("a");
 	const encoded = encodePath(path);
-	const url = WEBDAV_HOST + encoded + (encoded.includes("?") ? "&download=true" : "?download=true");
+	const url = WEBDAV_HOST + encoded + "?download=true";
 	a.href = url;
 	a.download = "";
 	document.body.appendChild(a);
