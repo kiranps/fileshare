@@ -29,7 +29,7 @@ function getIcon(contentType: string, isCollection: boolean) {
 	return icons.file;
 }
 
-function humanFileSize(size?: number): string {
+export function humanFileSize(size?: number): string {
 	if (typeof size !== "number" || size < 0) return "-";
 	if (size === 0) return "0 B";
 	const units = ["B", "KB", "MB", "GB", "TB", "PB"] as const;
@@ -71,7 +71,7 @@ export function filesFromWebDAV(data: WebDAVEntry[]): {
 				id: entry.href,
 				name,
 				type,
-				size: entry.isCollection ? "-" : humanFileSize(entry.contentLength),
+				size: entry.contentLength,
 				modified: entry.lastModified ?? new Date(0),
 				icon: getIcon(contentType || type.toLowerCase(), entry.isCollection),
 				selected: false,

@@ -44,7 +44,7 @@ describe("filesFromWebDAV", () => {
 			id: "/folder/subfolder/",
 			name: "subfolder",
 			type: "Folder",
-			size: "-",
+			size: undefined,
 			selected: false,
 		});
 
@@ -53,7 +53,7 @@ describe("filesFromWebDAV", () => {
 			id: "/folder/file.txt",
 			name: "file.txt",
 			type: "Text",
-			size: "1.0 KB",
+			size: 1024,
 			selected: false,
 		});
 	});
@@ -198,12 +198,12 @@ describe("filesFromWebDAV", () => {
 
 		const result = filesFromWebDAV(webdavData);
 
-		expect(result.files[0].size).toBe("0 B");
-		expect(result.files[1].size).toBe("500.0 B");
-		expect(result.files[2].size).toBe("1.0 KB");
-		expect(result.files[3].size).toBe("1.5 KB");
-		expect(result.files[4].size).toBe("1.0 MB");
-		expect(result.files[5].size).toBe("1.0 GB");
+		expect(result.files[0].size).toBe(0);
+		expect(result.files[1].size).toBe(500);
+		expect(result.files[2].size).toBe(1024);
+		expect(result.files[3].size).toBe(1536);
+		expect(result.files[4].size).toBe(1048576);
+		expect(result.files[5].size).toBe(1073741824);
 	});
 
 	it('should show "-" for folder sizes', () => {
@@ -220,8 +220,8 @@ describe("filesFromWebDAV", () => {
 		];
 
 		const result = filesFromWebDAV(webdavData);
-		expect(result.activeDirectory?.size).toBe("-");
-		expect(result.files[0].size).toBe("-");
+		expect(result.activeDirectory?.size).toBe(undefined);
+		expect(result.files[0].size).toBe(undefined);
 	});
 
 	it('should show "-" for undefined file sizes', () => {
@@ -238,7 +238,7 @@ describe("filesFromWebDAV", () => {
 		];
 
 		const result = filesFromWebDAV(webdavData);
-		expect(result.files[0].size).toBe("-");
+		expect(result.files[0].size).toBe(undefined);
 	});
 
 	it("should handle missing lastModified dates", () => {

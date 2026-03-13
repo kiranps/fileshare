@@ -6,7 +6,7 @@ export type FileItemProps = {
 	id: string;
 	name: string;
 	type: FileType | string;
-	size?: string;
+	size?: number;
 	modified: Date;
 	icon: JSX.Element;
 	selected: boolean;
