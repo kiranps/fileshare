@@ -20,7 +20,11 @@ export const FileItem: FC<
 > = ({ name, size, modified, icon, selected, onClick, onDoubleClick, onRightClick }) => (
 	<tr
 		tabIndex={0}
-		className={`cursor-pointer outline-none ${selected ? "bg-primary text-primary-content" : "hover:bg-base-200"}`}
+		className={`cursor-pointer outline-none ${
+			selected
+				? "bg-base-200 text-primary-content shadow-[inset_1px_0_0_rgb(218,220,224),inset_-1px_0_0_rgb(218,220,224)]"
+				: "hover:shadow-[inset_1px_0_0_rgb(218,220,224),inset_-1px_0_0_rgb(218,220,224),0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]"
+		}`}
 		onClick={onClick}
 		onDoubleClick={onDoubleClick}
 		onContextMenu={onRightClick}

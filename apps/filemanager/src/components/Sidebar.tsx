@@ -17,7 +17,7 @@ export const Sidebar: FC = () => {
 
 	return (
 		<aside
-			className="w-56 bg-base-200 p-4 flex flex-col gap-2 border-r border-base-300 h-full min-w-[3.5rem]"
+			className="w-56 bg-base-200 p-4 flex flex-col gap-2  h-full min-w-[3.5rem]"
 			aria-label="Sidebar with shortcuts, favorites"
 		>
 			<h2 className="text-sm font-semibold uppercase mb-2 text-base-content/70 pl-1 tracking-wide">Places</h2>

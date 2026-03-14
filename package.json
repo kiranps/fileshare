@@ -1,21 +1,22 @@
 {
-  "name": "webdav-server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "mobile:start": "pnpm --filter mobile start",
-    "mobile:android": "pnpm --filter mobile android",
-    "mobile:android:release": "pnpm --filter mobile android:release",
-    "rust:build": "pnpm --filter react-native-webdav-server ubrn:android && pnpm install",
-    "rust:clean": "pnpm --filter react-native-webdav-server ubrn:clean",
-    "rust:test": "cd packages/react-native-webdav-server/rust/webdavserver; cargo test"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.27.0",
-  "devDependencies": {
-    "typescript": "^5.9.3"
-  }
+    "name": "webdav-server",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "mobile:start": "pnpm --filter mobile start",
+        "mobile:android": "pnpm --filter mobile android",
+        "mobile:android:release": "pnpm --filter mobile android:release",
+        "rust:build": "pnpm --filter react-native-webdav-server ubrn:android && pnpm install",
+        "rust:clean": "pnpm --filter react-native-webdav-server ubrn:clean",
+        "rust:test": "cd packages/react-native-webdav-server/rust/webdavserver; cargo test",
+        "rust:server": "cd packages/react-native-webdav-server/rust/webdavserver; cargo run --example start_server"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "packageManager": "pnpm@10.27.0",
+    "devDependencies": {
+        "typescript": "^5.9.3"
+    }
 }
