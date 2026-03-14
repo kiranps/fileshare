@@ -9,7 +9,7 @@ import { useFileManagerStore } from "@store/useFileManagerStore";
 import type { FileItemProps } from "@types/FileItemProps";
 import { collectDirs, dirname, joinPath, openFilePicker, openFolderPicker } from "@utils/files";
 import { openFileContextMenu } from "@utils/openContextMenu";
-import { ArrowDownUp } from "lucide-react";
+import { ArrowDownUp, FileUp, FolderPlus, FolderUp, Upload } from "lucide-react";
 import type { FC } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -194,60 +194,100 @@ export const FileList: FC<{ files: FileItemProps[] }> = ({ files }) => {
 	return (
 		<section
 			aria-label="File list"
-			className="fixed h-full left-56 right-0 top-26 bottom-0 pb-20 overflow-auto"
+			className="fixed h-full left-56 right-0 top-14 bottom-0 pb-20"
 			onContextMenu={(e) => handleRightClick(e)}
 		>
-			<table className="table text-sm">
-				<thead className="sticky top-0 z-20 bg-base-100">
-					<tr>
-						<th scope="col" className="w-12 text-center"></th>
-						<th
-							scope="col"
-							className="font-semibold cursor-pointer select-none"
-							onClick={() => handleSort("name")}
-							aria-sort={sortColumn === "name" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-						>
-							Name <SortIcon />
-						</th>
-						<th
-							scope="col"
-							className="text-right cursor-pointer select-none"
-							onClick={() => handleSort("size")}
-							aria-sort={sortColumn === "size" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-						>
-							Size <SortIcon />
-						</th>
-						<th
-							scope="col"
-							className="cursor-pointer select-none"
-							onClick={() => handleSort("modified")}
-							aria-sort={sortColumn === "modified" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-						>
-							Modified <SortIcon />
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{sortedFiles.length === 0 ? (
+			<div className="fixed bg-base-100 flex p-2 z-30 left-56 right-0 items-center px-4 border-b border-base-300">
+				<button type="button" className="btn btn-outline btn-sm border-base-300 hover:bg-base-200">
+					<FolderPlus className="mr-2 w-4 h-4" />
+					New Folder
+				</button>
+				<div className="dropdown ml-2">
+					<button type="button" className="btn btn-outline btn-sm border-base-300 hover:bg-base-200">
+						<Upload className="mr-2 w-4 h-4" />
+						Upload
+					</button>
+					<ul tabIndex={-1} className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+						<li>
+							<button
+								type="button"
+								className="flex items-center w-full"
+								onClick={(e) => {
+									e.preventDefault(); /* Handle file upload */
+								}}
+							>
+								<FileUp className="mr-2 w-4 h-4" />
+								Upload File
+							</button>
+						</li>
+						<li>
+							<button
+								type="button"
+								className="flex items-center w-full"
+								onClick={(e) => {
+									e.preventDefault(); /* Handle folder upload */
+								}}
+							>
+								<FolderUp className="mr-2 w-4 h-4" />
+								Upload Folder
+							</button>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<div className="fixed top-26 left-56 right-0 overflow-auto h-full">
+				<table className="table text-sm z-20 top-0 pb-40">
+					<thead className="sticky z-20 top-0 bg-base-100">
 						<tr>
-							<td colSpan={5} className="text-center text-base-content/50 py-8">
-								No files or folders found.
-							</td>
+							<th scope="col" className="w-12 text-center"></th>
+							<th
+								scope="col"
+								className="font-semibold cursor-pointer select-none"
+								onClick={() => handleSort("name")}
+								aria-sort={sortColumn === "name" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+							>
+								Name <SortIcon />
+							</th>
+							<th
+								scope="col"
+								className="text-right cursor-pointer select-none"
+								onClick={() => handleSort("size")}
+								aria-sort={sortColumn === "size" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+							>
+								Size <SortIcon />
+							</th>
+							<th
+								scope="col"
+								className="cursor-pointer select-none"
+								onClick={() => handleSort("modified")}
+								aria-sort={sortColumn === "modified" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+							>
+								Modified <SortIcon />
+							</th>
 						</tr>
-					) : (
-						sortedFiles.map((file) => (
-							<FileItem
-								key={file.id}
-								{...file}
-								selected={selectedIds.includes(file.id)}
-								onClick={(e) => handleItemClick(e, file)}
-								onDoubleClick={() => handleDoubleClick(file)}
-								onRightClick={(e) => handleRightClick(e, file)}
-							/>
-						))
-					)}
-				</tbody>
-			</table>
+					</thead>
+					<tbody className="top-24">
+						{sortedFiles.length === 0 ? (
+							<tr>
+								<td colSpan={5} className="text-center text-base-content/50 py-8">
+									No files or folders found.
+								</td>
+							</tr>
+						) : (
+							sortedFiles.map((file) => (
+								<FileItem
+									key={file.id}
+									{...file}
+									selected={selectedIds.includes(file.id)}
+									onClick={(e) => handleItemClick(e, file)}
+									onDoubleClick={() => handleDoubleClick(file)}
+									onRightClick={(e) => handleRightClick(e, file)}
+								/>
+							))
+						)}
+					</tbody>
+				</table>
+			</div>
 
 			<InputModal
 				open={isModalOpen}
