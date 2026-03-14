@@ -11,6 +11,11 @@ function urlDecodeSafe(value: string): string {
 	}
 }
 
+export const fileSelectedClass =
+	"bg-base-200 text-primary-content shadow-[inset_1px_0_0_rgb(218,220,224),inset_-1px_0_0_rgb(218,220,224)]";
+export const fileHoverWhenNotSelected =
+	"hover:shadow-[inset_1px_0_0_rgb(218,220,224),inset_-1px_0_0_rgb(218,220,224),0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]";
+
 export const FileItem: FC<
 	FileItemProps & {
 		onClick?: (e: React.MouseEvent<HTMLTableRowElement>) => void;
@@ -20,11 +25,7 @@ export const FileItem: FC<
 > = ({ name, size, modified, icon, selected, onClick, onDoubleClick, onRightClick }) => (
 	<tr
 		tabIndex={0}
-		className={`cursor-pointer outline-none ${
-			selected
-				? "bg-base-200 text-primary-content shadow-[inset_1px_0_0_rgb(218,220,224),inset_-1px_0_0_rgb(218,220,224)]"
-				: "hover:shadow-[inset_1px_0_0_rgb(218,220,224),inset_-1px_0_0_rgb(218,220,224),0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]"
-		}`}
+		className={`cursor-pointer outline-none ${selected ? fileSelectedClass : fileHoverWhenNotSelected}`}
 		onClick={onClick}
 		onDoubleClick={onDoubleClick}
 		onContextMenu={onRightClick}

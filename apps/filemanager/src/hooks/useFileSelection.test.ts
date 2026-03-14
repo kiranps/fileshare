@@ -8,7 +8,7 @@ const createMockFile = (id: string, name: string): FileItemProps => ({
 	id,
 	name,
 	type: "File",
-	size: "1.0 KB",
+	size: 1024,
 	modified: new Date("2024-01-15"),
 	icon: createElement("div"),
 	selected: false,
@@ -20,6 +20,11 @@ const mockFiles: FileItemProps[] = [
 	createMockFile("/file3", "file3.txt"),
 	createMockFile("/file4", "file4.txt"),
 	createMockFile("/file5", "file5.txt"),
+	createMockFile("/file6", "file3.txt"),
+	createMockFile("/file7", "file4.txt"),
+	createMockFile("/file8", "file5.txt"),
+	createMockFile("/file9", "file3.txt"),
+	createMockFile("/file10", "file4.txt"),
 ];
 
 describe("useFileSelection", () => {
@@ -119,24 +124,58 @@ describe("useFileSelection", () => {
 		});
 
 		expect(result.current.selectedIds).toEqual(["/file1", "/file2", "/file3", "/file4"]);
+
+		// Shift+click on eighth file
+		act(() => {
+			const event = { stopPropagation: () => {}, shiftKey: true } as React.MouseEvent;
+			result.current.handleItemClick(event, mockFiles[7]);
+		});
+
+		expect(result.current.selectedIds).toEqual([
+			"/file1",
+			"/file2",
+			"/file3",
+			"/file4",
+			"/file5",
+			"/file6",
+			"/file7",
+			"/file8",
+		]);
 	});
 
 	it("should handle Shift+click in reverse order", () => {
 		const { result } = renderHook(() => useFileSelection(mockFiles));
 
-		// Select fourth file
+		// Select nineth file
 		act(() => {
 			const event = { stopPropagation: () => {} } as React.MouseEvent;
-			result.current.handleItemClick(event, mockFiles[3]);
+			result.current.handleItemClick(event, mockFiles[8]);
 		});
 
-		// Shift+click on first file
+		// Shift+click on fifth file
 		act(() => {
 			const event = { stopPropagation: () => {}, shiftKey: true } as React.MouseEvent;
-			result.current.handleItemClick(event, mockFiles[0]);
+			result.current.handleItemClick(event, mockFiles[4]);
 		});
 
-		expect(result.current.selectedIds).toEqual(["/file1", "/file2", "/file3", "/file4"]);
+		expect(result.current.selectedIds).toEqual(["/file5", "/file6", "/file7", "/file8", "/file9"]);
+
+		// Shift+click on second file
+		act(() => {
+			const event = { stopPropagation: () => {}, shiftKey: true } as React.MouseEvent;
+			result.current.handleItemClick(event, mockFiles[1]);
+		});
+
+		expect(result.current.selectedIds).toEqual([
+			"/file2",
+			"/file3",
+			"/file4",
+			"/file5",
+			"/file6",
+			"/file7",
+			"/file8",
+			"/file9",
+		]);
 	});
 
 	it("should handle Shift+click without prior selection", () => {
@@ -211,7 +250,18 @@ describe("useFileSelection", () => {
 			result.current.selectAll();
 		});
 
-		expect(result.current.selectedIds).toEqual(["/file1", "/file2", "/file3", "/file4", "/file5"]);
+		expect(result.current.selectedIds).toEqual([
+			"/file1",
+			"/file2",
+			"/file3",
+			"/file4",
+			"/file5",
+			"/file6",
+			"/file7",
+			"/file8",
+			"/file9",
+			"/file10",
+		]);
 	});
 
 	it("should clear selection on document click", () => {
@@ -297,16 +347,16 @@ describe("useFileSelection", () => {
 		expect(result.current.selectedIds).toEqual(["/file1", "/file3", "/file5"]);
 	});
 
-	it("should maintain last clicked index for subsequent Shift operations", () => {
+	it("should maintain anchor for subsequent Shift operations based on anchor logic", () => {
 		const { result } = renderHook(() => useFileSelection(mockFiles));
 
-		// Click file 1
+		// Click file 1 (index 1)
 		act(() => {
 			const event = { stopPropagation: () => {} } as React.MouseEvent;
 			result.current.handleItemClick(event, mockFiles[1]);
 		});
 
-		// Shift+click file 3
+		// First Shift+click file 3 (index 3) - should select from anchor (file 1)
 		act(() => {
 			const event = { stopPropagation: () => {}, shiftKey: true } as React.MouseEvent;
 			result.current.handleItemClick(event, mockFiles[3]);
@@ -314,14 +364,14 @@ describe("useFileSelection", () => {
 
 		expect(result.current.selectedIds).toEqual(["/file2", "/file3", "/file4"]);
 
-		// Another Shift+click from the last clicked position
+		// Second Shift+click file 0 (index 0) - anchor still file 1
 		act(() => {
 			const event = { stopPropagation: () => {}, shiftKey: true } as React.MouseEvent;
 			result.current.handleItemClick(event, mockFiles[0]);
 		});
 
-		// Should select from file 3 (last clicked) to file 0
-		expect(result.current.selectedIds).toEqual(["/file1", "/file2", "/file3", "/file4"]);
+		// Should select from anchor (file 1, index 1) to file 0
+		expect(result.current.selectedIds).toEqual(["/file1", "/file2"]);
 	});
 
 	it("should cleanup event listener on unmount", () => {

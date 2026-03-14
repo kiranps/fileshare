@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 import { render } from "../test/test-utils";
 import type { FileItemProps } from "../types";
+import { fileSelectedClass } from "./FileItem";
 import { FileList } from "./FileList";
 
 // Mock all heavy external dependencies
@@ -431,17 +432,17 @@ describe("FileList", () => {
 	});
 
 	describe("file selection highlight", () => {
-		it("selected file row has bg-primary class", () => {
+		it("selected file row has selection class", () => {
 			render(<FileList files={[makeFile({ id: "/f.txt", name: "f.txt" })]} />);
 			const row = screen.getByText("f.txt").closest("tr")!;
 			fireEvent.click(row);
-			expect(row.className).toContain("bg-primary");
+			expect(row.className).toContain(fileSelectedClass);
 		});
 
-		it("unselected file row does not have bg-primary class", () => {
+		it("unselected file row does not have selected class", () => {
 			render(<FileList files={[makeFile({ id: "/f.txt", name: "f.txt" })]} />);
 			const row = screen.getByText("f.txt").closest("tr")!;
-			expect(row.className).not.toContain("bg-primary");
+			expect(row.className).not.toContain(fileSelectedClass);
 		});
 	});
 });

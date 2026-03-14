@@ -9,6 +9,7 @@ import type { FileItemProps } from "../types";
 export function useFileSelection(sortedFiles: FileItemProps[]) {
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
 	const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
+	const [selectionAnchor, setSelectionAnchor] = useState<number | null>(null);
 
 	// Clear selection on clicks that bubble up to the document without a file target.
 	useEffect(() => {
@@ -22,11 +23,12 @@ export function useFileSelection(sortedFiles: FileItemProps[]) {
 		const index = sortedFiles.findIndex((f) => f.id === file.id);
 
 		if (e.shiftKey) {
-			let anchor = lastClickedIndex;
+			let anchor = selectionAnchor;
 			if (anchor === null) {
-				const firstSelected = sortedFiles.findIndex((f) => selectedIds.includes(f.id));
-				anchor = firstSelected !== -1 ? firstSelected : index;
+				anchor = lastClickedIndex !== null ? lastClickedIndex : index;
+				setSelectionAnchor(anchor);
 			}
+
 			const start = Math.min(anchor, index);
 			const end = Math.max(anchor, index);
 			setSelectedIds(sortedFiles.slice(start, end + 1).map((f) => f.id));
@@ -37,6 +39,7 @@ export function useFileSelection(sortedFiles: FileItemProps[]) {
 		if (e.ctrlKey) {
 			setSelectedIds((prev) => (prev.includes(file.id) ? prev.filter((id) => id !== file.id) : [...prev, file.id]));
 			setLastClickedIndex(index);
+			setSelectionAnchor(index);
 			return;
 		}
 
@@ -44,15 +47,18 @@ export function useFileSelection(sortedFiles: FileItemProps[]) {
 		if (selectedIds.length === 1 && selectedIds[0] === file.id) {
 			setSelectedIds([]);
 			setLastClickedIndex(null);
+			setSelectionAnchor(null);
 		} else {
 			setSelectedIds([file.id]);
 			setLastClickedIndex(index);
+			setSelectionAnchor(index);
 		}
 	};
 
 	const clearSelection = () => {
 		setSelectedIds([]);
 		setLastClickedIndex(null);
+		setSelectionAnchor(null);
 	};
 
 	const selectAll = () => {

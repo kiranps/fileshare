@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "../test/test-utils";
 import type { FileItemProps } from "../types";
-import { FileItem } from "./FileItem";
+import { FileItem, fileHoverWhenNotSelected, fileSelectedClass } from "./FileItem";
 
 const makeFile = (overrides: Partial<FileItemProps> = {}): FileItemProps => ({
 	id: "/files/document.txt",
@@ -125,7 +125,7 @@ describe("FileItem", () => {
 	});
 
 	describe("selection state", () => {
-		it("applies bg-primary class when selected", () => {
+		it("applies selection style class when selected", () => {
 			const { container } = render(
 				<table>
 					<tbody>
@@ -134,7 +134,7 @@ describe("FileItem", () => {
 				</table>,
 			);
 			const row = container.querySelector("tr");
-			expect(row?.className).toContain("bg-primary");
+			expect(row?.className).toContain(fileSelectedClass);
 		});
 
 		it("does not apply bg-primary when not selected", () => {
@@ -158,7 +158,7 @@ describe("FileItem", () => {
 				</table>,
 			);
 			const row = container.querySelector("tr");
-			expect(row?.className).toContain("hover:bg-base-200");
+			expect(row?.className).toContain(fileHoverWhenNotSelected);
 		});
 	});
 
