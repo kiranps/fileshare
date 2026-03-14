@@ -194,7 +194,7 @@ export const FileList: FC<{ files: FileItemProps[] }> = ({ files }) => {
 	return (
 		<section
 			aria-label="File list"
-			className="fixed h-full left-56 right-0 top-14 bottom-0 pb-20 overflow-auto"
+			className="fixed h-full left-56 right-0 top-26 bottom-0 pb-20 overflow-auto"
 			onContextMenu={(e) => handleRightClick(e)}
 		>
 			<table className="table text-sm">

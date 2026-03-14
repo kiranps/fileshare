@@ -1,3 +1,4 @@
+import { ActionBar } from "@components/ActionBar";
 import { FileList } from "@components/FileList";
 import { Navbar } from "@components/Navbar";
 import { Sidebar } from "@components/Sidebar";
@@ -18,6 +19,8 @@ export const FileManager: FC = () => {
 				<Sidebar />
 				<main className="flex-1 overflow-auto">
 					<Navbar />
+					<ActionBar />
+					<div style={{ height: 48 }} />
 					{isLoading ? (
 						<div className="p-8 text-center text-lg text-base-content/50">Loading files...</div>
 					) : error ? (
