@@ -9,7 +9,7 @@ import { useFileManagerStore } from "@store/useFileManagerStore";
 import type { FileItemProps } from "@types/FileItemProps";
 import { collectDirs, dirname, joinPath, openFilePicker, openFolderPicker } from "@utils/files";
 import { openFileContextMenu } from "@utils/openContextMenu";
-import { ArrowDownUp, FileUp, FolderPlus, FolderUp, Upload } from "lucide-react";
+import { ArrowDownUp, FileUp, FolderPlus, FolderUp, Plus } from "lucide-react";
 import type { FC } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -197,17 +197,25 @@ export const FileList: FC<{ files: FileItemProps[] }> = ({ files }) => {
 			className="fixed h-full left-56 right-0 top-14 bottom-0 pb-20"
 			onContextMenu={(e) => handleRightClick(e)}
 		>
-			<div className="fixed bg-base-100 flex p-2 z-30 left-56 right-0 items-center px-4 border-b border-base-300">
-				<button type="button" className="btn btn-outline btn-sm border-base-300 hover:bg-base-200">
-					<FolderPlus className="mr-2 w-4 h-4" />
-					New Folder
-				</button>
+			<div className="fixed bg-base-100 flex p-2 z-30 left-56 right-0 items-center px-4 border-b border-base-300 justify-between">
 				<div className="dropdown ml-2">
-					<button type="button" className="btn btn-outline btn-sm border-base-300 hover:bg-base-200">
-						<Upload className="mr-2 w-4 h-4" />
-						Upload
+					<button type="button" className="btn btn-outline btn-sm border-base-300">
+						<Plus className="mr-2 w-4 h-4" />
+						New
 					</button>
-					<ul tabIndex={-1} className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+					<ul tabIndex={-1} className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-md">
+						<li>
+							<button
+								type="button"
+								className="flex items-center w-full"
+								onClick={(e) => {
+									e.preventDefault(); /* Handle new folder */
+								}}
+							>
+								<FolderPlus className="mr-2 w-4 h-4" />
+								New Folder
+							</button>
+						</li>
 						<li>
 							<button
 								type="button"
@@ -233,6 +241,11 @@ export const FileList: FC<{ files: FileItemProps[] }> = ({ files }) => {
 							</button>
 						</li>
 					</ul>
+				</div>
+				<div>
+					{selectedIds.length > 0 && (
+						<span className="ml-4 text-xs font-semibold text-base-400">{selectedIds.length} selected</span>
+					)}
 				</div>
 			</div>
 			<div className="fixed top-26 left-56 right-0 overflow-auto h-full">
