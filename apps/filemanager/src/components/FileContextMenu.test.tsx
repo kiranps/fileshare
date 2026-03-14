@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { FileContextMenu } from "./FileContextMenu";
 
 describe("FileContextMenu", () => {
@@ -107,6 +107,8 @@ describe("FileContextMenu", () => {
 		it("does not bubble menu action click to parent", () => {
 			const parentClick = vi.fn();
 			render(
+				// biome-ignore lint/a11y/noStaticElementInteractions: test-only wrapper to verify event propagation
+				// biome-ignore lint/a11y/useKeyWithClickEvents: test-only wrapper to verify event propagation
 				<div onClick={parentClick}>
 					<FileContextMenu {...defaultProps} />
 				</div>,

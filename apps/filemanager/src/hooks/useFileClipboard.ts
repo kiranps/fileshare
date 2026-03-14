@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 import { basename, joinPath } from "../utils/files";
 import { useWebDAVCopy, useWebDAVMove } from "./useWebDAVPropfind";
@@ -6,30 +5,28 @@ import { useWebDAVCopy, useWebDAVMove } from "./useWebDAVPropfind";
 export type ClipboardAction = "cut" | "copy";
 
 /**
- * Manages the clipboard for cut/copy/paste file operations.
- * The clipboard holds the paths of files staged for the operation,
- * and `activeAction` indicates whether a cut or copy is pending.
+ * Thin wrapper over the global clipboard slice in useFileManagerStore.
  *
- * `paste` returns a Promise that resolves when all mutations succeed and
- * rejects (with an AggregateError) if any mutation fails. The clipboard is
- * only cleared on full success so the user can retry after a partial failure.
+ * The synchronous `cut` and `copy` actions are delegated directly to the store.
+ * The `paste` operation is implemented here because it requires the WebDAV
+ * mutation hooks (which cannot live inside a Zustand store).
+ *
+ * Most callers should prefer reading `clipboard`, `activeAction`, `hasPending`,
+ * `cut`, and `copy` directly from `useFileManagerStore` — this hook is provided
+ * for the specific case where `paste` is needed without going through the
+ * FileActionsContext (e.g. standalone tests or headless usage).
  */
 export function useFileClipboard() {
-	const [clipboard, setClipboard] = useState<string[]>([]);
-	const [activeAction, setActiveAction] = useState<ClipboardAction | null>(null);
+	const clipboard = useFileManagerStore((s) => s.clipboard);
+	const activeAction = useFileManagerStore((s) => s.activeAction);
+	const hasPending = useFileManagerStore((s) => s.hasPending);
+	const cut = useFileManagerStore((s) => s.cut);
+	const copy = useFileManagerStore((s) => s.copy);
+	const clearClipboard = useFileManagerStore((s) => s.clearClipboard);
 	const activePath = useFileManagerStore((s) => s.activePath);
+
 	const moveMutation = useWebDAVMove();
 	const copyMutation = useWebDAVCopy();
-
-	const cut = (paths: string[]) => {
-		setClipboard(paths);
-		setActiveAction("cut");
-	};
-
-	const copy = (paths: string[]) => {
-		setClipboard(paths);
-		setActiveAction("copy");
-	};
 
 	const paste = async (): Promise<void> => {
 		if (!activeAction || clipboard.length === 0) return;
@@ -47,19 +44,14 @@ export function useFileClipboard() {
 		const failures = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
 
 		if (failures.length === 0) {
-			// All succeeded — clear clipboard.
-			setClipboard([]);
-			setActiveAction(null);
+			clearClipboard();
 		} else {
-			// Keep clipboard so the user can retry; surface errors to the caller.
 			throw new AggregateError(
 				failures.map((f: PromiseRejectedResult) => f.reason as unknown),
 				`${failures.length} of ${clipboard.length} ${activeAction} operation(s) failed`,
 			);
 		}
 	};
-
-	const hasPending = clipboard.length > 0;
 
 	return { clipboard, activeAction, cut, copy, paste, hasPending };
 }

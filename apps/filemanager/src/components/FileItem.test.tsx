@@ -100,7 +100,6 @@ describe("FileItem", () => {
 		});
 
 		it("renders '-' when modified date is falsy", () => {
-			// @ts-expect-error - testing falsy modified
 			render(
 				<table>
 					<tbody>

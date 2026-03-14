@@ -18,8 +18,8 @@ describe("downloadFile", () => {
 		vi.spyOn(document, "createElement").mockImplementation((tagName: string) => {
 			const element = originalCreateElement(tagName);
 			if (tagName === "a") {
-				element.click = clickSpy;
-				element.remove = removeSpy;
+				element.click = clickSpy as unknown as () => void;
+				element.remove = removeSpy as unknown as () => void;
 			}
 			return element;
 		});
@@ -51,7 +51,7 @@ describe("downloadFile", () => {
 
 describe("webdavPropfind", () => {
 	beforeEach(() => {
-		global.fetch = vi.fn();
+		globalThis.fetch = vi.fn();
 	});
 
 	afterEach(() => {
@@ -72,7 +72,7 @@ describe("webdavPropfind", () => {
   </D:response>
 </D:multistatus>`;
 
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 207,
 			text: async () => mockXML,
@@ -80,7 +80,7 @@ describe("webdavPropfind", () => {
 
 		await webdavPropfind("/folder");
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			"http://localhost:8080/folder",
 			expect.objectContaining({
 				method: "PROPFIND",
@@ -108,7 +108,7 @@ describe("webdavPropfind", () => {
   </D:response>
 </D:multistatus>`;
 
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			text: async () => mockXML,
 		});
@@ -124,7 +124,7 @@ describe("webdavPropfind", () => {
 	});
 
 	it("should throw error on non-ok response", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: false,
 			status: 404,
 			statusText: "Not Found",
@@ -136,14 +136,14 @@ describe("webdavPropfind", () => {
 	it("should pass abort signal to fetch", async () => {
 		const controller = new AbortController();
 
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			text: async () => '<D:multistatus xmlns:D="DAV:"></D:multistatus>',
 		});
 
 		await webdavPropfind("/folder", { signal: controller.signal });
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			expect.any(String),
 			expect.objectContaining({
 				signal: controller.signal,
@@ -152,14 +152,14 @@ describe("webdavPropfind", () => {
 	});
 
 	it("should encode path with special characters", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			text: async () => '<D:multistatus xmlns:D="DAV:"></D:multistatus>',
 		});
 
 		await webdavPropfind("/folder/file with spaces.txt");
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			"http://localhost:8080/folder/file%20with%20spaces.txt",
 			expect.any(Object),
 		);
@@ -168,7 +168,7 @@ describe("webdavPropfind", () => {
 
 describe("webdavDelete", () => {
 	beforeEach(() => {
-		global.fetch = vi.fn();
+		globalThis.fetch = vi.fn();
 	});
 
 	afterEach(() => {
@@ -176,14 +176,14 @@ describe("webdavDelete", () => {
 	});
 
 	it("should make DELETE request and return result", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 204,
 		});
 
 		const result = await webdavDelete("/folder/file.txt");
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			"http://localhost:8080/folder/file.txt",
 			expect.objectContaining({
 				method: "DELETE",
@@ -199,7 +199,7 @@ describe("webdavDelete", () => {
 	});
 
 	it("should throw error on non-ok response", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: false,
 			status: 403,
 			statusText: "Forbidden",
@@ -209,7 +209,7 @@ describe("webdavDelete", () => {
 	});
 
 	it("should throw error on network failure", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
 
 		await expect(webdavDelete("/file.txt")).rejects.toThrow("WebDAV DELETE request failed: Network error");
 	});
@@ -217,14 +217,14 @@ describe("webdavDelete", () => {
 	it("should pass abort signal", async () => {
 		const controller = new AbortController();
 
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 204,
 		});
 
 		await webdavDelete("/file.txt", { signal: controller.signal });
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			expect.any(String),
 			expect.objectContaining({
 				signal: controller.signal,
@@ -235,7 +235,7 @@ describe("webdavDelete", () => {
 
 describe("webdavMove", () => {
 	beforeEach(() => {
-		global.fetch = vi.fn();
+		globalThis.fetch = vi.fn();
 	});
 
 	afterEach(() => {
@@ -243,14 +243,14 @@ describe("webdavMove", () => {
 	});
 
 	it("should make MOVE request with correct headers", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 201,
 		});
 
 		const result = await webdavMove("/old/path.txt", "/new/path.txt");
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			"http://localhost:8080/old/path.txt",
 			expect.objectContaining({
 				method: "MOVE",
@@ -271,14 +271,14 @@ describe("webdavMove", () => {
 	});
 
 	it("should set Overwrite header to T when overwrite is true", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 204,
 		});
 
 		await webdavMove("/old.txt", "/new.txt", true);
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			expect.any(String),
 			expect.objectContaining({
 				headers: expect.objectContaining({
@@ -289,7 +289,7 @@ describe("webdavMove", () => {
 	});
 
 	it("should throw error on non-ok response", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: false,
 			status: 409,
 			statusText: "Conflict",
@@ -299,20 +299,20 @@ describe("webdavMove", () => {
 	});
 
 	it("should throw error on network failure", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
 
 		await expect(webdavMove("/old.txt", "/new.txt")).rejects.toThrow("WebDAV MOVE request failed: Network error");
 	});
 
 	it("should encode paths with special characters", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 201,
 		});
 
 		await webdavMove("/old file.txt", "/new file.txt");
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			"http://localhost:8080/old%20file.txt",
 			expect.objectContaining({
 				headers: expect.objectContaining({
@@ -325,7 +325,7 @@ describe("webdavMove", () => {
 
 describe("webdavCopy", () => {
 	beforeEach(() => {
-		global.fetch = vi.fn();
+		globalThis.fetch = vi.fn();
 	});
 
 	afterEach(() => {
@@ -333,14 +333,14 @@ describe("webdavCopy", () => {
 	});
 
 	it("should make COPY request with correct headers", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 201,
 		});
 
 		const result = await webdavCopy("/source.txt", "/copy.txt");
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			"http://localhost:8080/source.txt",
 			expect.objectContaining({
 				method: "COPY",
@@ -361,14 +361,14 @@ describe("webdavCopy", () => {
 	});
 
 	it("should set Overwrite header to T when overwrite is true", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 204,
 		});
 
 		await webdavCopy("/source.txt", "/copy.txt", true);
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			expect.any(String),
 			expect.objectContaining({
 				headers: expect.objectContaining({
@@ -379,7 +379,7 @@ describe("webdavCopy", () => {
 	});
 
 	it("should throw error on non-ok response", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: false,
 			status: 507,
 			statusText: "Insufficient Storage",
@@ -389,7 +389,7 @@ describe("webdavCopy", () => {
 	});
 
 	it("should throw error on network failure", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network timeout"));
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network timeout"));
 
 		await expect(webdavCopy("/source.txt", "/copy.txt")).rejects.toThrow("WebDAV COPY request failed: Network timeout");
 	});
@@ -397,7 +397,7 @@ describe("webdavCopy", () => {
 
 describe("webdavMkcol", () => {
 	beforeEach(() => {
-		global.fetch = vi.fn();
+		globalThis.fetch = vi.fn();
 	});
 
 	afterEach(() => {
@@ -405,13 +405,13 @@ describe("webdavMkcol", () => {
 	});
 
 	it("should make MKCOL request and return result on 201", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			status: 201,
 		});
 
 		const result = await webdavMkcol("/new/folder");
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			"http://localhost:8080/new/folder",
 			expect.objectContaining({
 				method: "MKCOL",
@@ -427,7 +427,7 @@ describe("webdavMkcol", () => {
 	});
 
 	it("should accept 200 status as success", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			status: 200,
 		});
 
@@ -441,7 +441,7 @@ describe("webdavMkcol", () => {
 	});
 
 	it("should throw error on non-success status", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			status: 405,
 			statusText: "Method Not Allowed",
 		});
@@ -450,7 +450,7 @@ describe("webdavMkcol", () => {
 	});
 
 	it("should throw error on 409 conflict", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			status: 409,
 			statusText: "Conflict",
 		});
@@ -459,7 +459,7 @@ describe("webdavMkcol", () => {
 	});
 
 	it("should throw error on network failure", async () => {
-		(global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Connection refused"));
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Connection refused"));
 
 		await expect(webdavMkcol("/folder")).rejects.toThrow("WebDAV MKCOL request failed: Connection refused");
 	});
@@ -467,7 +467,7 @@ describe("webdavMkcol", () => {
 
 describe("webdavPut", () => {
 	beforeEach(() => {
-		global.fetch = vi.fn();
+		globalThis.fetch = vi.fn();
 	});
 
 	afterEach(() => {
@@ -477,14 +477,14 @@ describe("webdavPut", () => {
 	it("should make PUT request with file body", async () => {
 		const file = new File(["content"], "test.txt", { type: "text/plain" });
 
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 201,
 		});
 
 		const result = await webdavPut("/folder/test.txt", file);
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			"http://localhost:8080/folder/test.txt",
 			expect.objectContaining({
 				method: "PUT",
@@ -503,14 +503,14 @@ describe("webdavPut", () => {
 	it("should include Content-Type header when provided", async () => {
 		const file = new File(["content"], "test.txt");
 
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 201,
 		});
 
 		await webdavPut("/folder/test.txt", file, { contentType: "text/plain" });
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			expect.any(String),
 			expect.objectContaining({
 				headers: {
@@ -523,14 +523,14 @@ describe("webdavPut", () => {
 	it("should not include Content-Type header when not provided", async () => {
 		const file = new File(["content"], "test.txt");
 
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 201,
 		});
 
 		await webdavPut("/folder/test.txt", file);
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			expect.any(String),
 			expect.objectContaining({
 				headers: {},
@@ -541,7 +541,7 @@ describe("webdavPut", () => {
 	it("should throw error on non-ok response", async () => {
 		const file = new File(["content"], "test.txt");
 
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: false,
 			status: 413,
 			statusText: "Payload Too Large",
@@ -553,7 +553,7 @@ describe("webdavPut", () => {
 	it("should throw error on network failure", async () => {
 		const file = new File(["content"], "test.txt");
 
-		(global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Upload interrupted"));
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Upload interrupted"));
 
 		await expect(webdavPut("/folder/test.txt", file)).rejects.toThrow("WebDAV PUT request failed: Upload interrupted");
 	});
@@ -562,14 +562,14 @@ describe("webdavPut", () => {
 		const file = new File(["content"], "test.txt");
 		const controller = new AbortController();
 
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 201,
 		});
 
 		await webdavPut("/folder/test.txt", file, { signal: controller.signal });
 
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			expect.any(String),
 			expect.objectContaining({
 				signal: controller.signal,
@@ -581,7 +581,7 @@ describe("webdavPut", () => {
 		const largeContent = "a".repeat(10 * 1024 * 1024); // 10MB
 		const file = new File([largeContent], "large.bin");
 
-		(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,
 			status: 201,
 		});
@@ -589,7 +589,7 @@ describe("webdavPut", () => {
 		const result = await webdavPut("/large.bin", file);
 
 		expect(result.ok).toBe(true);
-		expect(global.fetch).toHaveBeenCalledWith(
+		expect(globalThis.fetch).toHaveBeenCalledWith(
 			expect.any(String),
 			expect.objectContaining({
 				body: file,

@@ -163,7 +163,7 @@ describe("openFilePicker", () => {
 				createdInput = element as HTMLInputElement;
 				createdInput.type = "file";
 				createdInput.multiple = true;
-				element.click = clickSpy;
+				element.click = clickSpy as unknown as () => void;
 			}
 			return element;
 		});
@@ -228,7 +228,7 @@ describe("openFolderPicker", () => {
 				createdInput.type = "file";
 				createdInput.multiple = true;
 				createdInput.webkitdirectory = true;
-				element.click = clickSpy;
+				element.click = clickSpy as unknown as () => void;
 			}
 			return element;
 		});

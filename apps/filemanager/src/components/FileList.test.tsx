@@ -1,6 +1,7 @@
-import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { createElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { FileActionsProvider } from "../contexts/FileActionsContext";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 import { render } from "../test/test-utils";
 import type { FileItemProps } from "../types";
@@ -111,87 +112,104 @@ const sampleFiles: FileItemProps[] = [
 	makeFolder({ id: "/Photos", name: "Photos" }),
 ];
 
+/** Seed the store with files and render <FileList /> wrapped in FileActionsProvider. */
+function renderFileList(files: FileItemProps[] = sampleFiles) {
+	useFileManagerStore.setState({ files, sortedFiles: files });
+	return render(
+		<FileActionsProvider>
+			<FileList />
+		</FileActionsProvider>,
+	);
+}
+
 describe("FileList", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		capturedContextMenuProps = null;
-		useFileManagerStore.setState({ activePath: "/files" });
+		useFileManagerStore.setState({
+			activePath: "/files",
+			files: [],
+			sortedFiles: [],
+			selectedIds: [],
+			sortColumn: "name",
+			sortDirection: "asc",
+		});
 	});
 
 	describe("rendering", () => {
 		it("renders a table", () => {
-			render(<FileList files={sampleFiles} />);
+			renderFileList();
 			expect(screen.getByRole("table")).toBeInTheDocument();
 		});
 
 		it("renders table header with Name column", () => {
-			render(<FileList files={sampleFiles} />);
+			renderFileList();
 			expect(screen.getByText("Name")).toBeInTheDocument();
 		});
 
 		it("renders table header with Size column", () => {
-			render(<FileList files={sampleFiles} />);
+			renderFileList();
 			expect(screen.getByText("Size")).toBeInTheDocument();
 		});
 
 		it("renders table header with Modified column", () => {
-			render(<FileList files={sampleFiles} />);
+			renderFileList();
 			expect(screen.getByText("Modified")).toBeInTheDocument();
 		});
 
 		it("renders all files as rows", () => {
-			render(<FileList files={sampleFiles} />);
+			renderFileList();
 			expect(screen.getByText("a.txt")).toBeInTheDocument();
 			expect(screen.getByText("b.pdf")).toBeInTheDocument();
 			expect(screen.getByText("Photos")).toBeInTheDocument();
 		});
 
 		it("renders empty state when files is empty", () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			expect(screen.getByText("No files or folders found.")).toBeInTheDocument();
 		});
 
 		it("renders section with aria-label 'File list'", () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			expect(screen.getByRole("region", { name: "File list" })).toBeInTheDocument();
 		});
 	});
 
 	describe("sort headers", () => {
 		it("Name header has aria-sort='ascending' by default", () => {
-			render(<FileList files={sampleFiles} />);
+			renderFileList();
 			const nameHeader = screen.getByRole("columnheader", { name: /Name/ });
 			expect(nameHeader).toHaveAttribute("aria-sort", "ascending");
 		});
 
 		it("Size header has aria-sort='none' by default", () => {
-			render(<FileList files={sampleFiles} />);
+			renderFileList();
 			const sizeHeader = screen.getByRole("columnheader", { name: /Size/ });
 			expect(sizeHeader).toHaveAttribute("aria-sort", "none");
 		});
 
 		it("Modified header has aria-sort='none' by default", () => {
-			render(<FileList files={sampleFiles} />);
+			renderFileList();
 			const modifiedHeader = screen.getByRole("columnheader", { name: /Modified/ });
 			expect(modifiedHeader).toHaveAttribute("aria-sort", "none");
 		});
 
 		it("clicking Name header toggles sort direction", () => {
-			render(<FileList files={sampleFiles} />);
+			renderFileList();
 			const nameHeader = screen.getByRole("columnheader", { name: /Name/ });
 			fireEvent.click(nameHeader);
 			expect(nameHeader).toHaveAttribute("aria-sort", "descending");
 		});
 
 		it("clicking Size header activates size sort", () => {
-			render(<FileList files={sampleFiles} />);
+			renderFileList();
 			const sizeHeader = screen.getByRole("columnheader", { name: /Size/ });
 			fireEvent.click(sizeHeader);
 			expect(sizeHeader).toHaveAttribute("aria-sort", "ascending");
 		});
 
 		it("clicking Modified header activates modified sort", () => {
-			render(<FileList files={sampleFiles} />);
+			renderFileList();
 			const modifiedHeader = screen.getByRole("columnheader", { name: /Modified/ });
 			fireEvent.click(modifiedHeader);
 			expect(modifiedHeader).toHaveAttribute("aria-sort", "ascending");
@@ -200,14 +218,14 @@ describe("FileList", () => {
 
 	describe("double-click folder navigation", () => {
 		it("navigates to folder path on double-click", () => {
-			render(<FileList files={[makeFolder({ id: "/Photos" })]} />);
+			renderFileList([makeFolder({ id: "/Photos" })]);
 			const row = screen.getByText("Photos").closest("tr")!;
 			fireEvent.doubleClick(row);
 			expect(mockNavigate).toHaveBeenCalledWith("/Photos");
 		});
 
 		it("does not navigate on double-click of a file", () => {
-			render(<FileList files={[makeFile({ id: "/files/doc.txt", name: "doc.txt" })]} />);
+			renderFileList([makeFile({ id: "/files/doc.txt", name: "doc.txt" })]);
 			const row = screen.getByText("doc.txt").closest("tr")!;
 			fireEvent.doubleClick(row);
 			expect(mockNavigate).not.toHaveBeenCalled();
@@ -217,49 +235,49 @@ describe("FileList", () => {
 	describe("context menu on file", () => {
 		it("opens context menu on right-click on a file", async () => {
 			const { openFileContextMenu } = vi.mocked(await import("../utils/openContextMenu"));
-			render(<FileList files={[makeFile({ id: "/files/doc.txt", name: "doc.txt" })]} />);
+			renderFileList([makeFile({ id: "/files/doc.txt", name: "doc.txt" })]);
 			const row = screen.getByText("doc.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			expect(openFileContextMenu).toHaveBeenCalled();
 		});
 
 		it("file context menu includes Rename action", () => {
-			render(<FileList files={[makeFile()]} />);
+			renderFileList([makeFile()]);
 			const row = screen.getByText("document.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			expect(capturedContextMenuProps?.actions.some((a) => a.value === "rename")).toBe(true);
 		});
 
 		it("file context menu includes Delete action", () => {
-			render(<FileList files={[makeFile()]} />);
+			renderFileList([makeFile()]);
 			const row = screen.getByText("document.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			expect(capturedContextMenuProps?.actions.some((a) => a.value === "delete")).toBe(true);
 		});
 
 		it("file context menu includes Cut action", () => {
-			render(<FileList files={[makeFile()]} />);
+			renderFileList([makeFile()]);
 			const row = screen.getByText("document.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			expect(capturedContextMenuProps?.actions.some((a) => a.value === "cut")).toBe(true);
 		});
 
 		it("file context menu includes Copy action", () => {
-			render(<FileList files={[makeFile()]} />);
+			renderFileList([makeFile()]);
 			const row = screen.getByText("document.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			expect(capturedContextMenuProps?.actions.some((a) => a.value === "copy")).toBe(true);
 		});
 
 		it("file context menu includes Download action", () => {
-			render(<FileList files={[makeFile()]} />);
+			renderFileList([makeFile()]);
 			const row = screen.getByText("document.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			expect(capturedContextMenuProps?.actions.some((a) => a.value === "download")).toBe(true);
 		});
 
 		it("triggers delete mutation when Delete action is selected", async () => {
-			render(<FileList files={[makeFile({ id: "/files/doc.txt" })]} />);
+			renderFileList([makeFile({ id: "/files/doc.txt" })]);
 			const row = screen.getByText("document.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			await act(async () => {
@@ -270,7 +288,7 @@ describe("FileList", () => {
 
 		it("triggers download when Download action is selected", async () => {
 			const { downloadFile } = vi.mocked(await import("../api/webdav"));
-			render(<FileList files={[makeFile({ id: "/files/doc.txt" })]} />);
+			renderFileList([makeFile({ id: "/files/doc.txt" })]);
 			const row = screen.getByText("document.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			await act(async () => {
@@ -280,7 +298,7 @@ describe("FileList", () => {
 		});
 
 		it("opens rename modal when Rename action is selected", async () => {
-			render(<FileList files={[makeFile({ name: "doc.txt" })]} />);
+			renderFileList([makeFile({ name: "doc.txt" })]);
 			const row = screen.getByText("doc.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			await act(async () => {
@@ -293,55 +311,56 @@ describe("FileList", () => {
 
 	describe("context menu on empty area", () => {
 		it("opens context menu on right-click on empty area", () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			const section = screen.getByRole("region", { name: "File list" });
 			fireEvent.contextMenu(section);
 			expect(capturedContextMenuProps).not.toBeNull();
 		});
 
 		it("empty area context menu includes New Folder", () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			const section = screen.getByRole("region", { name: "File list" });
 			fireEvent.contextMenu(section);
 			expect(capturedContextMenuProps?.actions.some((a) => a.value === "new_folder")).toBe(true);
 		});
 
 		it("empty area context menu includes File Upload", () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			const section = screen.getByRole("region", { name: "File list" });
 			fireEvent.contextMenu(section);
 			expect(capturedContextMenuProps?.actions.some((a) => a.value === "file_upload")).toBe(true);
 		});
 
 		it("empty area context menu includes Folder Upload", () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			const section = screen.getByRole("region", { name: "File list" });
 			fireEvent.contextMenu(section);
 			expect(capturedContextMenuProps?.actions.some((a) => a.value === "folder_upload")).toBe(true);
 		});
 
 		it("empty area context menu includes Select All", () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			const section = screen.getByRole("region", { name: "File list" });
 			fireEvent.contextMenu(section);
 			expect(capturedContextMenuProps?.actions.some((a) => a.value === "select_all")).toBe(true);
 		});
 
 		it("opens new folder modal when New Folder action selected", async () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			const section = screen.getByRole("region", { name: "File list" });
 			fireEvent.contextMenu(section);
 			await act(async () => {
 				await capturedContextMenuProps?.onAction("new_folder");
 			});
 			expect(screen.getByRole("dialog")).toBeInTheDocument();
-			expect(screen.getByText("New Folder")).toBeInTheDocument();
+			const dialog = screen.getByRole("dialog");
+			expect(within(dialog).getByText("New Folder")).toBeInTheDocument();
 		});
 	});
 
 	describe("new folder modal", () => {
 		it("renders InputModal when new_folder modal is open", async () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			const section = screen.getByRole("region", { name: "File list" });
 			fireEvent.contextMenu(section);
 			await act(async () => {
@@ -351,7 +370,7 @@ describe("FileList", () => {
 		});
 
 		it("closes modal when Cancel is clicked", async () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			const section = screen.getByRole("region", { name: "File list" });
 			fireEvent.contextMenu(section);
 			await act(async () => {
@@ -363,7 +382,7 @@ describe("FileList", () => {
 		});
 
 		it("submit button is disabled when input is empty", async () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			const section = screen.getByRole("region", { name: "File list" });
 			fireEvent.contextMenu(section);
 			await act(async () => {
@@ -373,7 +392,7 @@ describe("FileList", () => {
 		});
 
 		it("submit button is enabled when folder name is typed", async () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			const section = screen.getByRole("region", { name: "File list" });
 			fireEvent.contextMenu(section);
 			await act(async () => {
@@ -384,7 +403,7 @@ describe("FileList", () => {
 		});
 
 		it("calls mkdirMutate when folder creation is submitted", async () => {
-			render(<FileList files={[]} />);
+			renderFileList([]);
 			const section = screen.getByRole("region", { name: "File list" });
 			fireEvent.contextMenu(section);
 			await act(async () => {
@@ -401,7 +420,7 @@ describe("FileList", () => {
 
 	describe("rename modal", () => {
 		it("opens rename modal with file name pre-filled", async () => {
-			render(<FileList files={[makeFile({ name: "original.txt" })]} />);
+			renderFileList([makeFile({ name: "original.txt" })]);
 			const row = screen.getByText("original.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			await act(async () => {
@@ -412,7 +431,7 @@ describe("FileList", () => {
 		});
 
 		it("calls move mutation when rename is submitted", async () => {
-			render(<FileList files={[makeFile({ id: "/files/original.txt", name: "original.txt" })]} />);
+			renderFileList([makeFile({ id: "/files/original.txt", name: "original.txt" })]);
 			const row = screen.getByText("original.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			await act(async () => {
@@ -433,14 +452,14 @@ describe("FileList", () => {
 
 	describe("file selection highlight", () => {
 		it("selected file row has selection class", () => {
-			render(<FileList files={[makeFile({ id: "/f.txt", name: "f.txt" })]} />);
+			renderFileList([makeFile({ id: "/f.txt", name: "f.txt" })]);
 			const row = screen.getByText("f.txt").closest("tr")!;
 			fireEvent.click(row);
 			expect(row.className).toContain(fileSelectedClass);
 		});
 
 		it("unselected file row does not have selected class", () => {
-			render(<FileList files={[makeFile({ id: "/f.txt", name: "f.txt" })]} />);
+			renderFileList([makeFile({ id: "/f.txt", name: "f.txt" })]);
 			const row = screen.getByText("f.txt").closest("tr")!;
 			expect(row.className).not.toContain(fileSelectedClass);
 		});
