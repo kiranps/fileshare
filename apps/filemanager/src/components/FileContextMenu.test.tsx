@@ -103,6 +103,17 @@ describe("FileContextMenu", () => {
 			// Verify it is disabled (the native disabled attribute prevents click callbacks)
 			expect(deleteBtn).toBeDisabled();
 		});
+
+		it("does not bubble menu action click to parent", () => {
+			const parentClick = vi.fn();
+			render(
+				<div onClick={parentClick}>
+					<FileContextMenu {...defaultProps} />
+				</div>,
+			);
+			fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+			expect(parentClick).not.toHaveBeenCalled();
+		});
 	});
 
 	describe("outside click dismiss", () => {

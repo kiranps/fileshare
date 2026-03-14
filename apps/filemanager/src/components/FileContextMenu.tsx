@@ -71,7 +71,10 @@ export const FileContextMenu: FC<FileContextMenuProps> = ({ x, y, actions, visib
 						className={`px-4 py-2 w-full text-left hover:bg-base-200 ${
 							action.disabled ? "pointer-events-none text-gray-400" : ""
 						}`}
-						onClick={() => onAction(action.value)}
+						onClick={(e) => {
+							e.stopPropagation();
+							onAction(action.value);
+						}}
 						disabled={action.disabled}
 					>
 						{action.label}
