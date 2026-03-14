@@ -6,21 +6,16 @@ import { useFileSelection } from "@hooks/useFileSelection";
 import { useFileSort } from "@hooks/useFileSort";
 import { useWebDAVDelete, useWebDAVMkcol, useWebDAVMove, useWebDAVPut } from "@hooks/useWebDAVPropfind";
 import { useFileManagerStore } from "@store/useFileManagerStore";
-import type { FileItemProps } from "@types/FileItemProps";
+import type { FileItemProps } from "../types/FileItemProps";
 import { collectDirs, dirname, joinPath, openFilePicker, openFolderPicker } from "@utils/files";
 import { openFileContextMenu } from "@utils/openContextMenu";
-import { ArrowDownUp, FileUp, FolderPlus, FolderUp, Plus } from "lucide-react";
+import { FileUp, FolderPlus, FolderUp, Plus } from "lucide-react";
 import type { FC } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { SortIcon } from "./CustomIcons";
 
 type ModalType = "new_folder" | "rename";
-
-const SortIcon: FC = () => (
-	<span className="ml-2 align-middle inline-block text-sm text-base-content/60">
-		<ArrowDownUp size={16} className="inline" />
-	</span>
-);
 
 export const FileList: FC<{ files: FileItemProps[] }> = ({ files }) => {
 	const activePath = useFileManagerStore((s) => s.activePath);
