@@ -302,9 +302,12 @@ describe("useFileManagerStore", () => {
 			expect(state.hasPending).toBe(false);
 		});
 
-		it("cut sets clipboard and activeAction='cut'", () => {
+		it("cut sets clipboard and activeaction='cut'", () => {
+			useFileManagerStore.setState({
+				selectedIds: ["/file1.txt", "/file2.txt"],
+			});
 			act(() => {
-				useFileManagerStore.getState().cut(["/file1.txt", "/file2.txt"]);
+				useFileManagerStore.getState().cut();
 			});
 			const state = useFileManagerStore.getState();
 			expect(state.clipboard).toEqual(["/file1.txt", "/file2.txt"]);
@@ -313,8 +316,11 @@ describe("useFileManagerStore", () => {
 		});
 
 		it("copy sets clipboard and activeAction='copy'", () => {
+			useFileManagerStore.setState({
+				selectedIds: ["/file1.txt"],
+			});
 			act(() => {
-				useFileManagerStore.getState().copy(["/file1.txt"]);
+				useFileManagerStore.getState().copy();
 			});
 			const state = useFileManagerStore.getState();
 			expect(state.clipboard).toEqual(["/file1.txt"]);
@@ -322,16 +328,19 @@ describe("useFileManagerStore", () => {
 			expect(state.hasPending).toBe(true);
 		});
 
-		it("cut with empty array sets hasPending=false", () => {
+		it("cut with empty selectedId sets hasPending=false", () => {
 			act(() => {
-				useFileManagerStore.getState().cut([]);
+				useFileManagerStore.getState().cut();
 			});
 			expect(useFileManagerStore.getState().hasPending).toBe(false);
 		});
 
 		it("clearClipboard resets clipboard state", () => {
+			useFileManagerStore.setState({
+				selectedIds: ["/file1.txt"],
+			});
 			act(() => {
-				useFileManagerStore.getState().cut(["/file1.txt"]);
+				useFileManagerStore.getState().cut();
 				useFileManagerStore.getState().clearClipboard();
 			});
 			const state = useFileManagerStore.getState();
@@ -341,9 +350,17 @@ describe("useFileManagerStore", () => {
 		});
 
 		it("calling copy after cut replaces clipboard", () => {
+			useFileManagerStore.setState({
+				selectedIds: ["/old.txt"],
+			});
 			act(() => {
-				useFileManagerStore.getState().cut(["/old.txt"]);
-				useFileManagerStore.getState().copy(["/new.txt"]);
+				useFileManagerStore.getState().cut();
+			});
+			useFileManagerStore.setState({
+				selectedIds: ["/new.txt"],
+			});
+			act(() => {
+				useFileManagerStore.getState().copy();
 			});
 			const state = useFileManagerStore.getState();
 			expect(state.clipboard).toEqual(["/new.txt"]);

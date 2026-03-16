@@ -62,6 +62,7 @@ export const FileContextMenu: FC<FileContextMenuProps> = ({ x, y, actions, visib
 				minWidth: 140,
 				position: "fixed",
 			}}
+			data-ignore-outside-click
 			className="menu bg-base-100 px-0 border border-base-300 shadow"
 		>
 			{actions.map((action) => (

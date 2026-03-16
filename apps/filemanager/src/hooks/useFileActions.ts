@@ -13,7 +13,7 @@ export interface FileActions {
 	/** Upload a folder (with all its contents) to the current directory. */
 	uploadFolder: () => void;
 	/** Delete a file/folder by its path id. */
-	deleteFiles: () => void;
+	deleteFiles: () => Promise<void>;
 	/** Download a file by its path id. */
 	downloadFile: (id: string) => void;
 	/** Open the rename modal for a specific file. */

@@ -60,7 +60,10 @@ export const FileList: FC = () => {
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
-			if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+			const target = event.target as HTMLElement;
+			const isIgnored = target.closest("[data-ignore-outside-click]");
+			const isInsideList = containerRef.current?.contains(target);
+			if (containerRef.current && !isInsideList && !isIgnored) {
 				clearSelection();
 			}
 		};
@@ -111,10 +114,10 @@ export const FileList: FC = () => {
 							deleteFiles();
 							break;
 						case "cut":
-							cut(selectedIds);
+							cut();
 							break;
 						case "copy":
-							copy(selectedIds);
+							copy();
 							break;
 						case "download":
 							downloadFile(file.id);

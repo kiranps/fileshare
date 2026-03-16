@@ -65,8 +65,8 @@ export interface FileManagerState {
 	clipboard: string[];
 	activeAction: ClipboardAction | null;
 	hasPending: boolean;
-	cut: (paths: string[]) => void;
-	copy: (paths: string[]) => void;
+	cut: () => void;
+	copy: () => void;
 	clearClipboard: () => void;
 }
 
@@ -179,7 +179,7 @@ export const useFileManagerStore = create<FileManagerState>((set, get) => ({
 	activeAction: null,
 	hasPending: false,
 
-	cut: (paths) => set({ clipboard: paths, activeAction: "cut", hasPending: paths.length > 0 }),
-	copy: (paths) => set({ clipboard: paths, activeAction: "copy", hasPending: paths.length > 0 }),
+	cut: () => set({ clipboard: get().selectedIds, activeAction: "cut", hasPending: get().selectedIds.length > 0 }),
+	copy: () => set({ clipboard: get().selectedIds, activeAction: "copy", hasPending: get().selectedIds.length > 0 }),
 	clearClipboard: () => set({ clipboard: [], activeAction: null, hasPending: false }),
 }));
