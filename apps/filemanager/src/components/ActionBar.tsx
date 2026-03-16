@@ -1,8 +1,6 @@
 import { useFileManagerStore } from "@store/useFileManagerStore";
 import { EllipsisVertical, FileUp, FolderPlus, FolderUp, Plus } from "lucide-react";
 import type { FC } from "react";
-import { useFileActionsContext } from "../contexts/FileActionsContext";
-
 /**
  * ActionBar renders the fixed toolbar above the file list.
  *
@@ -10,10 +8,23 @@ import { useFileActionsContext } from "../contexts/FileActionsContext";
  * FileActionsContext — no props are required. This makes it usable from any
  * position in the component tree without threading callbacks down.
  */
+import { useState } from "react";
+import { useFileActionsContext } from "../contexts/FileActionsContext";
+
 export const ActionBar: FC = () => {
 	const selectedIds = useFileManagerStore((s) => s.selectedIds);
 	const toggleHiddenFiles = useFileManagerStore((s) => s.toggleHiddenFiles);
 	const { openNewFolderModal, uploadFile, uploadFolder } = useFileActionsContext();
+
+	const [dropdownOpen, setDropdownOpen] = useState(false);
+
+	const handleDropdownToggle = () => setDropdownOpen((open) => !open);
+	const handleDropdownClose = () => setDropdownOpen(false);
+
+	const handleToggleHiddenFiles = () => {
+		toggleHiddenFiles();
+		handleDropdownClose();
+	};
 
 	return (
 		<div
@@ -55,31 +66,53 @@ export const ActionBar: FC = () => {
 				</div>
 			</div>
 			<div>
-				<div className="dropdown dropdown-end">
-					<button type="button" tabIndex={0} className="btn btn-ghost btn-sm px-2" aria-label="More actions">
+				<div className={`dropdown dropdown-end ${dropdownOpen ? " dropdown-open" : ""}`}>
+					<button
+						type="button"
+						className="btn btn-ghost btn-sm px-2"
+						aria-label="More actions"
+						onClick={handleDropdownToggle}
+					>
 						<EllipsisVertical className="w-5 h-5" />
 					</button>
-					<ul tabIndex={-1} className="dropdown-content menu bg-base-200 rounded-box z-1 w-52 p-2 shadow-xl mt-2">
+					<ul
+						className="dropdown-content menu bg-base-200 rounded-box z-1 w-52 p-2 shadow-xl mt-2"
+						style={{ display: dropdownOpen ? "block" : "none" }}
+					>
 						<li>
-							<a>SORT</a>
+							<button type="button" className="w-full text-left" onClick={handleDropdownClose}>
+								SORT
+							</button>
 						</li>
 						<li>
-							<a>A-Z</a>
+							<button type="button" className="w-full text-left" onClick={handleDropdownClose}>
+								A-Z
+							</button>
 						</li>
 						<li>
-							<a>Z-A</a>
+							<button type="button" className="w-full text-left" onClick={handleDropdownClose}>
+								Z-A
+							</button>
 						</li>
 						<li>
-							<a>Last Modified</a>
+							<button type="button" className="w-full text-left" onClick={handleDropdownClose}>
+								Last Modified
+							</button>
 						</li>
 						<li>
-							<a>First Modified</a>
+							<button type="button" className="w-full text-left" onClick={handleDropdownClose}>
+								First Modified
+							</button>
 						</li>
 						<li>
-							<a>Size</a>
+							<button type="button" className="w-full text-left" onClick={handleDropdownClose}>
+								Size
+							</button>
 						</li>
-						<li onClick={toggleHiddenFiles}>
-							<a>Show Hidden Files</a>
+						<li>
+							<button type="button" className="w-full text-left" onClick={handleToggleHiddenFiles}>
+								Show Hidden Files
+							</button>
 						</li>
 					</ul>
 				</div>
