@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useFileActionsContext } from "../contexts/FileActionsContext";
 import type { FileItemProps } from "../types/FileItemProps";
 import { SortIcon } from "./CustomIcons";
+import { useEffect, useRef } from "react";
 
 /**
  * FileList renders the sortable table of files and folders.
@@ -33,6 +34,10 @@ export const FileList: FC = () => {
 	const cut = useFileManagerStore((s) => s.cut);
 	const copy = useFileManagerStore((s) => s.copy);
 
+	const clearSelection = useFileManagerStore((s) => s.clearSelection);
+
+	const containerRef = useRef<HTMLDivElement>(null);
+
 	// --- Context actions ---
 	const {
 		openNewFolderModal,
@@ -52,6 +57,18 @@ export const FileList: FC = () => {
 		isModalError,
 		modalErrorText,
 	} = useFileActionsContext();
+
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+				clearSelection();
+			}
+		};
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, [clearSelection]);
 
 	// --- Navigation ---
 	const handleDoubleClick = (file: FileItemProps) => {
@@ -157,6 +174,7 @@ export const FileList: FC = () => {
 			aria-label="File list"
 			className="fixed h-full left-56 right-0 top-14 bottom-0 pb-20"
 			onContextMenu={(e) => handleRightClick(e)}
+			ref={containerRef}
 		>
 			<div className="fixed top-26 left-56 right-0 overflow-auto h-full">
 				<table className="table text-sm z-20 top-0 pb-40">
