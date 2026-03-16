@@ -25,7 +25,7 @@ vi.mock("react-router-dom", async () => {
 
 vi.mock("../hooks/useWebDAVPropfind", () => ({
 	useWebDAVDelete: vi.fn(() => ({
-		mutate: mockDeleteMutate,
+		mutateAsync: mockDeleteMutate,
 		isPending: false,
 		isError: false,
 		error: null,
@@ -284,6 +284,30 @@ describe("FileList", () => {
 				await capturedContextMenuProps?.onAction("delete");
 			});
 			expect(mockDeleteMutate).toHaveBeenCalledWith("/files/doc.txt");
+		});
+
+		it("triggers delete mutation when Delete action is selected - multiple files", async () => {
+			renderFileList([
+				makeFile({ id: "/files/doc1.txt", name: "document1.txt" }),
+				makeFile({ id: "/files/doc2.txt", name: "document2.txt" }),
+				makeFile({ id: "/files/doc3.txt", name: "document3.txt" }),
+				makeFile({ id: "/files/doc4.txt", name: "document4.txt" }),
+				makeFile({ id: "/files/doc5.txt", name: "document5.txt" }),
+			]);
+			const row2 = screen.getByText("document2.txt").closest("tr")!;
+			const row3 = screen.getByText("document3.txt").closest("tr")!;
+			const row4 = screen.getByText("document4.txt").closest("tr")!;
+			fireEvent.click(row2, { ctrlKey: true });
+			fireEvent.click(row3, { ctrlKey: true });
+			fireEvent.click(row4, { ctrlKey: true });
+			fireEvent.contextMenu(row4);
+			await act(async () => {
+				await capturedContextMenuProps?.onAction("delete");
+			});
+			expect(mockDeleteMutate).toHaveBeenCalledWith("/files/doc2.txt");
+			expect(mockDeleteMutate).toHaveBeenCalledWith("/files/doc3.txt");
+			expect(mockDeleteMutate).toHaveBeenCalledWith("/files/doc4.txt");
+			expect(mockDeleteMutate).toHaveBeenCalledTimes(3);
 		});
 
 		it("triggers download when Download action is selected", async () => {

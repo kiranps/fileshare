@@ -37,7 +37,7 @@ export const FileList: FC = () => {
 	const {
 		openNewFolderModal,
 		openRenameModal,
-		deleteFile,
+		deleteFiles,
 		uploadFile,
 		uploadFolder,
 		paste,
@@ -91,7 +91,7 @@ export const FileList: FC = () => {
 							openRenameModal(file.id, file.name);
 							break;
 						case "delete":
-							deleteFile(file.id);
+							deleteFiles();
 							break;
 						case "cut":
 							cut(selectedIds);

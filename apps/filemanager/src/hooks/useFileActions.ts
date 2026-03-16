@@ -13,7 +13,7 @@ export interface FileActions {
 	/** Upload a folder (with all its contents) to the current directory. */
 	uploadFolder: () => void;
 	/** Delete a file/folder by its path id. */
-	deleteFile: (id: string) => void;
+	deleteFiles: () => void;
 	/** Download a file by its path id. */
 	downloadFile: (id: string) => void;
 	/** Open the rename modal for a specific file. */
@@ -36,6 +36,7 @@ export function useFileActions(onModalRequest: (req: ModalRequest) => void): Fil
 	const clipboard = useFileManagerStore((s) => s.clipboard);
 	const activeAction = useFileManagerStore((s) => s.activeAction);
 	const clearClipboard = useFileManagerStore((s) => s.clearClipboard);
+	const clearSelection = useFileManagerStore((s) => s.clearSelection);
 
 	const deleteMutation = useWebDAVDelete();
 	const moveMutation = useWebDAVMove();
@@ -77,8 +78,24 @@ export function useFileActions(onModalRequest: (req: ModalRequest) => void): Fil
 			});
 	};
 
-	const handleDeleteFile = (id: string) => {
-		deleteMutation.mutate(id);
+	const handleDeleteFiles = async (): Promise<void> => {
+		const selectedIds = useFileManagerStore.getState().selectedIds;
+		const results = await Promise.allSettled(
+			selectedIds.map((p) => {
+				return deleteMutation.mutateAsync(p);
+			}),
+		);
+
+		const failures = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+
+		if (failures.length === 0) {
+			clearSelection();
+		} else {
+			throw new AggregateError(
+				failures.map((f: PromiseRejectedResult) => f.reason as unknown),
+				`${failures.length} of ${selectedIds.length} delete operation(s) failed`,
+			);
+		}
 	};
 
 	const handleDownloadFile = (id: string) => {
@@ -118,7 +135,7 @@ export function useFileActions(onModalRequest: (req: ModalRequest) => void): Fil
 		openNewFolderModal,
 		uploadFile: handleUploadFile,
 		uploadFolder: handleUploadFolder,
-		deleteFile: handleDeleteFile,
+		deleteFiles: handleDeleteFiles,
 		downloadFile: handleDownloadFile,
 		openRenameModal: handleOpenRenameModal,
 		paste: handlePaste,
