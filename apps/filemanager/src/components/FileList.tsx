@@ -84,14 +84,9 @@ export const FileList: FC = () => {
 	const handleRightClick = (e: React.MouseEvent, file?: FileItemProps) => {
 		e.preventDefault();
 		e.stopPropagation();
-
+		const menuActions = [];
 		if (file) {
-			// Ensure the right-clicked file is in the selection.
-			if (!selectedIds.includes(file.id)) {
-				handleItemClick(e, file);
-			}
-
-			const menuActions = hasPending
+			const menu = hasPending
 				? [{ label: "Paste", value: "paste" }]
 				: [
 						{ label: "Rename", value: "rename" },
@@ -100,38 +95,9 @@ export const FileList: FC = () => {
 						{ label: "Copy", value: "copy" },
 						{ label: "Delete", value: "delete" },
 					];
-
-			openFileContextMenu({
-				x: e.clientX,
-				y: e.clientY,
-				actions: menuActions,
-				onAction: async (action) => {
-					switch (action) {
-						case "rename":
-							openRenameModal(file.id, file.name);
-							break;
-						case "delete":
-							deleteFiles();
-							break;
-						case "cut":
-							cut();
-							break;
-						case "copy":
-							copy();
-							break;
-						case "download":
-							downloadFile(file.id);
-							break;
-						case "paste":
-							await paste().catch((err: unknown) => {
-								console.error("Paste failed:", err);
-							});
-							break;
-					}
-				},
-			});
+			menuActions.push(...menu);
 		} else {
-			const menuActions = hasPending
+			const menu = hasPending
 				? [
 						{ label: "New Folder", value: "new_folder" },
 						{ label: "Paste", value: "paste" },
@@ -142,34 +108,61 @@ export const FileList: FC = () => {
 						{ label: "Folder Upload", value: "folder_upload" },
 						{ label: "Select All", value: "select_all" },
 					];
-
-			openFileContextMenu({
-				x: e.clientX,
-				y: e.clientY,
-				actions: menuActions,
-				onAction: async (action) => {
-					switch (action) {
-						case "new_folder":
-							openNewFolderModal();
-							break;
-						case "paste":
-							await paste().catch((err: unknown) => {
-								console.error("Paste failed:", err);
-							});
-							break;
-						case "file_upload":
-							uploadFile();
-							break;
-						case "folder_upload":
-							uploadFolder();
-							break;
-						case "select_all":
-							selectAll();
-							break;
-					}
-				},
-			});
+			menuActions.push(...menu);
 		}
+
+		if (file) {
+			// Ensure the right-clicked file is in the selection.
+			if (!selectedIds.includes(file.id)) {
+				handleItemClick(e, file);
+			}
+		}
+
+		openFileContextMenu({
+			x: e.clientX,
+			y: e.clientY,
+			actions: menuActions,
+			onAction: async (action) => {
+				switch (action) {
+					case "rename":
+						if (file) {
+							openRenameModal(file.id, file.name);
+						}
+						break;
+					case "delete":
+						deleteFiles();
+						break;
+					case "cut":
+						cut();
+						break;
+					case "copy":
+						copy();
+						break;
+					case "download":
+						if (file) {
+							downloadFile(file.id);
+						}
+						break;
+					case "paste":
+						await paste().catch((err: unknown) => {
+							console.error("Paste failed:", err);
+						});
+						break;
+					case "new_folder":
+						openNewFolderModal();
+						break;
+					case "file_upload":
+						uploadFile();
+						break;
+					case "folder_upload":
+						uploadFolder();
+						break;
+					case "select_all":
+						selectAll();
+						break;
+				}
+			},
+		});
 	};
 
 	return (
