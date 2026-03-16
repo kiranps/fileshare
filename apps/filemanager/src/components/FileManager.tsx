@@ -16,10 +16,15 @@ export const FileManager: FC = () => {
 
 	// Push the fetched (and filtered) files into the global store so that the
 	// sort/selection slices always work on the current file list.
+	const showHiddenFiles = useFileManagerStore((s) => s.showHiddenFiles);
+
 	useEffect(() => {
-		const files = data ? filesFromWebDAV(data).files.filter((f) => !f.name.startsWith(".")) : [];
+		let files = data ? filesFromWebDAV(data).files : [];
+		if (!showHiddenFiles) {
+			files = files.filter((f) => !f.name.startsWith("."));
+		}
 		setFiles(files);
-	}, [data, setFiles]);
+	}, [data, setFiles, showHiddenFiles]);
 
 	return (
 		<FileActionsProvider>

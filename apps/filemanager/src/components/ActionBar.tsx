@@ -1,5 +1,5 @@
 import { useFileManagerStore } from "@store/useFileManagerStore";
-import { FileUp, FolderPlus, FolderUp, Plus } from "lucide-react";
+import { EllipsisVertical, FileUp, FolderPlus, FolderUp, Plus } from "lucide-react";
 import type { FC } from "react";
 import { useFileActionsContext } from "../contexts/FileActionsContext";
 
@@ -12,6 +12,7 @@ import { useFileActionsContext } from "../contexts/FileActionsContext";
  */
 export const ActionBar: FC = () => {
 	const selectedIds = useFileManagerStore((s) => s.selectedIds);
+	const toggleHiddenFiles = useFileManagerStore((s) => s.toggleHiddenFiles);
 	const { openNewFolderModal, uploadFile, uploadFolder } = useFileActionsContext();
 
 	return (
@@ -20,36 +21,68 @@ export const ActionBar: FC = () => {
 			role="toolbar"
 			aria-label="File actions"
 		>
-			<div className="dropdown ml-2">
-				<button type="button" className="btn btn-outline btn-sm border-base-300">
-					<Plus className="mr-2 w-4 h-4" />
-					New
-				</button>
-				<ul tabIndex={-1} className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-md">
-					<li>
-						<button type="button" className="flex items-center w-full" onClick={openNewFolderModal}>
-							<FolderPlus className="mr-2 w-4 h-4" />
-							New Folder
-						</button>
-					</li>
-					<li>
-						<button type="button" className="flex items-center w-full" onClick={uploadFile}>
-							<FileUp className="mr-2 w-4 h-4" />
-							Upload File
-						</button>
-					</li>
-					<li>
-						<button type="button" className="flex items-center w-full" onClick={uploadFolder}>
-							<FolderUp className="mr-2 w-4 h-4" />
-							Upload Folder
-						</button>
-					</li>
-				</ul>
+			<div className="flex items-center">
+				<div className="dropdown ml-2">
+					<button type="button" className="btn btn-outline btn-sm border-base-300">
+						<Plus className="mr-2 w-4 h-4" />
+						New
+					</button>
+					<ul tabIndex={-1} className="dropdown-content menu bg-base-200 rounded-box z-1 w-52 p-2 shadow-xl">
+						<li>
+							<button type="button" className="flex items-center w-full" onClick={openNewFolderModal}>
+								<FolderPlus className="mr-2 w-4 h-4" />
+								New Folder
+							</button>
+						</li>
+						<li>
+							<button type="button" className="flex items-center w-full" onClick={uploadFile}>
+								<FileUp className="mr-2 w-4 h-4" />
+								Upload File
+							</button>
+						</li>
+						<li>
+							<button type="button" className="flex items-center w-full" onClick={uploadFolder}>
+								<FolderUp className="mr-2 w-4 h-4" />
+								Upload Folder
+							</button>
+						</li>
+					</ul>
+				</div>
+				<div>
+					{selectedIds.length > 0 && (
+						<span className="ml-4 text-xs font-semibold text-base-400">{selectedIds.length} selected</span>
+					)}
+				</div>
 			</div>
 			<div>
-				{selectedIds.length > 0 && (
-					<span className="ml-4 text-xs font-semibold text-base-400">{selectedIds.length} selected</span>
-				)}
+				<div className="dropdown dropdown-end">
+					<button type="button" tabIndex={0} className="btn btn-ghost btn-sm px-2" aria-label="More actions">
+						<EllipsisVertical className="w-5 h-5" />
+					</button>
+					<ul tabIndex={-1} className="dropdown-content menu bg-base-200 rounded-box z-1 w-52 p-2 shadow-xl mt-2">
+						<li>
+							<a>SORT</a>
+						</li>
+						<li>
+							<a>A-Z</a>
+						</li>
+						<li>
+							<a>Z-A</a>
+						</li>
+						<li>
+							<a>Last Modified</a>
+						</li>
+						<li>
+							<a>First Modified</a>
+						</li>
+						<li>
+							<a>Size</a>
+						</li>
+						<li onClick={toggleHiddenFiles}>
+							<a>Show Hidden Files</a>
+						</li>
+					</ul>
+				</div>
 			</div>
 		</div>
 	);

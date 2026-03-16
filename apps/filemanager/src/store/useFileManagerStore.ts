@@ -55,6 +55,10 @@ export interface FileManagerState {
 	/** Derived: files sorted by sortColumn / sortDirection. Always up-to-date. */
 	sortedFiles: FileItemProps[];
 
+	// --- Hidden Files Toggle ---
+	showHiddenFiles: boolean;
+	toggleHiddenFiles: () => void;
+
 	// --- Selection ---
 	selectedIds: string[];
 	handleItemClick: (e: React.MouseEvent, file: FileItemProps) => void;
@@ -100,6 +104,10 @@ export const useFileManagerStore = create<FileManagerState>((set, get) => ({
 			sortedFiles: computeSortedFiles(files, newColumn, newDirection),
 		});
 	},
+
+	// --- Hidden Files Toggle ---
+	showHiddenFiles: false,
+	toggleHiddenFiles: () => set((state) => ({ showHiddenFiles: !state.showHiddenFiles })),
 
 	// --- Selection ---
 	selectedIds: [],
