@@ -1,7 +1,12 @@
-use thiserror::Error;
-mod server;
+mod helpers;
+mod logging;
+mod middleware;
+mod routing;
+mod webdav_server;
 
 uniffi::setup_scaffolding!();
+
+use thiserror::Error;
 
 /// =======================
 /// Errors exposed to JS
@@ -19,4 +24,4 @@ pub enum ServerError {
     RuntimeError { message: String },
 }
 
-pub use server::{StartOptions, WebDavServer};
+pub use webdav_server::{StartOptions, WebDavServer};

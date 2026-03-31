@@ -153,6 +153,6 @@
     "version": "0.57.0"
   },
   "dependencies": {
-    "uniffi-bindgen-react-native": "github:jhugman/uniffi-bindgen-react-native#main"
+    "uniffi-bindgen-react-native": "github:kiranps/uniffi-bindgen-react-native#main"
   }
 }
