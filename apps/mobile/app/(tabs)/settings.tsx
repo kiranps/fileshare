@@ -1,26 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Settings as SettingsIcon, Save, RefreshCw } from 'lucide-react-native';
 import { interopIcon } from '@/utils/css';
-import {
-  Settings as SettingsIcon,
-  Server,
-  Folder,
-  Lock,
-  Shield,
-  Save,
-  RefreshCw,
-} from 'lucide-react-native';
-import { useServerStore } from '@/store/serverStore';
+import { useServerStore, DEFAULT_SETTINGS } from '@/store/serverStore';
 import { useShallow } from 'zustand/react/shallow';
 import FileBrowser from '@/components/FileBrowser';
+import ConnectionSettings from '@/components/settings/ConnectionSettings';
+import AuthSettings from '@/components/settings/AuthSettings';
 
 interopIcon(SettingsIcon);
-interopIcon(Server);
-interopIcon(Folder);
-interopIcon(Lock);
-interopIcon(Shield);
 interopIcon(Save);
 interopIcon(RefreshCw);
 
@@ -31,43 +21,28 @@ export default function SettingsScreen() {
       setSettings: s.setSettings,
     }))
   );
-  const [showPassword, setShowPassword] = useState(false);
+
   const [showFileBrowser, setShowFileBrowser] = useState(false);
 
-  const port = settings.port;
-  const rootPath = settings.basePath;
-  const authEnabled = settings.authEnabled;
-  const username = settings.username;
-  const password = settings.password;
-
   const handleSave = () => {
-    // Validate port
-    const portNum = port;
-    if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+    if (isNaN(settings.port) || settings.port < 1 || settings.port > 65535) {
       Alert.alert('Invalid Port', 'Please enter a valid port number (1-65535)');
       return;
     }
 
-    // Validate auth credentials if enabled
-    if (authEnabled && (!username || !password)) {
+    if (settings.authEnabled && (!settings.username || !settings.password)) {
       Alert.alert('Missing Credentials', 'Please enter both username and password');
       return;
     }
 
     Alert.alert(
       'Settings Saved',
-      `Configuration updated:\n\nPort: ${port}\nRoot: ${rootPath}\nAuth: ${authEnabled ? 'Enabled' : 'Disabled'}`
+      `Configuration updated:\n\nPort: ${settings.port}\nRoot: ${settings.basePath}\nAuth: ${settings.authEnabled ? 'Enabled' : 'Disabled'}`
     );
   };
 
   const handleReset = () => {
-    setSettings({
-      port: 8080,
-      basePath: '/storage/emulated/0',
-      authEnabled: true,
-      username: 'admin',
-      password: 'password',
-    });
+    setSettings(DEFAULT_SETTINGS);
     Alert.alert('Reset', 'Settings have been reset to defaults');
   };
 
@@ -76,9 +51,11 @@ export default function SettingsScreen() {
     setShowFileBrowser(false);
   };
 
-  return showFileBrowser ? (
-    <FileBrowser rootPath={rootPath} setRootPath={selectFolder} />
-  ) : (
+  if (showFileBrowser) {
+    return <FileBrowser rootPath={settings.basePath} setRootPath={selectFolder} />;
+  }
+
+  return (
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ paddingBottom: 128 }}>
         {/* Header */}
@@ -90,127 +67,13 @@ export default function SettingsScreen() {
           <ThemeToggle />
         </View>
 
-        {/* Connection Settings */}
-        <View className="mb-6 px-6">
-          <Text className="mb-3 text-sm font-semibold uppercase tracking-wider text-foreground opacity-70">
-            Connection
-          </Text>
-          <View className="overflow-hidden rounded-xl border border-border bg-card">
-            {/* Port */}
-            <View className="border-b border-border p-4">
-              <Text className="mb-2 text-sm text-muted-foreground">Server Port</Text>
-              <TextInput
-                value={port?.toString() ?? ''}
-                onChangeText={(v) => {
-                  if (/^\d*$/.test(v)) {
-                    setSettings({ port: v === '' ? undefined : Number(v) });
-                  }
-                }}
-                keyboardType="number-pad"
-                className="rounded-lg border border-border bg-input px-4 py-3 font-mono text-foreground"
-              />
-              <Text className="mt-2 text-xs text-muted-foreground">
-                Port must be between 1 and 65535
-              </Text>
-            </View>
+        <ConnectionSettings
+          settings={settings}
+          onChangeSettings={setSettings}
+          onBrowseFolder={() => setShowFileBrowser(true)}
+        />
 
-            {/* Root Path */}
-            <View className="p-4">
-              <Text className="mb-2 text-sm text-muted-foreground">Root Filesystem Path</Text>
-              <TouchableOpacity onPress={() => setShowFileBrowser(true)} className="flex-row gap-2">
-                <TextInput
-                  value={rootPath}
-                  editable={false}
-                  placeholder="/storage/emulated/0"
-                  className="flex-1 rounded-lg border border-border bg-input px-4 py-3 font-mono text-foreground"
-                />
-                <View className="flex items-center justify-center rounded-lg border border-border bg-secondary px-4">
-                  <Folder className="text-secondary-foreground" size={20} />
-                </View>
-              </TouchableOpacity>
-              <Text className="mt-2 text-xs text-muted-foreground">
-                The folder that will be accessible to connected devices
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Authentication Settings */}
-        <View className="mb-6 px-6">
-          <Text className="mb-3 text-sm font-semibold uppercase tracking-wider text-foreground opacity-70">
-            Authentication
-          </Text>
-          <View className="overflow-hidden rounded-xl border border-border bg-card">
-            {/* Auth Toggle */}
-            <View className="border-b border-border p-4">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3">
-                  <View className={`rounded-lg p-2 ${authEnabled ? 'bg-primary/20' : 'bg-muted'}`}>
-                    <Shield
-                      size={20}
-                      className={authEnabled ? 'text-primary' : 'text-muted-foreground'}
-                    />
-                  </View>
-                  <View>
-                    <Text className="font-medium text-foreground">Enable Authentication</Text>
-                    <Text className="text-xs text-muted-foreground">
-                      Require username and password to connect
-                    </Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  onPress={() => setSettings({ authEnabled: !authEnabled })}
-                  className={`h-7 w-12 rounded-full p-1 ${authEnabled ? 'bg-primary' : 'bg-muted'}`}>
-                  <View
-                    className={`h-5 w-5 rounded-full bg-white shadow-sm ${
-                      authEnabled ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Username */}
-            {authEnabled && (
-              <>
-                <View className="border-b border-border p-4">
-                  <Text className="mb-2 text-sm text-muted-foreground">Username</Text>
-                  <View className="flex-row items-center rounded-lg border border-border bg-input px-4">
-                    <Lock size={18} className="mr-3 text-muted-foreground" />
-                    <TextInput
-                      value={username}
-                      onChangeText={(v) => setSettings({ username: v })}
-                      placeholder="Enter username"
-                      className="flex-1 py-3 text-foreground"
-                      autoCapitalize="none"
-                    />
-                  </View>
-                </View>
-
-                {/* Password */}
-                <View className="p-4">
-                  <Text className="mb-2 text-sm text-muted-foreground">Password</Text>
-                  <View className="flex-row items-center rounded-lg border border-border bg-input px-4">
-                    <Lock size={18} className="mr-3 text-muted-foreground" />
-                    <TextInput
-                      value={password}
-                      onChangeText={(v) => setSettings({ password: v })}
-                      placeholder="Enter password"
-                      secureTextEntry={!showPassword}
-                      className="flex-1 py-3 text-foreground"
-                      autoCapitalize="none"
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                      <Text className="text-sm font-medium text-primary">
-                        {showPassword ? 'Hide' : 'Show'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
+        <AuthSettings settings={settings} onChangeSettings={setSettings} />
 
         {/* Action Buttons */}
         <View className="gap-3 px-6">

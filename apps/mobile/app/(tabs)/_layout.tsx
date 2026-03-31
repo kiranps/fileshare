@@ -2,6 +2,16 @@ import { Tabs } from 'expo-router';
 import { Server, Settings } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { interopIcon } from '@/utils/css';
+import {
+  TAB_ACTIVE_COLOR_LIGHT,
+  TAB_ACTIVE_COLOR_DARK,
+  TAB_INACTIVE_COLOR_LIGHT,
+  TAB_INACTIVE_COLOR_DARK,
+  TAB_BAR_BG_LIGHT,
+  TAB_BAR_BG_DARK,
+  TAB_BORDER_COLOR_LIGHT,
+  TAB_BORDER_COLOR_DARK,
+} from '@/constants';
 
 // Enable className styling for Lucide icons
 interopIcon(Server);
@@ -16,11 +26,11 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: isDark ? '#0f0f1a' : '#fafaff',
-          borderTopColor: isDark ? '#262641' : '#e2e8f0',
+          backgroundColor: isDark ? TAB_BAR_BG_DARK : TAB_BAR_BG_LIGHT,
+          borderTopColor: isDark ? TAB_BORDER_COLOR_DARK : TAB_BORDER_COLOR_LIGHT,
         },
-        tabBarActiveTintColor: isDark ? '#818cf8' : '#4f46e5',
-        tabBarInactiveTintColor: isDark ? '#94a3b8' : '#64748b',
+        tabBarActiveTintColor: isDark ? TAB_ACTIVE_COLOR_DARK : TAB_ACTIVE_COLOR_LIGHT,
+        tabBarInactiveTintColor: isDark ? TAB_INACTIVE_COLOR_DARK : TAB_INACTIVE_COLOR_LIGHT,
       }}>
       <Tabs.Screen
         name="index"

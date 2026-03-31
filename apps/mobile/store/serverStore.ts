@@ -1,103 +1,104 @@
-import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { WebDavServer } from "react-native-webdav-server";
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { WebDavServer } from 'react-native-webdav-server';
+import { DEFAULT_PORT, DEFAULT_BASE_PATH, DEFAULT_USERNAME, DEFAULT_PASSWORD } from '@/constants';
 
-type Settings = {
-    port: number;
-    basePath: string;
-    authEnabled: boolean;
-    username: string;
-    password: string;
+export type Settings = {
+  port: number;
+  basePath: string;
+  authEnabled: boolean;
+  username: string;
+  password: string;
 };
 
 type ServerState = {
-    ip: string | null;
-    isRunning: boolean;
-    settings: Settings;
-    setSettings: (patch: Partial<Settings>) => void;
-    start: (opts?: {
-        port?: number;
-        basePath?: string;
-    }) => Promise<void> | void;
-    stop: () => Promise<void> | void;
+  ip: string | null;
+  isRunning: boolean;
+  settings: Settings;
+  setSettings: (patch: Partial<Settings>) => void;
+  start: () => Promise<void>;
+  stop: () => Promise<void>;
 };
 
+// Held outside Zustand to avoid serialization issues with the native server instance.
 let serverRef: WebDavServer | null = null;
 
-const initializer = (set: any, get: any) => ({
-    ip: null,
-    isRunning: false,
-    settings: {
-        port: "8080",
-        basePath: "/storage/emulated/0",
-        protocol: "FTP",
-        authEnabled: true,
-        username: "admin",
-        password: "password",
-    },
-    setSettings: (patch: Partial<Settings>) => {
-        set((s: any) => ({ settings: { ...s.settings, ...patch } }));
-    },
-    start: async () => {
-        const state = get() as ServerState;
-        if (!serverRef) {
-            serverRef = new WebDavServer();
-        }
-        if (state.isRunning) return;
-
-        try {
-            const opts: any = {
-                port: state.settings.port,
-                basePath: state.settings.basePath,
-            };
-            if (state.settings.authEnabled) {
-                opts.auth = {
-                    username: state.settings.username,
-                    password: state.settings.password,
-                };
-            }
-
-            const result = serverRef.start(opts);
-            set({
-                ip: result?.ip ?? null,
-                port: result?.port ?? null,
-                isRunning: true,
-            });
-        } catch (e) {
-            console.error("Failed to start WebDAV server", e);
-            throw e;
-        }
-    },
-    stop: async () => {
-        const state = get() as ServerState;
-        if (!serverRef || !state.isRunning) return;
-        try {
-            console.log("stopping server", serverRef);
-            serverRef.stop();
-            set({ isRunning: false, ip: null, port: null });
-        } catch (e) {
-            console.error("Failed to stop WebDAV server", e);
-            throw e;
-        }
-    },
-});
-
-const storage =
-    typeof AsyncStorage !== "undefined"
-        ? createJSONStorage(() => AsyncStorage)
-        : undefined;
+const DEFAULT_SETTINGS: Settings = {
+  port: DEFAULT_PORT,
+  basePath: DEFAULT_BASE_PATH,
+  authEnabled: true,
+  username: DEFAULT_USERNAME,
+  password: DEFAULT_PASSWORD,
+};
 
 export const useServerStore = create<ServerState>()(
-    persist(
-        initializer as any,
-        {
-            name: "server-storage",
-            storage: createJSONStorage(() => AsyncStorage),
-            partialize: (state: ServerState) => ({ settings: state.settings }),
-        } as any,
-    ),
+  persist(
+    (set, get) => ({
+      ip: null,
+      isRunning: false,
+      settings: DEFAULT_SETTINGS,
+
+      setSettings: (patch: Partial<Settings>) => {
+        set((s) => ({ settings: { ...s.settings, ...patch } }));
+      },
+
+      start: async () => {
+        const state = get();
+        if (state.isRunning) return;
+
+        if (!serverRef) {
+          serverRef = new WebDavServer();
+        }
+
+        try {
+          const opts: Parameters<WebDavServer['start']>[0] = {
+            port: state.settings.port,
+            basePath: state.settings.basePath,
+          };
+
+          if (state.settings.authEnabled) {
+            opts.auth = {
+              username: state.settings.username,
+              password: state.settings.password,
+            };
+          }
+
+          const result = serverRef.start(opts);
+          set({
+            ip: result?.ip ?? null,
+            isRunning: true,
+          });
+        } catch (e) {
+          console.error('Failed to start WebDAV server', e);
+          set({ isRunning: false, ip: null });
+          throw e;
+        }
+      },
+
+      stop: async () => {
+        const state = get();
+        if (!serverRef || !state.isRunning) return;
+
+        try {
+          serverRef.stop();
+          set({ isRunning: false, ip: null });
+        } catch (e) {
+          console.error('Failed to stop WebDAV server', e);
+          throw e;
+        }
+      },
+    }),
+    {
+      name: 'server-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+      // Only persist user-configurable settings, not transient runtime state.
+      partialize: (state) => ({ settings: state.settings }),
+    }
+  )
 );
 
-// Expose serverRef for debugging if necessary
+export { DEFAULT_SETTINGS };
+
+// Expose serverRef for debugging purposes only — do not use in production code.
 export const _serverRef = () => serverRef;
