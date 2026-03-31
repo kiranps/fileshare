@@ -49,11 +49,18 @@ const initializer = (set: any, get: any) => ({
         basePath: state.settings.basePath,
       };
       if (state.settings.authEnabled) {
-        opts.auth = { username: state.settings.username, password: state.settings.password };
+        opts.auth = {
+          username: state.settings.username,
+          password: state.settings.password,
+        };
       }
 
       const result = serverRef.start(opts);
-      set({ ip: result?.ip ?? null, port: result?.port ?? null, isRunning: true });
+      set({
+        ip: result?.ip ?? null,
+        port: result?.port ?? null,
+        isRunning: true,
+      });
     } catch (e) {
       console.error('Failed to start WebDAV server', e);
       throw e;
@@ -63,7 +70,7 @@ const initializer = (set: any, get: any) => ({
     const state = get() as ServerState;
     if (!serverRef || !state.isRunning) return;
     try {
-      console.error('stopping server', serverRef);
+      console.log('stopping server', serverRef);
       serverRef.stop();
       set({ isRunning: false, ip: null, port: null });
     } catch (e) {
