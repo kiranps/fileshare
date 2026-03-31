@@ -10,7 +10,9 @@
         "rust:build": "pnpm --filter react-native-webdav-server ubrn:android && pnpm install",
         "rust:clean": "pnpm --filter react-native-webdav-server ubrn:clean",
         "rust:test": "cd packages/react-native-webdav-server/rust/webdavserver; cargo test",
-        "rust:server": "cd packages/react-native-webdav-server/rust/webdavserver; cargo run --example start_server"
+        "rust:server": "cd packages/react-native-webdav-server/rust/webdavserver; cargo run --example start_server",
+        "android": "expo run:android",
+        "ios": "expo run:ios"
     },
     "keywords": [],
     "author": "",
@@ -18,5 +20,10 @@
     "packageManager": "pnpm@10.27.0",
     "devDependencies": {
         "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "expo": "~54.0.33",
+        "react": "19.1.0",
+        "react-native": "0.81.5"
     }
 }

@@ -3,9 +3,6 @@ import { type RenderOptions, render as rtlRender } from "@testing-library/react"
 import type { ReactElement, ReactNode } from "react";
 import { BrowserRouter, MemoryRouter } from "react-router-dom";
 
-/**
- * Create a new QueryClient for testing with disabled retries and cache
- */
 export function createTestQueryClient(): QueryClient {
 	return new QueryClient({
 		defaultOptions: {

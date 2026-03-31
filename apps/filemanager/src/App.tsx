@@ -1,4 +1,5 @@
-import { FileManager } from "@components/FileManager";
+//import { FileManager } from "@components/FileManager";
+import Pair from "@components/Pair";
 import { useEffect } from "react";
 
 function App() {
@@ -11,7 +12,8 @@ function App() {
 			document.removeEventListener("contextmenu", disableRightClick);
 		};
 	}, []);
-	return <FileManager />;
+	//return <FileManager />;
+	return <Pair />;
 }
 
 export default App;
