@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 
+type PairingData = {
+	to: string;
+	msg: string;
+};
+
 interface RemoteDeviceInfo {
 	ip: string;
 	port: string;
@@ -34,9 +39,10 @@ export function useRemoteDevicePair(id: string): UseRemoteDevicePairResult {
 		});
 
 		// Listen for device pairing event
-		const handlePairing = (data: RemoteDeviceInfo) => {
+		const handlePairing = (data: PairingData) => {
+			const ip_port: RemoteDeviceInfo = JSON.parse(data.msg);
 			if (!active) return;
-			setMessage(data);
+			setMessage(ip_port);
 			if (socketRef.current) {
 				socketRef.current.disconnect();
 				socketRef.current = null;

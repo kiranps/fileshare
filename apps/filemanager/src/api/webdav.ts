@@ -1,14 +1,24 @@
 import { encodePath } from "../utils/files";
 import { parseWebDAVPropfindResponse } from "../utils/webdav";
 
-const WEBDAV_HOST = import.meta.env.VITE_HOST;
+let _webdavHost: string = import.meta.env.VITE_HOST ?? "";
 const WEBDAV_DEPTH = "1";
+
+/** Override the WebDAV host at runtime (called after pairing). */
+export function setWebDAVHost(host: string): void {
+	_webdavHost = host;
+}
+
+/** Returns the currently configured WebDAV host. */
+export function getWebDAVHost(): string {
+	return _webdavHost;
+}
 
 /** Triggers a browser download for the given WebDAV path. */
 export function downloadFile(path: string) {
 	const a = document.createElement("a");
 	const encoded = encodePath(path);
-	const url = WEBDAV_HOST + encoded + "?download=true";
+	const url = `${_webdavHost}${encoded}?download=true`;
 	a.href = url;
 	a.download = "";
 	document.body.appendChild(a);
@@ -30,7 +40,7 @@ export async function webdavPropfind(path: string, options?: { signal?: AbortSig
 		Depth: WEBDAV_DEPTH,
 		"Content-Type": "text/xml",
 	};
-	const url = WEBDAV_HOST + encodePath(path);
+	const url = _webdavHost + encodePath(path);
 	const response = await fetch(url, {
 		method: "PROPFIND",
 		headers,
@@ -51,7 +61,7 @@ export type WebDAVDeleteResult = {
 };
 
 export async function webdavDelete(path: string, options?: { signal?: AbortSignal }): Promise<WebDAVDeleteResult> {
-	const url = WEBDAV_HOST + encodePath(path);
+	const url = _webdavHost + encodePath(path);
 	let response: Response;
 	try {
 		response = await fetch(url, {
@@ -81,8 +91,8 @@ export async function webdavMove(
 	overwrite = false,
 	options?: { signal?: AbortSignal },
 ): Promise<WebDAVMoveResult> {
-	const url = WEBDAV_HOST + encodePath(fromPath);
-	const destinationUrl = WEBDAV_HOST + encodePath(toPath);
+	const url = _webdavHost + encodePath(fromPath);
+	const destinationUrl = _webdavHost + encodePath(toPath);
 
 	const headers: Record<string, string> = {
 		Destination: destinationUrl,
@@ -112,8 +122,8 @@ export async function webdavCopy(
 	overwrite = false,
 	options?: { signal?: AbortSignal },
 ): Promise<WebDAVMoveResult> {
-	const url = WEBDAV_HOST + encodePath(fromPath);
-	const destinationUrl = WEBDAV_HOST + encodePath(toPath);
+	const url = _webdavHost + encodePath(fromPath);
+	const destinationUrl = _webdavHost + encodePath(toPath);
 
 	const headers: Record<string, string> = {
 		Destination: destinationUrl,
@@ -144,7 +154,7 @@ export type WebDAVMkcolResult = {
 };
 
 export async function webdavMkcol(path: string, options?: { signal?: AbortSignal }): Promise<WebDAVMkcolResult> {
-	const url = WEBDAV_HOST + encodePath(path);
+	const url = _webdavHost + encodePath(path);
 	let response: Response;
 	try {
 		response = await fetch(url, {
@@ -176,7 +186,7 @@ export async function webdavPut(
 	body: File,
 	options?: { signal?: AbortSignal; contentType?: string },
 ): Promise<WebDAVPutResult> {
-	const url = WEBDAV_HOST + encodePath(path);
+	const url = _webdavHost + encodePath(path);
 	const headers: Record<string, string> = {};
 	if (options?.contentType) headers["Content-Type"] = options.contentType;
 
