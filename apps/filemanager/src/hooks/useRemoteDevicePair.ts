@@ -16,8 +16,7 @@ interface UseRemoteDevicePairResult {
 	message: RemoteDeviceInfo | null;
 }
 
-// Endpoint example: /api/pair/socket
-const SOCKET_ENDPOINT = "http://localhost:5050";
+const SOCKET_ENDPOINT = ((import.meta.env as any).VITE_SOCKET_ENDPOINT as string) ?? "http://localhost:5050";
 
 export function useRemoteDevicePair(id: string): UseRemoteDevicePairResult {
 	const [message, setMessage] = useState<RemoteDeviceInfo | null>(null);
