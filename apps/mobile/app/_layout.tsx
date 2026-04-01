@@ -9,6 +9,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="qr-scanner" options={{ presentation: 'fullScreenModal' }} />
         </Stack>
       </SafeAreaProvider>
     </ThemeProvider>

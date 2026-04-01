@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import QRScanner from '@/components/QRScanner';
 import ServerControls from '@/components/ServerControls';
 import ConnectionInfo from '@/components/ConnectionInfo';
 import { useServerStore } from '@/store/serverStore';
@@ -19,7 +19,7 @@ export default function ServerScreen() {
     }))
   );
 
-  const [showQR, setShowQR] = useState(false);
+  const router = useRouter();
 
   const toggleServer = () => {
     if (!isRunning) {
@@ -28,10 +28,6 @@ export default function ServerScreen() {
       stop();
     }
   };
-
-  if (showQR) {
-    return <QRScanner onScanComplete={() => setShowQR(false)} />;
-  }
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -49,7 +45,7 @@ export default function ServerScreen() {
           onToggle={toggleServer}
         />
 
-        <ConnectionInfo isRunning={isRunning} onPairDevice={() => setShowQR(true)} />
+        <ConnectionInfo isRunning={isRunning} onPairDevice={() => router.push('/qr-scanner')} />
       </ScrollView>
     </SafeAreaView>
   );
