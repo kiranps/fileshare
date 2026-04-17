@@ -1,6 +1,6 @@
 use axum::http::Uri;
 use axum::{body::Body, response::Response};
-use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, percent_decode_str, utf8_percent_encode};
+use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, utf8_percent_encode};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use urlencoding::decode;
@@ -17,6 +17,8 @@ fn encode_href(path: &str) -> String {
     utf8_percent_encode(path, HREF_ENCODE_SET).to_string()
 }
 
+// file_metadata kept for potential test use; suppress dead_code warning
+#[allow(dead_code)]
 pub async fn file_metadata(
     uri: &Uri,
 ) -> Result<(std::path::PathBuf, std::fs::Metadata), Response<Body>> {
@@ -104,6 +106,8 @@ pub fn file_timestamps(meta: &std::fs::Metadata) -> (std::time::SystemTime, Stri
     (modified, etag)
 }
 
+// head_response kept for potential test use; suppress dead_code warning
+#[allow(dead_code)]
 pub fn head_response(meta: &std::fs::Metadata) -> Response<Body> {
     let (modified, etag) = file_timestamps(meta);
     Response::builder()

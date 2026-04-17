@@ -6,14 +6,13 @@ use axum::{body::Body, body::Bytes, extract::State, http::Request, response::Res
 use base64::Engine as _;
 use base64::engine::general_purpose;
 use http_body_util::BodyExt;
-use std::sync::Arc; // for collect()
+use std::sync::Arc;
 
+#[allow(dead_code)]
 pub async fn log_response_body(req: Request<Body>, next: Next) -> Response {
     let response = next.run(req).await;
-
     let (parts, body) = response.into_parts();
 
-    // Collect full body
     let bytes = body
         .collect()
         .await
@@ -26,11 +25,10 @@ pub async fn log_response_body(req: Request<Body>, next: Next) -> Response {
         tracing::info!("Response body (non-utf8): {:?}", bytes);
     }
 
-    // Reconstruct response
     Response::from_parts(parts, Body::from(bytes))
 }
 
-// Constant-time equality to avoid leaking timing information
+// Constant-time equality to avoid leaking timing information.
 fn constant_time_eq(a: &str, b: &str) -> bool {
     if a.len() != b.len() {
         return false;
@@ -44,12 +42,9 @@ fn constant_time_eq(a: &str, b: &str) -> bool {
 
 pub async fn add_webdav_headers(req: Request<axum::body::Body>, next: Next) -> Response {
     let is_options = req.method() == Method::OPTIONS;
-
     let mut res = next.run(req).await;
-
     if is_options {
         let headers = res.headers_mut();
-
         headers.insert("DAV", HeaderValue::from_static("1, 2"));
         headers.insert(
             "Allow",
@@ -59,7 +54,6 @@ pub async fn add_webdav_headers(req: Request<axum::body::Body>, next: Next) -> R
         );
         headers.insert("MS-Author-Via", HeaderValue::from_static("DAV"));
     }
-
     res
 }
 
@@ -69,26 +63,20 @@ pub async fn prefix_middleware(
     next: Next,
 ) -> Response {
     let uri = req.uri().clone();
-
     let mut parts = uri.into_parts();
 
     let new_path_and_query = match parts.path_and_query {
         Some(pq) => {
             let path = pq.path();
             match pq.query() {
-                Some(existing) => {
-                    format!("{path}?{existing}&base_path={base_path}")
-                }
-                None => {
-                    format!("{path}?base_path={base_path}")
-                }
+                Some(existing) => format!("{path}?{existing}&base_path={base_path}"),
+                None => format!("{path}?base_path={base_path}"),
             }
         }
         None => format!("/?base_path={base_path}"),
     };
 
     parts.path_and_query = Some(new_path_and_query.parse().expect("valid path and query"));
-
     let new_uri = Uri::from_parts(parts).expect("valid uri");
     *req.uri_mut() = new_uri;
 
@@ -100,12 +88,10 @@ pub async fn auth_middleware(
     req: Request<Body>,
     next: Next,
 ) -> Response {
-    // If no auth configured, skip authentication
     if auth.is_none() {
         return next.run(req).await;
     }
 
-    // Require Authorization header
     let header = match req.headers().get("authorization") {
         Some(h) => match h.to_str() {
             Ok(s) => s,
@@ -132,9 +118,7 @@ pub async fn auth_middleware(
     let pass = parts.next().unwrap_or("");
 
     if let Some(creds) = auth.as_ref().as_ref() {
-        let expected_user = &creds.0;
-        let expected_pass = &creds.1;
-        if constant_time_eq(user, expected_user) && constant_time_eq(pass, expected_pass) {
+        if constant_time_eq(user, &creds.0) && constant_time_eq(pass, &creds.1) {
             return next.run(req).await;
         }
     }
