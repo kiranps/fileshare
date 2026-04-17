@@ -6,6 +6,10 @@ mod routing;
 mod webdav_service;
 mod webdav_server;
 
+pub mod p2p_types;
+pub mod p2p_handler;
+pub mod peer;
+
 uniffi::setup_scaffolding!();
 
 use thiserror::Error;
