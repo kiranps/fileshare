@@ -16,7 +16,7 @@ pub struct EntryInfo {
 }
 
 impl FsRepository {
-    /// Return metadata for `path`, or `None` if it does not exist.
+    /// Return metadata for `path`, or an error if it does not exist.
     pub async fn metadata(path: &Path) -> std::io::Result<Metadata> {
         tokio::fs::metadata(path).await
     }

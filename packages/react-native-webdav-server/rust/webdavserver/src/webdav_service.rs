@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 use tokio_util::io::ReaderStream;
 
-use crate::repository::FsRepository;
+use crate::fs_repository::FsRepository;
 
-/// Typed outcomes returned to the presentation layer.
+/// Typed outcomes returned to the routing layer.
 /// These carry just enough data to build HTTP responses — no axum types.
 
 pub enum GetFileResult {
@@ -187,7 +187,7 @@ impl WebDavService {
                 Ok(children) => {
                     for child in children {
                         let href = format!(
-                            "{}{}", 
+                            "{}{}",
                             crate::helpers::ensure_trailing_slash(request_path),
                             child.name
                         );

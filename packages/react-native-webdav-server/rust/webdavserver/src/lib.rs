@@ -1,8 +1,9 @@
+mod fs_repository;
 mod helpers;
 mod logging;
-mod presentation;
-mod repository;
-mod service;
+mod middleware;
+mod routing;
+mod webdav_service;
 mod webdav_server;
 
 uniffi::setup_scaffolding!();

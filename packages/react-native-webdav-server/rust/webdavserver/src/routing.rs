@@ -1,9 +1,54 @@
+//! HTTP routing for the WebDAV server.
+//!
+//! ## Endpoints
+//!
+//! All routes match `/*path` (including `/`). The method determines the WebDAV
+//! operation performed. Authentication (Basic) and the `base_path` query param
+//! are injected by middleware before reaching these handlers.
+//!
+//! | Method    | Path      | Description                                                                 |
+//! |-----------|-----------|-----------------------------------------------------------------------------|
+//! | OPTIONS   | any       | Returns DAV capability headers (`DAV: 1`, `Allow`, `MS-Author-Via`).        |
+//! | GET       | file      | Stream file contents inline (`Content-Length` set).                         |
+//! | GET       | file      | `?download=true` — serve file as attachment (`Content-Disposition`).        |
+//! | GET       | directory | `?download=true` — stream directory as a `.zip` attachment.                 |
+//! | GET       | directory | Without `?download=true` — returns 403 Forbidden.                          |
+//! | HEAD      | file      | Returns `Content-Length`, `Last-Modified`, `ETag` with no body.             |
+//! | HEAD      | directory | Returns 403 Forbidden.                                                      |
+//! | PUT       | file      | Create (201) or update (204) a file. Body is the new file content.          |
+//! | DELETE    | file/dir  | Delete a file or directory tree (204 on success).                           |
+//! | PROPFIND  | any       | WebDAV property retrieval. `Depth: 0` or `Depth: 1` supported (207).       |
+//! | MKCOL     | path      | Create a collection (directory). Body must be empty (201 on success).       |
+//! | COPY      | file/dir  | Copy resource to `Destination` header URL. Supports `Overwrite` + `Depth`. |
+//! | MOVE      | file/dir  | Move/rename resource to `Destination` header URL. Supports `Overwrite`.    |
+//!
+//! ### Request headers used
+//! - `Authorization` — Basic auth credentials (if auth is configured).
+//! - `Depth` — Used by PROPFIND (`0` or `1`) and COPY (`0`, `1`, or `infinity`).
+//! - `Destination` — Absolute URL of the target resource for COPY and MOVE.
+//! - `Overwrite` — `T` (default) or `F`; controls overwrite behaviour for COPY/MOVE.
+//!
+//! ### Response status codes
+//! - `200 OK` — GET/HEAD success.
+//! - `201 Created` — PUT/MKCOL/COPY/MOVE created a new resource.
+//! - `204 No Content` — OPTIONS, DELETE, or PUT/COPY/MOVE that replaced an existing resource.
+//! - `207 Multi-Status` — PROPFIND response (XML body).
+//! - `400 Bad Request` — Malformed or unsupported request (e.g. Depth: infinity for PROPFIND).
+//! - `401 Unauthorized` — Missing or invalid Basic auth credentials.
+//! - `403 Forbidden` — Operation not permitted (e.g. GET on a directory).
+//! - `404 Not Found` — Resource does not exist.
+//! - `409 Conflict` — Parent does not exist or resource already exists (MKCOL/PUT).
+//! - `412 Precondition Failed` — Destination exists and `Overwrite: F` was set.
+//! - `415 Unsupported Media Type` — MKCOL received a non-empty request body.
+//! - `507 Insufficient Storage` — Filesystem full (MKCOL).
+//! - `500 Internal Server Error` — Unexpected I/O failure.
+
 use crate::helpers::{
     absolute_destination_path, bad_request, forbidden, multistatus, not_found, ok,
     propfind_response, resolve_path, server_error, unsupported_media_type,
 };
-use crate::presentation::middleware::{add_webdav_headers, auth_middleware, prefix_middleware};
-use crate::service::webdav_service::{
+use crate::middleware::{add_webdav_headers, auth_middleware, prefix_middleware};
+use crate::webdav_service::{
     CopyMoveResult, DeleteResult, GetFileResult, GetResult, HeadOutcome, MkcolResult,
     PropfindResult, PutResult, WebDavService,
 };
