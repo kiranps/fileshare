@@ -16,7 +16,7 @@ interface UseRemoteDevicePairResult {
 	message: RemoteDeviceInfo | null;
 }
 
-const SOCKET_ENDPOINT = ((import.meta.env as any).VITE_SOCKET_ENDPOINT as string) ?? "http://localhost:5050";
+const SOCKET_ENDPOINT = ((import.meta.env as any).VITE_SOCKET_ENDPOINT as string) ?? "androidpair.freeddns.org";
 
 export function useRemoteDevicePair(id: string): UseRemoteDevicePairResult {
 	const [message, setMessage] = useState<RemoteDeviceInfo | null>(null);
