@@ -1,27 +1,27 @@
-/// rust_p2p — a PeerJS-inspired WebRTC responder crate.
-///
-/// # Quick start
-/// ```rust,no_run
-/// use rust_p2p::{Peer, PeerConfig};
-///
-/// #[tokio::main]
-/// async fn main() {
-///     let peer = Peer::new(PeerConfig::default());
-///
-///     peer.on_open(|peer| Box::pin(async move {
-///         println!("data channel open — ready to chat");
-///     }));
-///
-///     peer.on_data(|msg, peer| Box::pin(async move {
-///         println!("< {msg}");
-///         peer.send(&format!("pong: {msg}")).await.ok();
-///     }));
-///
-///     peer.on_close(|| Box::pin(async { println!("closed"); }));
-///
-///     peer.connect("my-session-id").await.unwrap();
-/// }
-/// ```
+///// rust_p2p — a PeerJS-inspired WebRTC responder crate.
+/////
+///// # Quick start
+///// ```rust,no_run
+///// use rust_p2p::{Peer, PeerConfig};
+/////
+///// #[tokio::main]
+///// async fn main() {
+/////     let peer = Peer::new(PeerConfig::default());
+/////
+/////     peer.on_open(|peer| Box::pin(async move {
+/////         println!("data channel open — ready to chat");
+/////     }));
+/////
+/////     peer.on_data(|msg, peer| Box::pin(async move {
+/////         println!("< {msg}");
+/////         peer.send(&format!("pong: {msg}")).await.ok();
+/////     }));
+/////
+/////     peer.on_close(|| Box::pin(async { println!("closed"); }));
+/////
+/////     peer.connect("my-session-id").await.unwrap();
+///// }
+///// ```
 use std::{sync::Arc, time::Duration};
 
 use reqwest::Client;

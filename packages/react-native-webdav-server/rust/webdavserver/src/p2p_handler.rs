@@ -1,49 +1,47 @@
-//! # P2P presentation layer — request dispatcher
-//!
-//! Call [`handle`] from your `peer.on_data` callback.  It deserialises the
-//! incoming JSON message, delegates to [`WebDavService`], and returns a
-//! serialised JSON response string ready to be sent back with `peer.send`.
-//!
-//! ## Usage
-//!
-//! ```rust,no_run
-//! use std::path::PathBuf;
-//! use std::sync::Arc;
-//! use crate::peer::{Peer, PeerConfig};
-//! use crate::p2p_handler::handle;
-//!
-//! #[tokio::main]
-//! async fn main() {
-//!     let base_path = PathBuf::from("/srv/files");
-//!     let peer = Peer::new(PeerConfig::default());
-//!
-//!     peer.on_data(move |msg, peer| {
-//!         let bp = base_path.clone();
-//!         Box::pin(async move {
-//!             let response = handle(&msg, &bp).await;
-//!             if let Err(e) = peer.send(&response).await {
-//!                 eprintln!("[p2p] send error: {e}");
-//!             }
-//!         })
-//!     })
-//!     .await;
-//!
-//!     peer.connect("my-session-id").await.unwrap();
-//! }
-//! ```
+////! # P2P presentation layer — request dispatcher
+////!
+////! Call [`handle`] from your `peer.on_data` callback.  It deserialises the
+////! incoming JSON message, delegates to [`WebDavService`], and returns a
+////! serialised JSON response string ready to be sent back with `peer.send`.
+////!
+////! ## Usage
+////!
+////! ```rust,no_run
+////! use std::path::PathBuf;
+////! use std::sync::Arc;
+////! use crate::peer::{Peer, PeerConfig};
+////! use crate::p2p_handler::handle;
+////!
+////! #[tokio::main]
+////! async fn main() {
+////!     let base_path = PathBuf::from("/srv/files");
+////!     let peer = Peer::new(PeerConfig::default());
+////!
+////!     peer.on_data(move |msg, peer| {
+////!         let bp = base_path.clone();
+////!         Box::pin(async move {
+////!             let response = handle(&msg, &bp).await;
+////!             if let Err(e) = peer.send(&response).await {
+////!                 eprintln!("[p2p] send error: {e}");
+////!             }
+////!         })
+////!     })
+////!     .await;
+////!
+////!     peer.connect("my-session-id").await.unwrap();
+////! }
+////! ```
 
 use std::path::PathBuf;
 
-use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
-use serde_json::json;
 use crate::helpers::file_timestamps;
-use crate::p2p_types::{
-    EntryInfo, GetData, HeadData, OptionsData, P2pRequest, P2pResponse,
-};
+use crate::p2p_types::{EntryInfo, GetData, HeadData, OptionsData, P2pRequest, P2pResponse};
 use crate::webdav_service::{
     CopyMoveResult, DeleteResult, GetFileResult, GetResult, HeadOutcome, MkcolResult,
     PropfindResult, PutResult, WebDavService,
 };
+use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
+use serde_json::json;
 
 /// Entry point: parse `msg`, dispatch to service, return JSON response string.
 pub async fn handle(msg: &str, base_path: &PathBuf) -> String {
@@ -135,30 +133,36 @@ pub async fn handle(msg: &str, base_path: &PathBuf) -> String {
                 GetResult::File(GetFileResult::Stream {
                     content_length,
                     stream,
-                }) => {
-                    match stream_to_bytes(stream).await {
-                        Ok(bytes) => {
-                            let filename = filename_from_path(&path);
-                            let data = GetData {
-                                filename,
-                                body_b64: BASE64.encode(&bytes),
-                                content_length,
-                            };
-                            P2pResponse::ok(id, op, "ok", json!(data)).to_json()
-                        }
-                        Err(e) => P2pResponse::err(id, op, "io_error", e).to_json(),
+                }) => match stream_to_bytes(stream).await {
+                    Ok(bytes) => {
+                        let filename = filename_from_path(&path);
+                        let data = GetData {
+                            filename,
+                            body_b64: BASE64.encode(&bytes),
+                            content_length,
+                        };
+                        P2pResponse::ok(id, op, "ok", json!(data)).to_json()
                     }
-                }
+                    Err(e) => P2pResponse::err(id, op, "io_error", e).to_json(),
+                },
                 GetResult::File(GetFileResult::Download { .. }) => {
                     // unreachable with want_download=false, but handle defensively
                     P2pResponse::err(id, op, "io_error", "unexpected download result").to_json()
                 }
-                GetResult::IsDirectory => {
-                    P2pResponse::err(id, op, "is_directory", "use fs.get_zip to download a directory").to_json()
-                }
-                GetResult::ZipStream { .. } => {
-                    P2pResponse::err(id, op, "is_directory", "use fs.get_zip to download a directory").to_json()
-                }
+                GetResult::IsDirectory => P2pResponse::err(
+                    id,
+                    op,
+                    "is_directory",
+                    "use fs.get_zip to download a directory",
+                )
+                .to_json(),
+                GetResult::ZipStream { .. } => P2pResponse::err(
+                    id,
+                    op,
+                    "is_directory",
+                    "use fs.get_zip to download a directory",
+                )
+                .to_json(),
                 GetResult::NotFound => {
                     P2pResponse::err(id, op, "not_found", format!("path not found: {path}"))
                         .to_json()
@@ -172,20 +176,18 @@ pub async fn handle(msg: &str, base_path: &PathBuf) -> String {
         P2pRequest::GetZip { id, path } => {
             let abs = resolve(base_path, &path);
             match WebDavService::get(abs, true).await {
-                GetResult::ZipStream { filename, stream } => {
-                    match stream_to_bytes(stream).await {
-                        Ok(bytes) => {
-                            let content_length = bytes.len() as u64;
-                            let data = GetData {
-                                filename,
-                                body_b64: BASE64.encode(&bytes),
-                                content_length,
-                            };
-                            P2pResponse::ok(id, op, "ok", json!(data)).to_json()
-                        }
-                        Err(e) => P2pResponse::err(id, op, "io_error", e).to_json(),
+                GetResult::ZipStream { filename, stream } => match stream_to_bytes(stream).await {
+                    Ok(bytes) => {
+                        let content_length = bytes.len() as u64;
+                        let data = GetData {
+                            filename,
+                            body_b64: BASE64.encode(&bytes),
+                            content_length,
+                        };
+                        P2pResponse::ok(id, op, "ok", json!(data)).to_json()
                     }
-                }
+                    Err(e) => P2pResponse::err(id, op, "io_error", e).to_json(),
+                },
                 GetResult::File(GetFileResult::Download {
                     content_length,
                     filename,
@@ -260,10 +262,13 @@ pub async fn handle(msg: &str, base_path: &PathBuf) -> String {
                 PutResult::IsDirectory => {
                     P2pResponse::err(id, op, "is_directory", "cannot PUT to a directory").to_json()
                 }
-                PutResult::ParentNotFound | PutResult::ParentNotDirectory => {
-                    P2pResponse::err(id, op, "parent_not_found", "parent directory does not exist")
-                        .to_json()
-                }
+                PutResult::ParentNotFound | PutResult::ParentNotDirectory => P2pResponse::err(
+                    id,
+                    op,
+                    "parent_not_found",
+                    "parent directory does not exist",
+                )
+                .to_json(),
                 PutResult::InvalidPath => {
                     P2pResponse::err(id, op, "io_error", "invalid path").to_json()
                 }
@@ -306,10 +311,13 @@ pub async fn handle(msg: &str, base_path: &PathBuf) -> String {
                 MkcolResult::AlreadyExists => {
                     P2pResponse::err(id, op, "already_exists", "directory already exists").to_json()
                 }
-                MkcolResult::ParentNotFound | MkcolResult::ParentNotDirectory => {
-                    P2pResponse::err(id, op, "parent_not_found", "parent directory does not exist")
-                        .to_json()
-                }
+                MkcolResult::ParentNotFound | MkcolResult::ParentNotDirectory => P2pResponse::err(
+                    id,
+                    op,
+                    "parent_not_found",
+                    "parent directory does not exist",
+                )
+                .to_json(),
                 MkcolResult::InvalidPath => {
                     P2pResponse::err(id, op, "io_error", "invalid path").to_json()
                 }
@@ -331,26 +339,43 @@ pub async fn handle(msg: &str, base_path: &PathBuf) -> String {
         // -------------------------------------------------------------------
         // fs.copy
         // -------------------------------------------------------------------
-        P2pRequest::Copy { id, src, dst, overwrite, depth } => {
+        P2pRequest::Copy {
+            id,
+            src,
+            dst,
+            overwrite,
+            depth,
+        } => {
             let abs_src = resolve(base_path, &src);
             let abs_dst = resolve(base_path, &dst);
             match WebDavService::copy(abs_src, abs_dst, overwrite, &depth).await {
-                CopyMoveResult::Created => {
-                    P2pResponse::ok(id, op, "created", json!({})).to_json()
-                }
+                CopyMoveResult::Created => P2pResponse::ok(id, op, "created", json!({})).to_json(),
                 CopyMoveResult::Replaced => P2pResponse::ok(id, op, "ok", json!({})).to_json(),
-                CopyMoveResult::SameSourceDest => {
-                    P2pResponse::err(id, op, "same_source_dest", "source and destination are the same").to_json()
-                }
+                CopyMoveResult::SameSourceDest => P2pResponse::err(
+                    id,
+                    op,
+                    "same_source_dest",
+                    "source and destination are the same",
+                )
+                .to_json(),
                 CopyMoveResult::SourceNotFound => {
-                    P2pResponse::err(id, op, "not_found", format!("source not found: {src}")).to_json()
+                    P2pResponse::err(id, op, "not_found", format!("source not found: {src}"))
+                        .to_json()
                 }
-                CopyMoveResult::DestExistsNoOverwrite => {
-                    P2pResponse::err(id, op, "dest_exists_no_overwrite", "destination exists and overwrite is false").to_json()
-                }
-                CopyMoveResult::ParentNotFound => {
-                    P2pResponse::err(id, op, "parent_not_found", "destination parent does not exist").to_json()
-                }
+                CopyMoveResult::DestExistsNoOverwrite => P2pResponse::err(
+                    id,
+                    op,
+                    "dest_exists_no_overwrite",
+                    "destination exists and overwrite is false",
+                )
+                .to_json(),
+                CopyMoveResult::ParentNotFound => P2pResponse::err(
+                    id,
+                    op,
+                    "parent_not_found",
+                    "destination parent does not exist",
+                )
+                .to_json(),
                 CopyMoveResult::PermissionDenied => {
                     P2pResponse::err(id, op, "permission_denied", "permission denied").to_json()
                 }
@@ -363,26 +388,42 @@ pub async fn handle(msg: &str, base_path: &PathBuf) -> String {
         // -------------------------------------------------------------------
         // fs.move
         // -------------------------------------------------------------------
-        P2pRequest::Move { id, src, dst, overwrite } => {
+        P2pRequest::Move {
+            id,
+            src,
+            dst,
+            overwrite,
+        } => {
             let abs_src = resolve(base_path, &src);
             let abs_dst = resolve(base_path, &dst);
             match WebDavService::move_resource(abs_src, abs_dst, overwrite).await {
-                CopyMoveResult::Created => {
-                    P2pResponse::ok(id, op, "created", json!({})).to_json()
-                }
+                CopyMoveResult::Created => P2pResponse::ok(id, op, "created", json!({})).to_json(),
                 CopyMoveResult::Replaced => P2pResponse::ok(id, op, "ok", json!({})).to_json(),
-                CopyMoveResult::SameSourceDest => {
-                    P2pResponse::err(id, op, "same_source_dest", "source and destination are the same").to_json()
-                }
+                CopyMoveResult::SameSourceDest => P2pResponse::err(
+                    id,
+                    op,
+                    "same_source_dest",
+                    "source and destination are the same",
+                )
+                .to_json(),
                 CopyMoveResult::SourceNotFound => {
-                    P2pResponse::err(id, op, "not_found", format!("source not found: {src}")).to_json()
+                    P2pResponse::err(id, op, "not_found", format!("source not found: {src}"))
+                        .to_json()
                 }
-                CopyMoveResult::DestExistsNoOverwrite => {
-                    P2pResponse::err(id, op, "dest_exists_no_overwrite", "destination exists and overwrite is false").to_json()
-                }
-                CopyMoveResult::ParentNotFound => {
-                    P2pResponse::err(id, op, "parent_not_found", "destination parent does not exist").to_json()
-                }
+                CopyMoveResult::DestExistsNoOverwrite => P2pResponse::err(
+                    id,
+                    op,
+                    "dest_exists_no_overwrite",
+                    "destination exists and overwrite is false",
+                )
+                .to_json(),
+                CopyMoveResult::ParentNotFound => P2pResponse::err(
+                    id,
+                    op,
+                    "parent_not_found",
+                    "destination parent does not exist",
+                )
+                .to_json(),
                 CopyMoveResult::PermissionDenied => {
                     P2pResponse::err(id, op, "permission_denied", "permission denied").to_json()
                 }

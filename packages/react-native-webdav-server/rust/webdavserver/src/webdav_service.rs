@@ -307,12 +307,7 @@ impl WebDavService {
     // COPY
     // -----------------------------------------------------------------------
 
-    pub async fn copy(
-        src: PathBuf,
-        dst: PathBuf,
-        overwrite: bool,
-        depth: &str,
-    ) -> CopyMoveResult {
+    pub async fn copy(src: PathBuf, dst: PathBuf, overwrite: bool, depth: &str) -> CopyMoveResult {
         if src == dst {
             return CopyMoveResult::SameSourceDest;
         }
@@ -370,11 +365,7 @@ impl WebDavService {
     // MOVE
     // -----------------------------------------------------------------------
 
-    pub async fn move_resource(
-        src: PathBuf,
-        dst: PathBuf,
-        overwrite: bool,
-    ) -> CopyMoveResult {
+    pub async fn move_resource(src: PathBuf, dst: PathBuf, overwrite: bool) -> CopyMoveResult {
         if src == dst {
             return CopyMoveResult::SameSourceDest;
         }
@@ -432,7 +423,9 @@ impl WebDavService {
                             }
                         }
                         Err(ce) => match ce.kind() {
-                            std::io::ErrorKind::PermissionDenied => CopyMoveResult::PermissionDenied,
+                            std::io::ErrorKind::PermissionDenied => {
+                                CopyMoveResult::PermissionDenied
+                            }
                             _ => CopyMoveResult::IoError,
                         },
                     }

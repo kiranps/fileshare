@@ -28,13 +28,18 @@ impl FsRepository {
         while let Some(entry) = rd.next_entry().await? {
             let meta = entry.metadata().await?;
             let name = entry.file_name().to_string_lossy().into_owned();
-            entries.push(EntryInfo { name, metadata: meta });
+            entries.push(EntryInfo {
+                name,
+                metadata: meta,
+            });
         }
         Ok(entries)
     }
 
     /// Read a file and return a streaming body.
-    pub async fn read_file_stream(path: &Path) -> std::io::Result<(Metadata, ReaderStream<tokio::fs::File>)> {
+    pub async fn read_file_stream(
+        path: &Path,
+    ) -> std::io::Result<(Metadata, ReaderStream<tokio::fs::File>)> {
         let file = tokio::fs::File::open(path).await?;
         let metadata = file.metadata().await?;
         Ok((metadata, ReaderStream::new(file)))
@@ -48,7 +53,9 @@ impl FsRepository {
             .truncate(true)
             .open(path)
             .await?;
-        file.write_all(data).await
+        file.write_all(data).await?;
+        //file.flush().await?;
+        Ok(())
     }
 
     /// Delete a file or directory recursively.
@@ -100,7 +107,10 @@ impl FsRepository {
     /// Returns `(folder_name, ReaderStream)` ready to pipe into an HTTP body.
     pub async fn zip_dir_stream(
         path: PathBuf,
-    ) -> std::io::Result<(String, ReaderStream<tokio::io::ReadHalf<tokio::io::DuplexStream>>)> {
+    ) -> std::io::Result<(
+        String,
+        ReaderStream<tokio::io::ReadHalf<tokio::io::DuplexStream>>,
+    )> {
         let folder_name = path
             .file_name()
             .and_then(|f| f.to_str())
