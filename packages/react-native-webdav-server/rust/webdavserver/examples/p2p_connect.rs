@@ -23,18 +23,20 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use rustls::crypto::CryptoProvider;
 use webdavserver::p2p_handler::handle;
 use webdavserver::peer::{Peer, PeerConfig};
 
 #[tokio::main]
 async fn main() {
+    CryptoProvider::install_default(rustls::crypto::aws_lc_rs::default_provider())
+        .expect("crypto init failed");
     // ── Parse minimal CLI args ────────────────────────────────────────────────
     let args: Vec<String> = std::env::args().collect();
 
     let session_id = flag_value(&args, "--session").unwrap_or_else(|| "demo-session".to_string());
-    let base_path = PathBuf::from(
-        flag_value(&args, "--base").unwrap_or_else(|| "/tmp/p2p_files".to_string()),
-    );
+    let base_path =
+        PathBuf::from(flag_value(&args, "--base").unwrap_or_else(|| "/home/kiran".to_string()));
     let signal_base =
         flag_value(&args, "--signal").unwrap_or_else(|| "http://localhost:9000".to_string());
 
@@ -110,7 +112,5 @@ async fn main() {
 
 /// Return the value that follows `flag` in `args`, or `None`.
 fn flag_value(args: &[String], flag: &str) -> Option<String> {
-    args.windows(2)
-        .find(|w| w[0] == flag)
-        .map(|w| w[1].clone())
+    args.windows(2).find(|w| w[0] == flag).map(|w| w[1].clone())
 }

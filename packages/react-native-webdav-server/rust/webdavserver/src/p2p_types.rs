@@ -30,6 +30,7 @@
 //! | op            | description                                         |
 //! |---------------|-----------------------------------------------------|
 //! | `fs.options`  | Server capability query                             |
+//! | `fs.ping`     | Health-check ping — server replies with pong        |
 //! | `fs.stat`     | Metadata for a single path (depth=0 PROPFIND)       |
 //! | `fs.list`     | List a directory (depth=1 PROPFIND)                 |
 //! | `fs.get`      | Read a file; body returned as base64                |
@@ -74,6 +75,11 @@ pub enum P2pRequest {
     /// `fs.options` — no extra fields.
     #[serde(rename = "fs.options")]
     Options { id: String },
+
+    /// `fs.ping` — health-check; echoes the optional `payload` back in `pong`.
+    /// The server replies immediately with `{"op":"fs.ping","ok":true,"code":"pong","data":{...}}`.
+    #[serde(rename = "fs.ping")]
+    Ping { id: String },
 
     /// `fs.stat` — depth-0 metadata for a single path.
     #[serde(rename = "fs.stat")]
@@ -157,6 +163,7 @@ impl P2pRequest {
     pub fn id(&self) -> &str {
         match self {
             P2pRequest::Options { id }
+            | P2pRequest::Ping { id, .. }
             | P2pRequest::Stat { id, .. }
             | P2pRequest::List { id, .. }
             | P2pRequest::Get { id, .. }
@@ -174,6 +181,7 @@ impl P2pRequest {
     pub fn op(&self) -> &'static str {
         match self {
             P2pRequest::Options { .. } => "fs.options",
+            P2pRequest::Ping { .. } => "fs.ping",
             P2pRequest::Stat { .. } => "fs.stat",
             P2pRequest::List { .. } => "fs.list",
             P2pRequest::Get { .. } => "fs.get",
@@ -212,7 +220,12 @@ pub struct P2pResponse {
 }
 
 impl P2pResponse {
-    pub fn ok(id: impl Into<String>, op: &'static str, code: &'static str, data: serde_json::Value) -> Self {
+    pub fn ok(
+        id: impl Into<String>,
+        op: &'static str,
+        code: &'static str,
+        data: serde_json::Value,
+    ) -> Self {
         Self {
             id: id.into(),
             op,
@@ -223,7 +236,12 @@ impl P2pResponse {
         }
     }
 
-    pub fn err(id: impl Into<String>, op: &'static str, code: &'static str, msg: impl Into<String>) -> Self {
+    pub fn err(
+        id: impl Into<String>,
+        op: &'static str,
+        code: &'static str,
+        msg: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             op,

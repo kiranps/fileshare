@@ -103,9 +103,74 @@ async fn options_returns_supported_ops() {
     let ops = v["data"]["ops"].as_array().expect("ops array");
     let op_strs: Vec<&str> = ops.iter().map(|o| o.as_str().unwrap()).collect();
     assert!(op_strs.contains(&"fs.options"));
+    assert!(op_strs.contains(&"fs.ping"));
     assert!(op_strs.contains(&"fs.get"));
     assert!(op_strs.contains(&"fs.put"));
     assert!(op_strs.contains(&"fs.delete"));
+}
+
+// ---------------------------------------------------------------------------
+// fs.ping  (health-check / keep-alive)
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn ping_returns_pong_code() {
+    let resp = handle(r#"{"id":"ping1","op":"fs.ping"}"#, base()).await;
+    let v = parse(&resp);
+    assert_ok(&v);
+    assert_eq!(v["op"], "fs.ping");
+    assert_eq!(v["code"], "pong");
+    assert!(v["data"]["server_ts_ms"].as_u64().unwrap_or(0) > 0);
+}
+
+#[tokio::test]
+async fn ping_echoes_payload() {
+    let resp = handle(
+        r#"{"id":"ping2","op":"fs.ping","payload":"hello-world"}"#,
+        base(),
+    )
+    .await;
+    let v = parse(&resp);
+    assert_ok(&v);
+    assert_eq!(v["code"], "pong");
+    assert_eq!(v["data"]["payload"], "hello-world");
+}
+
+#[tokio::test]
+async fn ping_without_payload_omits_payload_field() {
+    let resp = handle(r#"{"id":"ping3","op":"fs.ping"}"#, base()).await;
+    let v = parse(&resp);
+    assert_ok(&v);
+    assert_eq!(v["code"], "pong");
+    // `payload` should be absent when not provided
+    assert!(v["data"]["payload"].is_null());
+}
+
+#[tokio::test]
+async fn ping_echoes_request_id() {
+    let resp = handle(r#"{"id":"my-unique-id","op":"fs.ping"}"#, base()).await;
+    let v = parse(&resp);
+    assert_eq!(v["id"], "my-unique-id");
+}
+
+#[tokio::test]
+async fn ping_server_ts_ms_is_recent() {
+    let before = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64;
+
+    let resp = handle(r#"{"id":"ts-test","op":"fs.ping"}"#, base()).await;
+    let v = parse(&resp);
+
+    let after = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64;
+
+    let ts = v["data"]["server_ts_ms"].as_u64().expect("server_ts_ms");
+    assert!(ts >= before, "server_ts_ms should be >= before timestamp");
+    assert!(ts <= after, "server_ts_ms should be <= after timestamp");
 }
 
 // ---------------------------------------------------------------------------

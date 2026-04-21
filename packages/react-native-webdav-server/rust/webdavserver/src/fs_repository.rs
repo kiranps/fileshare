@@ -54,7 +54,7 @@ impl FsRepository {
             .open(path)
             .await?;
         file.write_all(data).await?;
-        //file.flush().await?;
+        file.flush().await?;
         Ok(())
     }
 

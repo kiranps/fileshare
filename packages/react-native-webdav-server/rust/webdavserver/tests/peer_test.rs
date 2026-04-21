@@ -37,6 +37,7 @@ fn config_is_cloneable() {
         poll_interval_ms: 500,
         poll_timeout_secs: 30,
         ice_servers: vec!["stun:example.com:3478".to_string()],
+        ..PeerConfig::default()
     };
     let cloned = cfg.clone();
     assert_eq!(cloned.signal_base, cfg.signal_base);
@@ -192,18 +193,103 @@ async fn multiple_peers_are_independent() {
 #[tokio::test]
 async fn connect_fails_fast_with_unreachable_signal_server() {
     if std::env::var("INTEGRATION").is_ok() {
-        // Skip in integration mode — might have a real server
         return;
     }
 
     let peer = Peer::new(PeerConfig {
-        // port 1 is conventionally refused immediately
         signal_base: "http://127.0.0.1:1".to_string(),
         poll_timeout_secs: 2,
         poll_interval_ms: 100,
         ice_servers: vec![],
+        ..PeerConfig::default()
     });
 
     let result = peer.connect("test-session").await;
     assert!(result.is_err(), "connect to unreachable server should fail");
+}
+
+// ---------------------------------------------------------------------------
+// Reconnect / health-check config fields
+// ---------------------------------------------------------------------------
+
+#[test]
+fn default_config_has_reconnect_fields() {
+    let cfg = PeerConfig::default();
+    assert!(cfg.health_check_interval_ms > 0, "health_check_interval_ms should be > 0");
+    assert!(cfg.health_check_timeout_ms > 0, "health_check_timeout_ms should be > 0");
+    assert!(cfg.reconnect_delay_ms > 0, "reconnect_delay_ms should be > 0");
+    assert_eq!(cfg.max_reconnect_attempts, 0, "default should be unlimited (0)");
+}
+
+#[test]
+fn config_with_health_check_disabled() {
+    let cfg = PeerConfig {
+        health_check_interval_ms: 0,
+        ..PeerConfig::default()
+    };
+    assert_eq!(cfg.health_check_interval_ms, 0);
+}
+
+#[test]
+fn config_with_limited_reconnects() {
+    let cfg = PeerConfig {
+        max_reconnect_attempts: 3,
+        reconnect_delay_ms: 500,
+        ..PeerConfig::default()
+    };
+    assert_eq!(cfg.max_reconnect_attempts, 3);
+    assert_eq!(cfg.reconnect_delay_ms, 500);
+}
+
+#[test]
+fn config_reconnect_fields_are_cloneable() {
+    let cfg = PeerConfig {
+        health_check_interval_ms: 5_000,
+        health_check_timeout_ms: 2_000,
+        reconnect_delay_ms: 1_000,
+        max_reconnect_attempts: 5,
+        ..PeerConfig::default()
+    };
+    let cloned = cfg.clone();
+    assert_eq!(cloned.health_check_interval_ms, cfg.health_check_interval_ms);
+    assert_eq!(cloned.health_check_timeout_ms, cfg.health_check_timeout_ms);
+    assert_eq!(cloned.reconnect_delay_ms, cfg.reconnect_delay_ms);
+    assert_eq!(cloned.max_reconnect_attempts, cfg.max_reconnect_attempts);
+}
+
+#[tokio::test]
+async fn connect_with_reconnect_exhausts_max_attempts() {
+    if std::env::var("INTEGRATION").is_ok() {
+        return;
+    }
+
+    let errors: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(vec![]));
+    let errors_clone = Arc::clone(&errors);
+
+    let peer = Peer::new(PeerConfig {
+        signal_base: "http://127.0.0.1:1".to_string(),
+        poll_timeout_secs: 1,
+        poll_interval_ms: 50,
+        max_reconnect_attempts: 2,
+        reconnect_delay_ms: 50,
+        health_check_interval_ms: 0,
+        ..PeerConfig::default()
+    });
+
+    peer.on_error(move |e| {
+        let errs = Arc::clone(&errors_clone);
+        async move { errs.lock().unwrap().push(e); }
+    })
+    .await;
+
+    peer.connect_with_reconnect("test-session").await;
+
+    let errs = errors.lock().unwrap();
+    assert!(!errs.is_empty(), "should have received at least one error");
+    // Final error should mention max attempts
+    let last = errs.last().unwrap();
+    assert!(
+        last.contains("max reconnect"),
+        "last error should mention max reconnect, got: {last}"
+    );
 }

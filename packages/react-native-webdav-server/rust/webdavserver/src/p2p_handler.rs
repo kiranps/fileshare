@@ -66,6 +66,7 @@ pub async fn handle(msg: &str, base_path: &PathBuf) -> String {
                 dav: "1",
                 ops: vec![
                     "fs.options",
+                    "fs.ping",
                     "fs.stat",
                     "fs.list",
                     "fs.get",
@@ -80,6 +81,11 @@ pub async fn handle(msg: &str, base_path: &PathBuf) -> String {
             };
             P2pResponse::ok(id, op, "ok", json!(data)).to_json()
         }
+
+        // -------------------------------------------------------------------
+        // fs.ping  — health-check / keep-alive
+        // -------------------------------------------------------------------
+        P2pRequest::Ping { id } => P2pResponse::ok(id, op, "pong", "pong".into()).to_json(),
 
         // -------------------------------------------------------------------
         // fs.stat  (depth=0)
