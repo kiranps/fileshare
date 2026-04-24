@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useWebDAVPropfind } from "../hooks/useWebDAVPropfind";
-import { filesFromWebDAV } from "../utils/webdav_files";
+import { useFiles } from "@hooks/useFileSystem";
 
 const canonicalSidebarFolders = [
 	"desktop",
@@ -20,11 +20,11 @@ export const Sidebar: FC = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 
-	const { data } = useWebDAVPropfind("/");
-	//const filteredFolders = filesFromWebDAV(data ?? []).files.filter(
-	//(f) => f.type === "Folder" && canonicalSidebarFolders.includes(f.name.toLowerCase()) && !f.name.startsWith("."),
-	//);
-	const filteredFolders = [];
+	const { data } = useFiles("/");
+	let common_places = data ? data.files : [];
+	const filteredFolders = common_places.filter(
+		(f) => f.type === "folder" && canonicalSidebarFolders.includes(f.name.toLowerCase()) && !f.name.startsWith("."),
+	);
 	filteredFolders.sort((a, b) => {
 		return (
 			canonicalSidebarFolders.indexOf(a.name.toLowerCase()) - canonicalSidebarFolders.indexOf(b.name.toLowerCase())

@@ -1,10 +1,5 @@
-import {
-	type FileActions,
-	type ModalRequest,
-	useCreateFolder,
-	useFileActions,
-	useRenameFile,
-} from "@hooks/useFileActions";
+import { type FileActions, type ModalRequest, useFileActions, useRenameFile } from "@hooks/useFileActions";
+import { useCreateDirectory } from "@hooks/useFileSystem";
 import { useFileManagerStore } from "@store/useFileManagerStore";
 import { dirname, joinPath } from "@utils/files";
 import { createContext, type FC, type ReactNode, useCallback, useContext, useState } from "react";
@@ -58,7 +53,7 @@ export const FileActionsProvider: FC<{ children: ReactNode }> = ({ children }) =
 		renameTargetName: null,
 	});
 
-	const mkdirMutation = useCreateFolder();
+	const mkdirMutation = useCreateDirectory();
 	const moveMutation = useRenameFile();
 
 	const handleModalRequest = useCallback((req: ModalRequest) => {

@@ -1,5 +1,5 @@
 import { downloadFile } from "@api/webdav";
-import { useWebDAVCopy, useWebDAVDelete, useWebDAVMkcol, useWebDAVMove, useWebDAVPut } from "@hooks/useWebDAVPropfind";
+import { useCreateDirectory, useCopyFile, useMoveFile, useUploadFile, useDeleteFile } from "@hooks/useFileSystem";
 import { useFileManagerStore } from "@store/useFileManagerStore";
 import { basename, collectDirs, dirname, joinPath, openFilePicker, openFolderPicker } from "@utils/files";
 
@@ -38,12 +38,11 @@ export function useFileActions(onModalRequest: (req: ModalRequest) => void): Fil
 	const clearClipboard = useFileManagerStore((s) => s.clearClipboard);
 	const clearSelection = useFileManagerStore((s) => s.clearSelection);
 
-	const deleteMutation = useWebDAVDelete();
-	const moveMutation = useWebDAVMove();
-	const mkdirMutation = useWebDAVMkcol();
-	const putMutation = useWebDAVPut();
-	const copyMutation = useWebDAVCopy();
-
+	const deleteMutation = useDeleteFile();
+	const moveMutation = useMoveFile();
+	const mkdirMutation = useCreateDirectory;
+	const putMutation = useUploadFile();
+	const copyMutation = useCopyFile();
 	const openNewFolderModal = () => {
 		onModalRequest({ type: "new_folder" });
 	};
@@ -149,14 +148,14 @@ export function useFileActions(onModalRequest: (req: ModalRequest) => void): Fil
  * can call the mutation directly without re-calling useWebDAVMkcol.
  */
 export function useCreateFolder() {
-	return useWebDAVMkcol();
+	return useCreateDirectory();
 }
 
 /**
  * Convenience: rename/move a file. Same rationale as useCreateFolder.
  */
 export function useRenameFile() {
-	return useWebDAVMove();
+	return useMoveFile();
 }
 
 // Re-export so that callers don't need to import from two different places.

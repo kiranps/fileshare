@@ -75,7 +75,7 @@ export const FileList: FC = () => {
 
 	// --- Navigation ---
 	const handleDoubleClick = (file: FileItemProps) => {
-		if (file.type === "Folder") {
+		if (file.type === "folder") {
 			navigate(file.id);
 		}
 	};

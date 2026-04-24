@@ -2,10 +2,8 @@ import { ActionBar } from "@components/ActionBar";
 import { FileList } from "@components/FileList";
 import { Navbar } from "@components/Navbar";
 import { Sidebar } from "@components/Sidebar";
-//import { useWebDAVPropfind } from "@hooks/useWebDAVPropfind";
-import { useWebDAVPropfind } from "@hooks/useFileSystem";
+import { useFiles } from "@hooks/useFileSystem";
 import { useFileManagerStore } from "@store/useFileManagerStore";
-import { filesFromWebDAV } from "@utils/webdav_files";
 import type { FC } from "react";
 import { useEffect } from "react";
 import { FileActionsProvider } from "../contexts/FileActionsContext";
@@ -13,7 +11,7 @@ import { FileActionsProvider } from "../contexts/FileActionsContext";
 export const FileManager: FC = () => {
 	const activePath = useFileManagerStore((s) => s.activePath);
 	const setFiles = useFileManagerStore((s) => s.setFiles);
-	const { data, isLoading, error } = useWebDAVPropfind(activePath);
+	const { data, isLoading, error } = useFiles(activePath);
 	console.log("files");
 	console.log(data);
 
