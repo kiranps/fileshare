@@ -11,6 +11,7 @@ type Events = {
 	ready: () => void;
 	close: () => void;
 	error: (err: Error) => void;
+	reconnecting: () => void;
 };
 
 type Handler = (payload: any) => Promise<any> | any;
@@ -27,6 +28,8 @@ type RPCResponse = {
 	data?: any;
 	error?: string;
 };
+
+type State = "idle" | "starting" | "connected";
 
 type RPCMessage = RPCRequest | RPCResponse;
 
@@ -144,6 +147,8 @@ class P2PConnection extends Emitter {
    Singleton Service
 ========================= */
 
+const HEALTH_CHECK_INTERVAL_MS = 15000;
+
 class P2PService {
 	private static instance: P2PService;
 
@@ -154,12 +159,23 @@ class P2PService {
 
 	private peer: SimplePeerInstance | null = null;
 	private rpc: PeerRPC | null = null;
-	private conn: P2PConnection | null = null;
+	public conn: P2PConnection | null = null;
+	private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
+	private reconnecting = false;
+	private state: State = "idle";
 
-	startSession(): P2PConnection {
-		if (this.conn) {
-			return this.conn;
+	/**
+	 * Start a P2P session.
+	 * @param sid - Optional existing session ID. If provided, skips createSession and reconnects instead.
+	 */
+	startSession(sid?: string): P2PConnection {
+		if (this.state === "starting" || this.state === "connected") {
+			return this.conn!;
 		}
+
+		this.state = "starting";
+		console.log("calling startSession");
+
 		this.cleanup();
 
 		const conn = new P2PConnection();
@@ -167,12 +183,17 @@ class P2PService {
 
 		(async () => {
 			try {
-				const sid = await createSession();
-
-				conn.sid = sid;
-				conn.emit("session", sid);
-
-				await this.connectPeer(sid, conn);
+				if (sid) {
+					// Reconnect to existing session
+					conn.sid = sid;
+					await resetSession(sid);
+					await this.connectPeer(sid, conn);
+				} else {
+					const newSid = await createSession();
+					conn.sid = newSid;
+					conn.emit("session", newSid);
+					await this.connectPeer(newSid, conn);
+				}
 			} catch (err: any) {
 				conn.emit("error", err);
 			}
@@ -187,28 +208,78 @@ class P2PService {
 
 		peer.on("signal", async (data) => {
 			await postOffer(sid, JSON.stringify(data));
+			console.log("on signal");
 			const answer = await pollAnswer(sid);
 			peer.signal(answer);
 		});
 
 		peer.on("connect", () => {
+			this.state = "connected";
 			this.rpc = new PeerRPC(peer);
 			conn.attachRPC(this.rpc);
-
+			this.reconnecting = false;
+			this.startHealthCheck(conn);
 			conn.emit("ready");
 		});
 
 		peer.on("close", () => {
 			this.rpc?.cleanup();
+			this.stopHealthCheck();
 			conn.emit("close");
 		});
 
 		peer.on("error", (err) => {
+			this.stopHealthCheck();
+			this.triggerReconnect(conn);
 			conn.emit("error", err);
 		});
 	}
 
-	private cleanup() {
+	private startHealthCheck(conn: P2PConnection) {
+		this.stopHealthCheck();
+
+		this.healthCheckTimer = setInterval(async () => {
+			try {
+				await conn.request("fs.ping", {});
+			} catch {
+				this.stopHealthCheck();
+				//this.triggerReconnect(conn);
+			}
+		}, HEALTH_CHECK_INTERVAL_MS);
+	}
+
+	private stopHealthCheck() {
+		if (this.healthCheckTimer !== null) {
+			clearInterval(this.healthCheckTimer);
+			this.healthCheckTimer = null;
+		}
+	}
+
+	private triggerReconnect(conn: P2PConnection) {
+		if (this.reconnecting) return;
+		this.reconnecting = true;
+
+		const sid = conn.sid;
+		if (!sid) {
+			conn.emit("error", new Error("Cannot reconnect: no session ID"));
+			return;
+		}
+
+		conn.emit("reconnecting");
+
+		(async () => {
+			try {
+				this.cleanupPeer();
+				await resetSession(sid);
+				await this.connectPeer(sid, conn);
+			} catch (err: any) {
+				this.reconnecting = false;
+				conn.emit("error", err);
+			}
+		})();
+	}
+
+	private cleanupPeer() {
 		this.rpc?.cleanup();
 
 		if (this.peer) {
@@ -220,6 +291,13 @@ class P2PService {
 
 		this.peer = null;
 		this.rpc = null;
+	}
+
+	private cleanup() {
+		this.stopHealthCheck();
+		this.reconnecting = false;
+		this.cleanupPeer();
+		this.conn = null;
 	}
 }
 

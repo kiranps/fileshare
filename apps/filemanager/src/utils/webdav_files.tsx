@@ -1,11 +1,11 @@
 import { FileText, Film, Folder, Image, Music } from "lucide-react";
 import type { WebDAVEntry } from "../api/webdav";
-import type { FileItemProps } from "../types";
+import type { FileItemProps, FileType } from "../types";
 import { basename } from "../utils/files";
 
 const ICON_SIZE = 18;
 
-const icons = {
+export const icons = {
 	folder: <Folder size={ICON_SIZE} />,
 	file: <FileText size={ICON_SIZE} />,
 	pdf: <FileText size={ICON_SIZE} />,

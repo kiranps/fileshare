@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import type { FC } from "react";
 import type { FileItemProps } from "../types";
 import { humanFileSize } from "../utils/webdav_files";
+import { icons } from "../utils/webdav_files";
 
 function urlDecodeSafe(value: string): string {
 	try {
@@ -18,11 +19,12 @@ export const fileHoverWhenNotSelected =
 
 export const FileItem: FC<
 	FileItemProps & {
+		selected: boolean;
 		onClick?: (e: React.MouseEvent<HTMLTableRowElement>) => void;
 		onDoubleClick?: () => void;
 		onRightClick?: (e: React.MouseEvent<HTMLTableRowElement>) => void;
 	}
-> = ({ name, size, modified, icon, selected, onClick, onDoubleClick, onRightClick }) => (
+> = ({ name, size, modified, type, selected, onClick, onDoubleClick, onRightClick }) => (
 	<tr
 		tabIndex={0}
 		className={`cursor-pointer outline-none ${selected ? fileSelectedClass : fileHoverWhenNotSelected}`}
@@ -30,7 +32,7 @@ export const FileItem: FC<
 		onDoubleClick={onDoubleClick}
 		onContextMenu={onRightClick}
 	>
-		<td className="w-12 text-center">{icon}</td>
+		<td className="w-12 text-center">{icons[type]}</td>
 		<td className="font-medium">{urlDecodeSafe(name)}</td>
 		<td className="text-right">{size ? humanFileSize(size) : "-"}</td>
 		<td>{modified ? format(modified, "yyyy-MM-dd HH:mm:ss") : "-"}</td>

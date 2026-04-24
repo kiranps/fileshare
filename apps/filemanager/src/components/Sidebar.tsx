@@ -21,9 +21,10 @@ export const Sidebar: FC = () => {
 	const location = useLocation();
 
 	const { data } = useWebDAVPropfind("/");
-	const filteredFolders = filesFromWebDAV(data ?? []).files.filter(
-		(f) => f.type === "Folder" && canonicalSidebarFolders.includes(f.name.toLowerCase()) && !f.name.startsWith("."),
-	);
+	//const filteredFolders = filesFromWebDAV(data ?? []).files.filter(
+	//(f) => f.type === "Folder" && canonicalSidebarFolders.includes(f.name.toLowerCase()) && !f.name.startsWith("."),
+	//);
+	const filteredFolders = [];
 	filteredFolders.sort((a, b) => {
 		return (
 			canonicalSidebarFolders.indexOf(a.name.toLowerCase()) - canonicalSidebarFolders.indexOf(b.name.toLowerCase())

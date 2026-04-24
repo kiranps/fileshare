@@ -1,3 +1,5 @@
+import type { FileType } from "../types";
+
 export function basename(path: string): string {
 	return path.replace(/\/+$/, "").split("/").pop() ?? "";
 }
@@ -84,4 +86,22 @@ function decodeURIComponentSafe(value: string): string {
 	} catch {
 		return value;
 	}
+}
+
+export function resolveFileType(ext: string, isDir: boolean): FileType {
+	const EXT_IMAGE = new Set(["jpg", "jpeg", "png", "gif", "bmp", "webp"]);
+	const EXT_MUSIC = new Set(["mp3", "wav", "ogg"]);
+	const EXT_VIDEO = new Set(["mp4", "avi", "mkv", "mov"]);
+	const EXT_PDF = new Set(["pdf"]);
+	const EXT_TEXT = new Set(["txt", "md", "rtf"]);
+
+	if (isDir) return "folder";
+	if (ext) {
+		if (EXT_IMAGE.has(ext)) return "image";
+		if (EXT_MUSIC.has(ext)) return "music";
+		if (EXT_VIDEO.has(ext)) return "video";
+		if (EXT_PDF.has(ext)) return "pdf";
+		if (EXT_TEXT.has(ext)) return "text";
+	}
+	return "file";
 }

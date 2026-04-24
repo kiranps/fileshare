@@ -1,15 +1,14 @@
 import type { JSX } from "react/jsx-runtime";
 
-export type FileType = "Folder" | "Image" | "Music" | "Video" | "PDF" | "Text" | "File";
+export type FileType = "folder" | "image" | "music" | "video" | "pdf" | "text" | "file";
 
 export type FileItemProps = {
 	id: string;
 	name: string;
-	type: FileType | string;
+	type: FileType;
 	size?: number;
 	modified: Date;
-	icon: JSX.Element;
-	selected: boolean;
-	onClick?: (e: React.MouseEvent<HTMLTableRowElement>) => void;
-	onDoubleClick?: () => void;
+	//selected: boolean;
+	//onClick?: (e: React.MouseEvent<HTMLTableRowElement>) => void;
+	//onDoubleClick?: () => void;
 };

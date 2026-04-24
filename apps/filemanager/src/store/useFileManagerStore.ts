@@ -40,6 +40,10 @@ function computeSortedFiles(files: FileItemProps[], col: SortColumn, dir: SortDi
 // ---------------------------------------------------------------------------
 
 export interface FileManagerState {
+	// --- Session ---
+	sessionId: string | null;
+	setSessionId: (id: string | null) => void;
+
 	// --- Path ---
 	activePath: string;
 	setActivePath: (path: string) => void;
@@ -79,6 +83,19 @@ export interface FileManagerState {
 // ---------------------------------------------------------------------------
 
 export const useFileManagerStore = create<FileManagerState>((set, get) => ({
+	// --- Session ---
+	sessionId: typeof window !== "undefined" ? (localStorage.getItem("session_id") ?? null) : null,
+	setSessionId: (id) => {
+		if (typeof window !== "undefined") {
+			if (id) {
+				localStorage.setItem("session_id", id);
+			} else {
+				localStorage.removeItem("session_id");
+			}
+		}
+		set({ sessionId: id });
+	},
+
 	// --- Path ---
 	activePath: typeof window !== "undefined" ? window.location.pathname : "/",
 	setActivePath: (path) => set({ activePath: path }),

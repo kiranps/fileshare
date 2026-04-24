@@ -2,7 +2,8 @@ import { ActionBar } from "@components/ActionBar";
 import { FileList } from "@components/FileList";
 import { Navbar } from "@components/Navbar";
 import { Sidebar } from "@components/Sidebar";
-import { useWebDAVPropfind } from "@hooks/useWebDAVPropfind";
+//import { useWebDAVPropfind } from "@hooks/useWebDAVPropfind";
+import { useWebDAVPropfind } from "@hooks/useFileSystem";
 import { useFileManagerStore } from "@store/useFileManagerStore";
 import { filesFromWebDAV } from "@utils/webdav_files";
 import type { FC } from "react";
@@ -13,18 +14,20 @@ export const FileManager: FC = () => {
 	const activePath = useFileManagerStore((s) => s.activePath);
 	const setFiles = useFileManagerStore((s) => s.setFiles);
 	const { data, isLoading, error } = useWebDAVPropfind(activePath);
+	console.log("files");
+	console.log(data);
 
 	// Push the fetched (and filtered) files into the global store so that the
 	// sort/selection slices always work on the current file list.
 	const showHiddenFiles = useFileManagerStore((s) => s.showHiddenFiles);
 
 	useEffect(() => {
-		let files = data ? filesFromWebDAV(data).files : [];
+		let files = data ? data.files : [];
 		if (!showHiddenFiles) {
 			files = files.filter((f) => !f.name.startsWith("."));
 		}
 		setFiles(files);
-	}, [data, setFiles, showHiddenFiles]);
+	}, [data, showHiddenFiles]);
 
 	return (
 		<FileActionsProvider>
