@@ -24,6 +24,8 @@ type RPCRequest = {
 
 type RPCResponse = {
 	id: string;
+	op: string;
+	ok: boolean;
 	status: string;
 	data?: any;
 	error?: string;
@@ -57,20 +59,19 @@ class Emitter {
 }
 
 /* =========================
-   RPC Layer
+   RPC Layer  (control channel — JSON messages)
 ========================= */
 
 class PeerRPC {
 	private peer: SimplePeerInstance;
 	private handlers = new Map<string, Handler>();
-	private pending = new Map<string, { resolve: Function; reject: Function; timeout: any }>();
+	private pending = new Map<string, { resolve: Function; reject: Function; timeout: ReturnType<typeof setTimeout> }>();
 
 	constructor(peer: SimplePeerInstance) {
 		this.peer = peer;
 
 		peer.on("data", (raw: Buffer | string) => {
 			const text = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
-
 			const msg: RPCMessage = JSON.parse(text);
 			this.handleMessage(msg);
 		});
@@ -78,15 +79,17 @@ class PeerRPC {
 
 	request(op: string, payload: any, timeoutMs = 10000): Promise<any> {
 		const id = crypto.randomUUID();
+		return this.requestWithId(id, op, payload, timeoutMs);
+	}
 
+	requestWithId(id: string, op: string, payload: any, timeoutMs = 90000): Promise<any> {
 		return new Promise((resolve, reject) => {
 			const timeout = setTimeout(() => {
 				this.pending.delete(id);
-				reject(new Error("timeout"));
+				reject(new Error(`RPC timeout: ${op}`));
 			}, timeoutMs);
 
 			this.pending.set(id, { resolve, reject, timeout });
-
 			this.send({ id, op, payload });
 		});
 	}
@@ -103,17 +106,16 @@ class PeerRPC {
 		this.pending.clear();
 	}
 
-	private async handleMessage(msg: RPCMessage) {
+	private handleMessage(msg: RPCMessage) {
 		const p = this.pending.get(msg.id);
 		if (!p) return;
 
 		clearTimeout(p.timeout);
 		this.pending.delete(msg.id);
 
-		if ("status" in msg) {
-			msg.error ? p.reject(new Error(msg.error)) : p.resolve(msg.data);
+		if ("ok" in msg) {
+			msg.ok ? p.resolve(msg.data) : p.reject(new Error(msg.error ?? msg.status));
 		}
-		return;
 	}
 
 	private send(msg: RPCMessage) {
@@ -125,21 +127,59 @@ class PeerRPC {
    Connection Object
 ========================= */
 
-class P2PConnection extends Emitter {
+export class P2PConnection extends Emitter {
 	sid: string | null = null;
 	private rpc: PeerRPC | null = null;
+
+	/** Open RTCDataChannels keyed by their label. */
+	private channels = new Map<string, RTCDataChannel>();
 
 	attachRPC(rpc: PeerRPC) {
 		this.rpc = rpc;
 	}
 
+	/**
+	 * Register a named RTCDataChannel on this connection. If a channel with the
+	 * same label is already registered the existing one is returned unchanged.
+	 */
+	attachChannel(dc: RTCDataChannel): RTCDataChannel {
+		const existing = this.channels.get(dc.label);
+		if (existing) return existing;
+		this.channels.set(dc.label, dc);
+		return dc;
+	}
+
+	/**
+	 * Return the RTCDataChannel registered under `label`, or null if none has
+	 * been attached yet.
+	 */
+	getChannel(label: string): RTCDataChannel | null {
+		return this.channels.get(label) ?? null;
+	}
+
+	/** Send a JSON RPC request on the control channel. */
 	request(op: string, payload: any) {
-		if (!this.rpc) throw new Error("not ready");
+		if (!this.rpc) throw new Error("P2P not ready");
 		return this.rpc.request(op, payload);
+	}
+
+	/** @internal Used by PeerRPC for correlated requests. */
+	requestWithId(id: string, op: string, payload: any) {
+		if (!this.rpc) throw new Error("P2P not ready");
+		return this.rpc.requestWithId(id, op, payload);
 	}
 
 	handle(op: string, handler: Handler) {
 		this.rpc?.handle(op, handler);
+	}
+
+	cleanupChannels() {
+		for (const dc of this.channels.values()) {
+			try {
+				dc.close();
+			} catch {}
+		}
+		this.channels.clear();
 	}
 }
 
@@ -147,7 +187,7 @@ class P2PConnection extends Emitter {
    Singleton Service
 ========================= */
 
-const HEALTH_CHECK_INTERVAL_MS = 15000;
+const HEALTH_CHECK_INTERVAL_MS = 15_000;
 
 class P2PService {
 	private static instance: P2PService;
@@ -167,14 +207,14 @@ class P2PService {
 	/**
 	 * Start a P2P session.
 	 * @param sid - Optional existing session ID. If provided, skips createSession and reconnects instead.
+	 * @param channelLabels - Labels of additional RTCDataChannels to open on connect (e.g. `["file"]`).
 	 */
-	startSession(sid?: string): P2PConnection {
+	startSession(sid?: string, channelLabels: string[] = []): P2PConnection {
 		if (this.state === "starting" || this.state === "connected") {
 			return this.conn!;
 		}
 
 		this.state = "starting";
-		console.log("calling startSession");
 
 		this.cleanup();
 
@@ -184,15 +224,14 @@ class P2PService {
 		(async () => {
 			try {
 				if (sid) {
-					// Reconnect to existing session
 					conn.sid = sid;
 					await resetSession(sid);
-					await this.connectPeer(sid, conn);
+					await this.connectPeer(sid, conn, channelLabels);
 				} else {
 					const newSid = await createSession();
 					conn.sid = newSid;
 					conn.emit("session", newSid);
-					await this.connectPeer(newSid, conn);
+					await this.connectPeer(newSid, conn, channelLabels);
 				}
 			} catch (err: any) {
 				conn.emit("error", err);
@@ -202,21 +241,42 @@ class P2PService {
 		return conn;
 	}
 
-	private async connectPeer(sid: string, conn: P2PConnection) {
+	private async connectPeer(sid: string, conn: P2PConnection, channelLabels: string[]) {
 		const peer = new SimplePeer({ initiator: true, trickle: false });
 		this.peer = peer;
 
 		peer.on("signal", async (data) => {
 			await postOffer(sid, JSON.stringify(data));
-			console.log("on signal");
 			const answer = await pollAnswer(sid);
 			peer.signal(answer);
 		});
 
 		peer.on("connect", () => {
 			this.state = "connected";
+
+			// Control channel — JSON RPC
 			this.rpc = new PeerRPC(peer);
 			conn.attachRPC(this.rpc);
+
+			// Open any additional RTCDataChannels requested by the caller.
+			const rtcPc: RTCPeerConnection = (peer as any)._pc;
+			if (rtcPc) {
+				for (const label of channelLabels) {
+					const dc = rtcPc.createDataChannel(label, { ordered: true });
+					console.log("created channel :", label);
+					console.log(dc);
+					//dc.onopen = (_dc) => {
+					//console.log("Data channel open :", label);
+					//console.log(_dc);
+					//console.log(event);
+					//};
+					//dc.onclose = () => {
+					//console.log("data channe ❌ channel closed :", label);
+					//};
+					conn.attachChannel(dc);
+				}
+			}
+
 			this.reconnecting = false;
 			this.startHealthCheck(conn);
 			conn.emit("ready");
@@ -224,13 +284,14 @@ class P2PService {
 
 		peer.on("close", () => {
 			this.rpc?.cleanup();
+			conn.cleanupChannels();
 			this.stopHealthCheck();
 			conn.emit("close");
 		});
 
 		peer.on("error", (err) => {
 			this.stopHealthCheck();
-			this.triggerReconnect(conn);
+			this.triggerReconnect(conn, channelLabels);
 			conn.emit("error", err);
 		});
 	}
@@ -243,7 +304,6 @@ class P2PService {
 				await conn.request("fs.ping", {});
 			} catch {
 				this.stopHealthCheck();
-				//this.triggerReconnect(conn);
 			}
 		}, HEALTH_CHECK_INTERVAL_MS);
 	}
@@ -255,7 +315,7 @@ class P2PService {
 		}
 	}
 
-	private triggerReconnect(conn: P2PConnection) {
+	private triggerReconnect(conn: P2PConnection, channelLabels: string[]) {
 		if (this.reconnecting) return;
 		this.reconnecting = true;
 
@@ -271,7 +331,7 @@ class P2PService {
 			try {
 				this.cleanupPeer();
 				await resetSession(sid);
-				await this.connectPeer(sid, conn);
+				await this.connectPeer(sid, conn, channelLabels);
 			} catch (err: any) {
 				this.reconnecting = false;
 				conn.emit("error", err);
@@ -281,6 +341,7 @@ class P2PService {
 
 	private cleanupPeer() {
 		this.rpc?.cleanup();
+		this.conn?.cleanupChannels();
 
 		if (this.peer) {
 			this.peer.removeAllListeners();

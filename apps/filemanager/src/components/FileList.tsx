@@ -1,8 +1,9 @@
-import { downloadFile } from "@api/webdav";
+//import { downloadFile } from "@api/webdav";
 import { FileItem } from "@components/FileItem";
 import InputModal from "@components/FileListModal";
 import { useFileManagerStore } from "@store/useFileManagerStore";
 import { openFileContextMenu } from "@utils/openContextMenu";
+import { useDownloadFile } from "@hooks/useFileSystem";
 import type { FC } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFileActionsContext } from "../contexts/FileActionsContext";
@@ -21,6 +22,11 @@ export const FileList: FC = () => {
 	const navigate = useNavigate();
 
 	// --- Store state ---
+	//return { download, progress, downloading, error, abort };
+	const { download, progress, downloading, error } = useDownloadFile();
+	console.log(`download downloading:${downloading} error:${error}`);
+	console.log("progress");
+	console.log(progress);
 	const sortedFiles = useFileManagerStore((s) => s.sortedFiles);
 	const sortColumn = useFileManagerStore((s) => s.sortColumn);
 	const sortDirection = useFileManagerStore((s) => s.sortDirection);
@@ -140,7 +146,7 @@ export const FileList: FC = () => {
 						break;
 					case "download":
 						if (file) {
-							downloadFile(file.id);
+							download(file.id);
 						}
 						break;
 					case "paste":

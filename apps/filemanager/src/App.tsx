@@ -21,7 +21,7 @@ function App() {
 
 	useEffect(() => {
 		console.log(sessionId);
-		const conn = p2p.startSession(sessionId ?? undefined);
+		const conn = p2p.startSession(sessionId ?? undefined, ["file"]);
 
 		conn.on("session", (sid) => {
 			console.log("session:", sid);
