@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:9000";
+const BASE_URL = import.meta.env.VITE_SIGNALLING_SERVER_URL || "http://localhost:9000";
 
 export interface SessionResponse {
 	session_id: string;
@@ -47,7 +47,12 @@ export async function closeSession(sessionId: string): Promise<void> {
 	if (!res.ok) throw new Error(`closeSession failed: ${res.status}`);
 }
 
-export async function pollAnswer(sessionId: string, intervalMs = 5000, timeoutMs = 60000, maxConsecutiveFailures = 5): Promise<any> {
+export async function pollAnswer(
+	sessionId: string,
+	intervalMs = 5000,
+	timeoutMs = 60000,
+	maxConsecutiveFailures = 5,
+): Promise<any> {
 	await new Promise((r) => setTimeout(r, 5000));
 	const deadline = Date.now() + timeoutMs;
 	let consecutiveFailures = 0;
