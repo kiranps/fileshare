@@ -1,8 +1,8 @@
 //! # p2p_connect — example: establish a P2P connection backed by p2p_handler
 //!
-//! This example shows how to wire [`Peer`] together with [`p2p_handler::handle`]
-//! so that every WebRTC data-channel message is dispatched to the filesystem
-//! handler and the response is sent back automatically.
+//! This example shows how to wire [`Peer`] together with the P2P handler via
+//! [`webdavserver::p2p_connect::run`], which handles both JSON responses and
+//! streaming downloads (with WebRTC `bufferedAmount` back-pressure).
 //!
 //! ## Running
 //!
@@ -24,7 +24,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use rustls::crypto::CryptoProvider;
-use webdavserver::p2p_handler::handle;
+use webdavserver::p2p_connect;
 use webdavserver::peer::{Peer, PeerConfig};
 
 #[tokio::main]
@@ -46,6 +46,7 @@ async fn main() {
     println!("[p2p_connect] session  : {session_id}");
     println!("[p2p_connect] base path: {}", base_path.display());
     println!("[p2p_connect] signal   : {signal_base}");
+    println!("[p2p_connect] press Ctrl-C to exit");
 
     // ── Build peer ────────────────────────────────────────────────────────────
     let peer = Peer::new(PeerConfig {
@@ -53,28 +54,8 @@ async fn main() {
         ..PeerConfig::default()
     });
 
-    // ── Register handlers ─────────────────────────────────────────────────────
-
     peer.on_open(|_peer| async move {
         println!("[p2p_connect] ✅ data channel open — ready to serve files");
-    })
-    .await;
-
-    let bp = base_path.clone();
-    peer.on_data(move |msg, peer| {
-        let base = bp.clone();
-        async move {
-            println!("[p2p_connect] ← {}", &msg[..msg.len().min(120)]);
-
-            // Dispatch to the p2p_handler; it returns a ready-to-send JSON string.
-            let response = handle(&msg, &base).await;
-
-            println!("[p2p_connect] → {}", &response[..response.len().min(120)]);
-
-            if let Err(e) = peer.send(&response).await {
-                eprintln!("[p2p_connect] send error: {e}");
-            }
-        }
     })
     .await;
 
@@ -88,20 +69,15 @@ async fn main() {
     })
     .await;
 
-    // ── Connect (blocks until the data channel is established) ────────────────
+    // ── Connect (runs until Ctrl-C) ───────────────────────────────────────────
     println!("[p2p_connect] ⏳ connecting to session '{session_id}'…");
-    match peer.connect(&session_id).await {
-        Ok(()) => {
-            println!("[p2p_connect] 🤝 WebRTC handshake complete — waiting for messages");
-            // Keep the process alive; in a real app you'd await a shutdown signal.
-            tokio::signal::ctrl_c()
-                .await
-                .expect("failed to listen for ctrl-c");
-            println!("[p2p_connect] shutting down");
+    tokio::select! {
+        // `p2p_connect::run` registers on_data and calls peer.connect internally.
+        _ = p2p_connect::run(Arc::clone(&peer), &session_id, base_path) => {
+            println!("[p2p_connect] done");
         }
-        Err(e) => {
-            eprintln!("[p2p_connect] connection failed: {e}");
-            std::process::exit(1);
+        _ = tokio::signal::ctrl_c() => {
+            println!("[p2p_connect] 🛑 Ctrl-C received — exiting");
         }
     }
 }

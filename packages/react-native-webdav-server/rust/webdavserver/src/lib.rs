@@ -8,6 +8,7 @@ mod webdav_server;
 
 pub mod p2p_types;
 pub mod p2p_handler;
+pub mod p2p_connect;
 pub mod peer;
 
 uniffi::setup_scaffolding!();

@@ -201,31 +201,33 @@ All messages over the WebRTC data channel are **UTF-8 JSON strings**.
 **Request** (client → server):
 ```json
 {
-  "id":  "<client-generated correlation id>",
-  "op":  "<operation name>",
-  ...op-specific fields...
+  "id":      "<client-generated correlation id>",
+  "op":      "<operation name>",
+  "payload": { ...op-specific fields... }
 }
 ```
+
+`payload` is required for operations that carry parameters; it may be omitted for operations with no parameters (e.g. `fs.options`).
 
 **Response** (server → client):
 ```json
 {
-  "id":   "<echoed from request>",
-  "op":   "<echoed from request>",
-  "ok":   true,
-  "code": "<status string>",
-  "data": { ...op-specific payload... }
+  "id":     "<echoed from request>",
+  "op":     "<echoed from request>",
+  "ok":     true,
+  "status": "<status string>",
+  "data":   { ...op-specific payload... }
 }
 ```
 
 **Error response**:
 ```json
 {
-  "id":    "<echoed>",
-  "op":    "<echoed>",
-  "ok":    false,
-  "code":  "<error code>",
-  "error": "human readable message"
+  "id":     "<echoed>",
+  "op":     "<echoed>",
+  "ok":     false,
+  "status": "<error code>",
+  "error":  "human readable message"
 }
 ```
 
@@ -235,22 +237,14 @@ All messages over the WebRTC data channel are **UTF-8 JSON strings**.
 
 #### `fs.ping` — health-check / keep-alive
 
-Send a ping; the server replies immediately with a pong containing the server timestamp and the echoed payload.
+Send a ping; the server replies immediately with a pong.
 
 **Request:**
 ```json
-{ "id": "1", "op": "fs.ping", "payload": "optional-string" }
+{ "id": "1", "op": "fs.ping" }
 ```
 
-**Response data:**
-```json
-{
-  "payload":      "optional-string",
-  "server_ts_ms": 1713700000000
-}
-```
-`code` is `"pong"`.  
-`payload` is omitted from the response if not supplied in the request.
+`status` is `"pong"`.
 
 ---
 
@@ -276,7 +270,7 @@ Send a ping; the server replies immediately with a pong containing the server ti
 
 **Request:**
 ```json
-{ "id": "1", "op": "fs.stat", "path": "documents/report.pdf" }
+{ "id": "1", "op": "fs.stat", "payload": { "path": "documents/report.pdf" } }
 ```
 
 **Response data:**
@@ -296,7 +290,7 @@ Send a ping; the server replies immediately with a pong containing the server ti
 
 **Request:**
 ```json
-{ "id": "1", "op": "fs.list", "path": "documents" }
+{ "id": "1", "op": "fs.list", "payload": { "path": "documents" } }
 ```
 
 **Response data:** array of entry objects (same shape as `fs.stat`).
@@ -307,7 +301,7 @@ Send a ping; the server replies immediately with a pong containing the server ti
 
 **Request:**
 ```json
-{ "id": "1", "op": "fs.get", "path": "photo.jpg" }
+{ "id": "1", "op": "fs.get", "payload": { "path": "photo.jpg" } }
 ```
 
 **Response data:**
@@ -327,7 +321,7 @@ Use `fs.get_zip` for directories.
 
 **Request:**
 ```json
-{ "id": "1", "op": "fs.get_zip", "path": "documents" }
+{ "id": "1", "op": "fs.get_zip", "payload": { "path": "documents" } }
 ```
 
 **Response data:** same shape as `fs.get`; `filename` is `"documents.zip"`.
@@ -338,7 +332,7 @@ Use `fs.get_zip` for directories.
 
 **Request:**
 ```json
-{ "id": "1", "op": "fs.head", "path": "video.mp4" }
+{ "id": "1", "op": "fs.head", "payload": { "path": "video.mp4" } }
 ```
 
 **Response data:**
@@ -357,14 +351,16 @@ Use `fs.get_zip` for directories.
 **Request:**
 ```json
 {
-  "id":       "1",
-  "op":       "fs.put",
-  "path":     "notes/todo.txt",
-  "body_b64": "<base64-encoded content>"
+  "id":  "1",
+  "op":  "fs.put",
+  "payload": {
+    "path":     "notes/todo.txt",
+    "body_b64": "<base64-encoded content>"
+  }
 }
 ```
 
-`code` is `"created"` (new file) or `"ok"` (existing file updated).
+`status` is `"created"` (new file) or `"ok"` (existing file updated).
 
 ---
 
@@ -372,7 +368,7 @@ Use `fs.get_zip` for directories.
 
 **Request:**
 ```json
-{ "id": "1", "op": "fs.delete", "path": "old_folder" }
+{ "id": "1", "op": "fs.delete", "payload": { "path": "old_folder" } }
 ```
 
 ---
@@ -381,10 +377,10 @@ Use `fs.get_zip` for directories.
 
 **Request:**
 ```json
-{ "id": "1", "op": "fs.mkdir", "path": "new_folder" }
+{ "id": "1", "op": "fs.mkdir", "payload": { "path": "new_folder" } }
 ```
 
-`code` is `"created"` on success.
+`status` is `"created"` on success.
 
 ---
 
@@ -393,17 +389,19 @@ Use `fs.get_zip` for directories.
 **Request:**
 ```json
 {
-  "id":        "1",
-  "op":        "fs.copy",
-  "src":       "file.txt",
-  "dst":       "backup/file.txt",
-  "overwrite": true,
-  "depth":     "infinity"
+  "id":  "1",
+  "op":  "fs.copy",
+  "payload": {
+    "src":       "file.txt",
+    "dst":       "backup/file.txt",
+    "overwrite": true,
+    "depth":     "infinity"
+  }
 }
 ```
 
 `overwrite` defaults to `true`. `depth` defaults to `"infinity"`.  
-`code` is `"created"` (new) or `"ok"` (replaced).
+`status` is `"created"` (new) or `"ok"` (replaced).
 
 ---
 
@@ -412,11 +410,13 @@ Use `fs.get_zip` for directories.
 **Request:**
 ```json
 {
-  "id":        "1",
-  "op":        "fs.move",
-  "src":       "draft.txt",
-  "dst":       "final.txt",
-  "overwrite": true
+  "id":  "1",
+  "op":  "fs.move",
+  "payload": {
+    "src":       "draft.txt",
+    "dst":       "final.txt",
+    "overwrite": true
+  }
 }
 ```
 
@@ -424,7 +424,7 @@ Use `fs.get_zip` for directories.
 
 ---
 
-### Status codes (`code` field)
+### Status codes (`status` field)
 
 | Code                       | Meaning                                           |
 |----------------------------|---------------------------------------------------|

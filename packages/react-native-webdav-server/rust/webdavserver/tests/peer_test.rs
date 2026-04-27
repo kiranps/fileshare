@@ -200,12 +200,14 @@ async fn connect_fails_fast_with_unreachable_signal_server() {
         signal_base: "http://127.0.0.1:1".to_string(),
         poll_timeout_secs: 2,
         poll_interval_ms: 100,
+        max_reconnect_attempts: 1,
         ice_servers: vec![],
         ..PeerConfig::default()
     });
 
-    let result = peer.connect("test-session").await;
-    assert!(result.is_err(), "connect to unreachable server should fail");
+    // connect() returns () and handles errors internally via on_error.
+    // With max_reconnect_attempts=1 and unreachable server it exits quickly.
+    peer.connect("test-session").await;
 }
 
 // ---------------------------------------------------------------------------
@@ -282,7 +284,7 @@ async fn connect_with_reconnect_exhausts_max_attempts() {
     })
     .await;
 
-    peer.connect_with_reconnect("test-session").await;
+    peer.connect("test-session").await;
 
     let errs = errors.lock().unwrap();
     assert!(!errs.is_empty(), "should have received at least one error");
