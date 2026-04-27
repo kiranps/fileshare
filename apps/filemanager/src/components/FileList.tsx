@@ -23,10 +23,7 @@ export const FileList: FC = () => {
 
 	// --- Store state ---
 	//return { download, progress, downloading, error, abort };
-	const { download, progress, downloading, error } = useDownloadFile();
-	console.log(`download downloading:${downloading} error:${error}`);
-	console.log("progress");
-	console.log(progress);
+	const { download } = useDownloadFile();
 	const sortedFiles = useFileManagerStore((s) => s.sortedFiles);
 	const sortColumn = useFileManagerStore((s) => s.sortColumn);
 	const sortDirection = useFileManagerStore((s) => s.sortDirection);

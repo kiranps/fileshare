@@ -246,9 +246,15 @@ class P2PService {
 		this.peer = peer;
 
 		peer.on("signal", async (data) => {
-			await postOffer(sid, JSON.stringify(data));
-			const answer = await pollAnswer(sid);
-			peer.signal(answer);
+			try {
+				await postOffer(sid, JSON.stringify(data));
+				const answer = await pollAnswer(sid);
+				peer.signal(answer);
+			} catch (err: any) {
+				this.state = "idle";
+				this.cleanup();
+				conn.emit("error", err);
+			}
 		});
 
 		peer.on("connect", () => {
@@ -263,22 +269,12 @@ class P2PService {
 			if (rtcPc) {
 				for (const label of channelLabels) {
 					const dc = rtcPc.createDataChannel(label, { ordered: true });
-					console.log("created channel :", label);
-					console.log(dc);
-					//dc.onopen = (_dc) => {
-					//console.log("Data channel open :", label);
-					//console.log(_dc);
-					//console.log(event);
-					//};
-					//dc.onclose = () => {
-					//console.log("data channe ❌ channel closed :", label);
-					//};
 					conn.attachChannel(dc);
 				}
 			}
 
 			this.reconnecting = false;
-			this.startHealthCheck(conn);
+			this.startHealthCheck(conn, channelLabels);
 			conn.emit("ready");
 		});
 
@@ -290,13 +286,14 @@ class P2PService {
 		});
 
 		peer.on("error", (err) => {
+			console.log("error :", err);
 			this.stopHealthCheck();
 			this.triggerReconnect(conn, channelLabels);
 			conn.emit("error", err);
 		});
 	}
 
-	private startHealthCheck(conn: P2PConnection) {
+	private startHealthCheck(conn: P2PConnection, channelLabels: string[] = []) {
 		this.stopHealthCheck();
 
 		this.healthCheckTimer = setInterval(async () => {
@@ -304,6 +301,7 @@ class P2PService {
 				await conn.request("fs.ping", {});
 			} catch {
 				this.stopHealthCheck();
+				this.triggerReconnect(conn, channelLabels);
 			}
 		}, HEALTH_CHECK_INTERVAL_MS);
 	}
@@ -329,6 +327,7 @@ class P2PService {
 
 		(async () => {
 			try {
+				console.log("reconnecting");
 				this.cleanupPeer();
 				await resetSession(sid);
 				await this.connectPeer(sid, conn, channelLabels);

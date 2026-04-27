@@ -20,6 +20,16 @@ function App() {
 	}, []);
 
 	useEffect(() => {
+		const handleUnload = () => {
+			p2p.closeSession();
+		};
+		window.addEventListener("unload", handleUnload);
+		return () => {
+			window.removeEventListener("unload", handleUnload);
+		};
+	}, []);
+
+	useEffect(() => {
 		console.log(sessionId);
 		const conn = p2p.startSession(sessionId ?? undefined, ["file"]);
 

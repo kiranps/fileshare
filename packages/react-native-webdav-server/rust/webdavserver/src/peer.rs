@@ -21,9 +21,9 @@ use std::{
     time::Duration,
 };
 
+use axum::body::Bytes;
 use reqwest::Client;
 use serde::Deserialize;
-use axum::body::Bytes;
 use tokio::{sync::Mutex, time::sleep};
 use webrtc::{
     api::APIBuilder,
