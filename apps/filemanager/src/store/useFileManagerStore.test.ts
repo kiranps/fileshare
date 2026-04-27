@@ -1,5 +1,4 @@
 import { act } from "@testing-library/react";
-import { createElement } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { FileItemProps } from "../types";
 import { useFileManagerStore } from "./useFileManagerStore";
@@ -11,22 +10,18 @@ import { useFileManagerStore } from "./useFileManagerStore";
 const makeFile = (overrides: Partial<FileItemProps> = {}): FileItemProps => ({
 	id: "/files/doc.txt",
 	name: "doc.txt",
-	type: "Text",
+	type: "text",
 	size: 1024,
 	modified: new Date("2024-06-15"),
-	icon: createElement("span"),
-	selected: false,
 	...overrides,
 });
 
 const makeFolder = (overrides: Partial<FileItemProps> = {}): FileItemProps => ({
 	id: "/Photos",
 	name: "Photos",
-	type: "Folder",
+	type: "folder",
 	size: undefined,
 	modified: new Date("2024-05-01"),
-	icon: createElement("span"),
-	selected: false,
 	...overrides,
 });
 

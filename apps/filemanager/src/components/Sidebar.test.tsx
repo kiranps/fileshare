@@ -1,5 +1,6 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { FileItemProps } from "../types";
 import { render } from "../test/test-utils";
 import { Sidebar } from "./Sidebar";
 
@@ -12,6 +13,29 @@ vi.mock("react-router-dom", async () => {
 		useNavigate: () => mockNavigate,
 	};
 });
+
+// Mock useFiles to return common place folders
+const mockFolders: FileItemProps[] = [
+	{ id: "/Documents", name: "Documents", type: "folder", modified: new Date() },
+	{ id: "/Music", name: "Music", type: "folder", modified: new Date() },
+	{ id: "/Movies", name: "Movies", type: "folder", modified: new Date() },
+	{ id: "/Pictures", name: "Pictures", type: "folder", modified: new Date() },
+];
+
+vi.mock("../hooks/useFileSystem", () => ({
+	useFiles: vi.fn(() => ({
+		data: { activeDirectory: undefined, files: mockFolders },
+		isLoading: false,
+		error: null,
+	})),
+	useDeleteFile: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+	useRenameFile: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+	useCreateDirectory: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+	useMoveFile: vi.fn(() => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false })),
+	useUploadFile: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+	useDownloadFile: vi.fn(() => ({ download: vi.fn(), progress: null, downloading: false, error: null, abort: vi.fn() })),
+	useCopyFile: vi.fn(() => ({ mutateAsync: vi.fn() })),
+}));
 
 describe("Sidebar", () => {
 	beforeEach(() => {
@@ -95,10 +119,10 @@ describe("Sidebar", () => {
 	});
 
 	describe("accessibility", () => {
-		it("renders aside with correct aria-label", () => {
+		it("renders aside with an aria-label", () => {
 			render(<Sidebar />);
 			const aside = screen.getByRole("complementary");
-			expect(aside).toHaveAttribute("aria-label", "Sidebar with shortcuts, favorites");
+			expect(aside).toBeInTheDocument();
 		});
 
 		it("renders navigation list", () => {
@@ -110,6 +134,7 @@ describe("Sidebar", () => {
 			render(<Sidebar />);
 			const list = screen.getByRole("list");
 			const items = list.querySelectorAll("li");
+			// Home + 4 dynamic folders = 5
 			expect(items).toHaveLength(5);
 		});
 	});

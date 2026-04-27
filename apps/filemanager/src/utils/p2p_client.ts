@@ -353,6 +353,12 @@ class P2PService {
 		this.rpc = null;
 	}
 
+	/** Tear down the current session and clean up all resources. */
+	closeSession() {
+		this.state = "idle";
+		this.cleanup();
+	}
+
 	private cleanup() {
 		this.stopHealthCheck();
 		this.reconnecting = false;

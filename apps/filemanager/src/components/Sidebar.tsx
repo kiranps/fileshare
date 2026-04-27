@@ -1,6 +1,5 @@
 import type { FC } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useWebDAVPropfind } from "../hooks/useWebDAVPropfind";
 import { useFiles } from "@hooks/useFileSystem";
 
 const canonicalSidebarFolders = [

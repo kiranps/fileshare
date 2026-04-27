@@ -204,8 +204,6 @@ class DownloadChannel {
 		dc.binaryType = "arraybuffer";
 
 		dc.onmessage = (ev: MessageEvent<ArrayBuffer>) => {
-			const decoder = new TextDecoder("utf-8");
-			const str = decoder.decode(ev.data);
 			this.handleFrame(new Uint8Array(ev.data));
 		};
 

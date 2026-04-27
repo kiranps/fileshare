@@ -1,5 +1,4 @@
 import { act, fireEvent, screen, within } from "@testing-library/react";
-import { createElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { FileActionsProvider } from "../contexts/FileActionsContext";
 import { useFileManagerStore } from "../store/useFileManagerStore";
@@ -14,6 +13,7 @@ const mockDeleteMutate = vi.fn();
 const mockMoveMutate = vi.fn();
 const mockMkdirMutate = vi.fn();
 const mockPutMutate = vi.fn();
+const mockDownload = vi.fn();
 
 vi.mock("react-router-dom", async () => {
 	const actual = await vi.importActual("react-router-dom");
@@ -74,6 +74,35 @@ vi.mock("../api/webdav", () => ({
 	downloadFile: vi.fn(),
 }));
 
+// Mock useFileSystem to provide download hook
+vi.mock("../hooks/useFileSystem", () => ({
+	useDownloadFile: vi.fn(() => ({
+		download: mockDownload,
+		progress: null,
+		downloading: false,
+		error: null,
+		abort: vi.fn(),
+	})),
+	useDeleteFile: vi.fn(() => ({ mutateAsync: mockDeleteMutate, isPending: false, isError: false, error: null })),
+	useMoveFile: vi.fn(() => ({
+		mutate: mockMoveMutate,
+		mutateAsync: vi.fn().mockResolvedValue({}),
+		isPending: false,
+		isError: false,
+		error: null,
+	})),
+	useCreateDirectory: vi.fn(() => ({ mutate: mockMkdirMutate, isPending: false, isError: false, error: null })),
+	useUploadFile: vi.fn(() => ({ mutate: mockPutMutate, isPending: false, isError: false, error: null })),
+	useCopyFile: vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue({}) })),
+	useRenameFile: vi.fn(() => ({
+		mutate: mockMoveMutate,
+		mutateAsync: vi.fn().mockResolvedValue({}),
+		isPending: false,
+		isError: false,
+		error: null,
+	})),
+}));
+
 // Mock file pickers
 vi.mock("../utils/files", async () => {
 	const actual = await vi.importActual("../utils/files");
@@ -87,28 +116,24 @@ vi.mock("../utils/files", async () => {
 const makeFile = (overrides: Partial<FileItemProps> = {}): FileItemProps => ({
 	id: "/files/document.txt",
 	name: "document.txt",
-	type: "Text",
+	type: "text",
 	size: 1024,
 	modified: new Date("2024-06-15"),
-	icon: createElement("span", { "data-testid": "file-icon" }),
-	selected: false,
 	...overrides,
 });
 
 const makeFolder = (overrides: Partial<FileItemProps> = {}): FileItemProps => ({
 	id: "/Photos",
 	name: "Photos",
-	type: "Folder",
+	type: "folder",
 	size: undefined,
 	modified: new Date("2024-05-01"),
-	icon: createElement("span", { "data-testid": "folder-icon" }),
-	selected: false,
 	...overrides,
 });
 
 const sampleFiles: FileItemProps[] = [
 	makeFile({ id: "/files/a.txt", name: "a.txt" }),
-	makeFile({ id: "/files/b.pdf", name: "b.pdf", type: "PDF" }),
+	makeFile({ id: "/files/b.pdf", name: "b.pdf", type: "pdf" }),
 	makeFolder({ id: "/Photos", name: "Photos" }),
 ];
 
@@ -311,14 +336,13 @@ describe("FileList", () => {
 		});
 
 		it("triggers download when Download action is selected", async () => {
-			const { downloadFile } = vi.mocked(await import("../api/webdav"));
 			renderFileList([makeFile({ id: "/files/doc.txt" })]);
 			const row = screen.getByText("document.txt").closest("tr")!;
 			fireEvent.contextMenu(row);
 			await act(async () => {
 				await capturedContextMenuProps?.onAction("download");
 			});
-			expect(downloadFile).toHaveBeenCalledWith("/files/doc.txt");
+			expect(mockDownload).toHaveBeenCalledWith("/files/doc.txt");
 		});
 
 		it("opens rename modal when Rename action is selected", async () => {

@@ -10,8 +10,8 @@ export type ClipboardAction = "cut" | "copy";
 // ---------------------------------------------------------------------------
 
 function computeSortedFiles(files: FileItemProps[], col: SortColumn, dir: SortDirection): FileItemProps[] {
-	const folders = files.filter((f) => f.type === "Folder");
-	const regularFiles = files.filter((f) => f.type !== "Folder");
+	const folders = files.filter((f) => f.type === "folder");
+	const regularFiles = files.filter((f) => f.type !== "folder");
 
 	const multiplier = dir === "asc" ? 1 : -1;
 

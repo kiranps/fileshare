@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import QRCode from "react-qr-code";
 
 interface PairProps {

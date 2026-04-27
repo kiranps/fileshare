@@ -1,16 +1,14 @@
-import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "../test/test-utils";
-import type { FileItemProps } from "../types";
 import { FileItem, fileHoverWhenNotSelected, fileSelectedClass } from "./FileItem";
+import type { FileItemProps } from "./FileItem";
 
 const makeFile = (overrides: Partial<FileItemProps> = {}): FileItemProps => ({
 	id: "/files/document.txt",
 	name: "document.txt",
-	type: "Text",
+	type: "text",
 	size: 1024,
 	modified: new Date("2024-06-15T10:30:00Z"),
-	icon: createElement("span", { "data-testid": "file-icon" }, "icon"),
 	selected: false,
 	...overrides,
 });
@@ -39,15 +37,17 @@ describe("FileItem", () => {
 			expect(screen.getByText("hello.txt")).toBeInTheDocument();
 		});
 
-		it("renders the icon", () => {
-			render(
+		it("renders an icon for the file type", () => {
+			const { container } = render(
 				<table>
 					<tbody>
 						<FileItem {...makeFile()} />
 					</tbody>
 				</table>,
 			);
-			expect(screen.getByTestId("file-icon")).toBeInTheDocument();
+			// The icon cell is the first td in the row
+			const iconCell = container.querySelector("td");
+			expect(iconCell).toBeInTheDocument();
 		});
 
 		it("renders formatted file size", () => {

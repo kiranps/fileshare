@@ -40,7 +40,7 @@ export function useFileActions(onModalRequest: (req: ModalRequest) => void): Fil
 
 	const deleteMutation = useDeleteFile();
 	const moveMutation = useMoveFile();
-	const mkdirMutation = useCreateDirectory;
+	const mkdirMutation = useCreateDirectory();
 	const putMutation = useUploadFile();
 	const copyMutation = useCopyFile();
 	const openNewFolderModal = () => {

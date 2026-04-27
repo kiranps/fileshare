@@ -47,7 +47,7 @@ function App() {
 		});
 
 		conn.on("close", () => {});
-		conn.on("error", (err) => {});
+		conn.on("error", (_err) => {});
 	}, []);
 
 	//const handlePaired = useCallback((ip: string, port: string) => {

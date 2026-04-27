@@ -1,13 +1,27 @@
 import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { WebDAVEntry } from "../api/webdav";
+import type { FileItemProps } from "../types";
 import { useFileManagerStore } from "../store/useFileManagerStore";
 import { render } from "../test/test-utils";
 import { FileManager } from "./FileManager";
 
-// Mock the WebDAV propfind hook
+// Mock useFileSystem hooks
+const mockUseFiles = vi.fn();
+
+vi.mock("../hooks/useFileSystem", () => ({
+	useFiles: (...args: unknown[]) => mockUseFiles(...args),
+	useDeleteFile: vi.fn(() => ({ mutate: vi.fn(), isPending: false, isError: false })),
+	useRenameFile: vi.fn(() => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false, isError: false })),
+	useCreateDirectory: vi.fn(() => ({ mutate: vi.fn(), isPending: false, isError: false })),
+	useMoveFile: vi.fn(() => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false, isError: false })),
+	useUploadFile: vi.fn(() => ({ mutate: vi.fn(), isPending: false, isError: false })),
+	useDownloadFile: vi.fn(() => ({ download: vi.fn(), progress: null, downloading: false, error: null, abort: vi.fn() })),
+	useCopyFile: vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue({}) })),
+}));
+
+// Also mock WebDAV propfind so context/sidebar doesn't blow up
 vi.mock("../hooks/useWebDAVPropfind", () => ({
-	useWebDAVPropfind: vi.fn(),
+	useWebDAVPropfind: vi.fn(() => ({ data: undefined, isLoading: false, error: null })),
 	useWebDAVDelete: vi.fn(() => ({ mutate: vi.fn(), isPending: false, isError: false })),
 	useWebDAVMove: vi.fn(() => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false, isError: false })),
 	useWebDAVMkcol: vi.fn(() => ({ mutate: vi.fn(), isPending: false, isError: false })),
@@ -15,42 +29,30 @@ vi.mock("../hooks/useWebDAVPropfind", () => ({
 	useWebDAVCopy: vi.fn(() => ({ mutateAsync: vi.fn() })),
 }));
 
-import { useWebDAVPropfind } from "../hooks/useWebDAVPropfind";
-
-const mockEntries: WebDAVEntry[] = [
+const mockFiles: FileItemProps[] = [
 	{
-		href: "/",
-		displayName: "/",
-		isCollection: true,
-		contentType: undefined,
-		contentLength: undefined,
-		lastModified: new Date("2024-01-01"),
+		id: "/document.txt",
+		name: "document.txt",
+		type: "text",
+		size: 1024,
+		modified: new Date("2024-06-10"),
 	},
 	{
-		href: "/document.txt",
-		displayName: "document.txt",
-		isCollection: false,
-		contentType: "text/plain",
-		contentLength: 1024,
-		lastModified: new Date("2024-06-10"),
-	},
-	{
-		href: "/Photos",
-		displayName: "Photos",
-		isCollection: true,
-		contentType: undefined,
-		contentLength: undefined,
-		lastModified: new Date("2024-05-01"),
-	},
-	{
-		href: "/.hidden-file",
-		displayName: ".hidden-file",
-		isCollection: false,
-		contentType: "text/plain",
-		contentLength: 512,
-		lastModified: new Date("2024-01-01"),
+		id: "/Photos",
+		name: "Photos",
+		type: "folder",
+		size: undefined,
+		modified: new Date("2024-05-01"),
 	},
 ];
+
+const hiddenFile: FileItemProps = {
+	id: "/.hidden-file",
+	name: ".hidden-file",
+	type: "file",
+	size: 512,
+	modified: new Date("2024-01-01"),
+};
 
 describe("FileManager", () => {
 	beforeEach(() => {
@@ -60,21 +62,13 @@ describe("FileManager", () => {
 
 	describe("loading state", () => {
 		it("renders loading message when isLoading is true", () => {
-			(useWebDAVPropfind as ReturnType<typeof vi.fn>).mockReturnValue({
-				data: undefined,
-				isLoading: true,
-				error: null,
-			});
+			mockUseFiles.mockReturnValue({ data: undefined, isLoading: true, error: null });
 			render(<FileManager />);
 			expect(screen.getByText("Loading files...")).toBeInTheDocument();
 		});
 
 		it("does not render FileList when loading", () => {
-			(useWebDAVPropfind as ReturnType<typeof vi.fn>).mockReturnValue({
-				data: undefined,
-				isLoading: true,
-				error: null,
-			});
+			mockUseFiles.mockReturnValue({ data: undefined, isLoading: true, error: null });
 			render(<FileManager />);
 			expect(screen.queryByRole("table")).not.toBeInTheDocument();
 		});
@@ -82,21 +76,13 @@ describe("FileManager", () => {
 
 	describe("error state", () => {
 		it("renders error message when error is set", () => {
-			(useWebDAVPropfind as ReturnType<typeof vi.fn>).mockReturnValue({
-				data: undefined,
-				isLoading: false,
-				error: new Error("Network error"),
-			});
+			mockUseFiles.mockReturnValue({ data: undefined, isLoading: false, error: new Error("Network error") });
 			render(<FileManager />);
 			expect(screen.getByText("Error loading files.")).toBeInTheDocument();
 		});
 
 		it("does not render FileList on error", () => {
-			(useWebDAVPropfind as ReturnType<typeof vi.fn>).mockReturnValue({
-				data: undefined,
-				isLoading: false,
-				error: new Error("Network error"),
-			});
+			mockUseFiles.mockReturnValue({ data: undefined, isLoading: false, error: new Error("Network error") });
 			render(<FileManager />);
 			expect(screen.queryByRole("table")).not.toBeInTheDocument();
 		});
@@ -104,8 +90,8 @@ describe("FileManager", () => {
 
 	describe("success state", () => {
 		beforeEach(() => {
-			(useWebDAVPropfind as ReturnType<typeof vi.fn>).mockReturnValue({
-				data: mockEntries,
+			mockUseFiles.mockReturnValue({
+				data: { activeDirectory: undefined, files: [...mockFiles, hiddenFile] },
 				isLoading: false,
 				error: null,
 			});
@@ -140,17 +126,8 @@ describe("FileManager", () => {
 
 	describe("empty directory", () => {
 		it("renders empty state message when no files returned", () => {
-			// Only the directory itself (first entry) with no files
-			(useWebDAVPropfind as ReturnType<typeof vi.fn>).mockReturnValue({
-				data: [
-					{
-						href: "/",
-						displayName: "/",
-						isCollection: true,
-						contentType: undefined,
-						lastModified: new Date("2024-01-01"),
-					},
-				],
+			mockUseFiles.mockReturnValue({
+				data: { activeDirectory: undefined, files: [] },
 				isLoading: false,
 				error: null,
 			});
@@ -159,11 +136,7 @@ describe("FileManager", () => {
 		});
 
 		it("renders empty state when data is undefined", () => {
-			(useWebDAVPropfind as ReturnType<typeof vi.fn>).mockReturnValue({
-				data: undefined,
-				isLoading: false,
-				error: null,
-			});
+			mockUseFiles.mockReturnValue({ data: undefined, isLoading: false, error: null });
 			render(<FileManager />);
 			// Should still render FileList with empty files array
 			expect(screen.getByText("No files or folders found.")).toBeInTheDocument();
@@ -172,23 +145,19 @@ describe("FileManager", () => {
 
 	describe("all-hidden directory", () => {
 		it("renders empty state when all files are hidden", () => {
-			(useWebDAVPropfind as ReturnType<typeof vi.fn>).mockReturnValue({
-				data: [
-					{
-						href: "/",
-						displayName: "/",
-						isCollection: true,
-						contentType: undefined,
-						lastModified: new Date("2024-01-01"),
-					},
-					{
-						href: "/.gitignore",
-						displayName: ".gitignore",
-						isCollection: false,
-						contentType: "text/plain",
-						lastModified: new Date("2024-01-01"),
-					},
-				],
+			mockUseFiles.mockReturnValue({
+				data: {
+					activeDirectory: undefined,
+					files: [
+						{
+							id: "/.gitignore",
+							name: ".gitignore",
+							type: "file",
+							size: undefined,
+							modified: new Date("2024-01-01"),
+						},
+					],
+				},
 				isLoading: false,
 				error: null,
 			});
@@ -199,22 +168,14 @@ describe("FileManager", () => {
 
 	describe("layout structure", () => {
 		it("renders main layout container", () => {
-			(useWebDAVPropfind as ReturnType<typeof vi.fn>).mockReturnValue({
-				data: [],
-				isLoading: false,
-				error: null,
-			});
+			mockUseFiles.mockReturnValue({ data: { activeDirectory: undefined, files: [] }, isLoading: false, error: null });
 			const { container } = render(<FileManager />);
 			// Root div should be present
 			expect(container.firstChild).toBeInTheDocument();
 		});
 
 		it("renders main element", () => {
-			(useWebDAVPropfind as ReturnType<typeof vi.fn>).mockReturnValue({
-				data: [],
-				isLoading: false,
-				error: null,
-			});
+			mockUseFiles.mockReturnValue({ data: { activeDirectory: undefined, files: [] }, isLoading: false, error: null });
 			render(<FileManager />);
 			expect(screen.getByRole("main")).toBeInTheDocument();
 		});
