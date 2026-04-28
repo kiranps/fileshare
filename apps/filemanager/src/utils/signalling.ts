@@ -1,4 +1,6 @@
 const BASE_URL = import.meta.env.VITE_SIGNALLING_SERVER_URL || "http://localhost:9000";
+//const BASE_URL =
+//import.meta.env.VITE_SIGNALLING_SERVER_URL || "https://vhlkksm25fy4nvj3zz4ruoao7i0ewjoa.lambda-url.ap-south-1.on.aws";
 
 export interface SessionResponse {
 	session_id: string;

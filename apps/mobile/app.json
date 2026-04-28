@@ -1,57 +1,57 @@
 {
-    "expo": {
-        "name": "my-expo-app",
-        "slug": "my-expo-app",
-        "version": "1.0.0",
-        "web": {
-            "favicon": "./assets/favicon.png"
-        },
-        "newArchEnabled": true,
-        "scheme": "myapp",
-        "experiments": {
-            "tsconfigPaths": true,
-            "typedRoutes": true
-        },
-        "plugins": [
-            "expo-router",
-            [
-                "expo-camera",
-                {
-                    "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-                    "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
-                    "recordAudioAndroid": true,
-                    "barcodeScannerEnabled": true
-                }
-            ],
-            [
-                "expo-build-properties",
-                {
-                    "android": {
-                        "usesCleartextTraffic": true
-                    }
-                }
-            ]
-        ],
-        "orientation": "portrait",
-
-        "icon": "./assets/icon.png",
-        "userInterfaceStyle": "light",
-        "splash": {
-            "image": "./assets/splash.png",
-            "resizeMode": "contain",
-            "backgroundColor": "#ffffff"
-        },
-        "assetBundlePatterns": ["**/*"],
-        "android": {
-            "package": "com.kiran.shareit",
-            "adaptiveIcon": {
-                "foregroundImage": "./assets/adaptive-icon.png",
-                "backgroundColor": "#ffffff"
-            },
-            "permissions": ["android.permission.MANAGE_EXTERNAL_STORAGE"]
-        },
-        "ios": {
-            "bundleIdentifier": "com.kiran.shareit"
+  "expo": {
+    "name": "my-expo-app",
+    "slug": "my-expo-app",
+    "version": "1.0.0",
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "newArchEnabled": true,
+    "scheme": "myapp",
+    "experiments": {
+      "tsconfigPaths": true,
+      "typedRoutes": true
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+          "recordAudioAndroid": true,
+          "barcodeScannerEnabled": true
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "orientation": "portrait",
+
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.kiran.shareit",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": ["android.permission.MANAGE_EXTERNAL_STORAGE"]
+    },
+    "ios": {
+      "bundleIdentifier": "com.kiran.shareit"
     }
+  }
 }

@@ -35,29 +35,30 @@ import nativeModule, {
   type UniffiForeignFutureCompleteVoid,
 } from "./webdavserver-ffi";
 import {
-  type FfiConverter, 
-  type UniffiByteArray, 
-  type UniffiObjectFactory, 
-  type UniffiRustArcPtr, 
-  type UnsafeMutableRawPointer, 
-  AbstractFfiConverterByteArray, 
-  FfiConverterBool, 
-  FfiConverterInt32, 
-  FfiConverterObject, 
-  FfiConverterOptional, 
-  FfiConverterUInt16, 
-  FfiConverterUInt64, 
-  RustBuffer, 
-  UniffiAbstractObject, 
-  UniffiError, 
-  UniffiInternalError, 
-  UniffiRustCaller, 
-  destructorGuardSymbol, 
-  pointerLiteralSymbol, 
-  uniffiCreateFfiConverterString, 
-  uniffiCreateRecord, 
-  uniffiTypeNameSymbol, 
-  variantOrdinalSymbol } from "uniffi-bindgen-react-native";
+  type FfiConverter,
+  type UniffiByteArray,
+  type UniffiObjectFactory,
+  type UniffiRustArcPtr,
+  type UnsafeMutableRawPointer,
+  AbstractFfiConverterByteArray,
+  FfiConverterBool,
+  FfiConverterInt32,
+  FfiConverterObject,
+  FfiConverterOptional,
+  FfiConverterUInt16,
+  FfiConverterUInt64,
+  RustBuffer,
+  UniffiAbstractObject,
+  UniffiError,
+  UniffiInternalError,
+  UniffiRustCaller,
+  destructorGuardSymbol,
+  pointerLiteralSymbol,
+  uniffiCreateFfiConverterString,
+  uniffiCreateRecord,
+  uniffiTypeNameSymbol,
+  variantOrdinalSymbol,
+} from "uniffi-bindgen-react-native";
 
 // Get converters from the other files, if any.
 const uniffiCaller = new UniffiRustCaller(() => ({ code: 0 }));
@@ -70,210 +71,347 @@ const uniffiIsDebug =
   false;
 // Public interface members begin here.
 
-
-
-
-
-
-
 export type Auth = {
-    username: string,
-    password: string
-}
+  username: string;
+  password: string;
+};
 
 /**
  * Generated factory for {@link Auth} record objects.
  */
 export const Auth = (() => {
-    const defaults = () => ({
-    });
-    const create = (() => {
-        return uniffiCreateRecord<Auth, ReturnType<typeof defaults>>(defaults);
-    })();
-    return Object.freeze({
-        /**
-         * Create a frozen instance of {@link Auth}, with defaults specified
-         * in Rust, in the {@link webdavserver} crate.
-         */
-        create,
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<Auth, ReturnType<typeof defaults>>(defaults);
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link Auth}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    create,
 
-        /**
-         * Create a frozen instance of {@link Auth}, with defaults specified
-         * in Rust, in the {@link webdavserver} crate.
-         */
-        new: create,
+    /**
+     * Create a frozen instance of {@link Auth}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    new: create,
 
-        /**
-         * Defaults specified in the {@link webdavserver} crate.
-         */
-        defaults: () => Object.freeze(defaults()) as Partial<Auth>,
-    });
+    /**
+     * Defaults specified in the {@link webdavserver} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<Auth>,
+  });
 })();
 
 const FfiConverterTypeAuth = (() => {
-    type TypeName = Auth;
-    class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
-        read(from: RustBuffer): TypeName {
-            return {
-                username: FfiConverterString.read(from), 
-                password: FfiConverterString.read(from)
-            };
-        }
-        write(value: TypeName, into: RustBuffer): void {
-            FfiConverterString.write(value.username, into);
-            FfiConverterString.write(value.password, into);
-        }
-        allocationSize(value: TypeName): number {
-            return FfiConverterString.allocationSize(value.username) + 
-            FfiConverterString.allocationSize(value.password);
-            
-        }
-    };
-    return new FFIConverter();
+  type TypeName = Auth;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        username: FfiConverterString.read(from),
+        password: FfiConverterString.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.username, into);
+      FfiConverterString.write(value.password, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterString.allocationSize(value.username) +
+        FfiConverterString.allocationSize(value.password)
+      );
+    }
+  }
+  return new FFIConverter();
 })();
 
+/**
+ * Options passed to [`P2pConnection::start`].
+ */
+export type P2pStartOptions = {
+  /**
+   * Base URL of the HTTP signalling server, e.g. `"https://signal.example.com/"`.
+   */
+  signallingEndpoint: string;
+  /**
+   * Filesystem root to serve over the P2P data channel.
+   */
+  basePath: string;
+  /**
+   * Session id to register with the signalling server.
+   */
+  sessionId: string;
+};
+
+/**
+ * Generated factory for {@link P2pStartOptions} record objects.
+ */
+export const P2pStartOptions = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<P2pStartOptions, ReturnType<typeof defaults>>(
+      defaults,
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link P2pStartOptions}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link P2pStartOptions}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link webdavserver} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<P2pStartOptions>,
+  });
+})();
+
+const FfiConverterTypeP2pStartOptions = (() => {
+  type TypeName = P2pStartOptions;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        signallingEndpoint: FfiConverterString.read(from),
+        basePath: FfiConverterString.read(from),
+        sessionId: FfiConverterString.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.signallingEndpoint, into);
+      FfiConverterString.write(value.basePath, into);
+      FfiConverterString.write(value.sessionId, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterString.allocationSize(value.signallingEndpoint) +
+        FfiConverterString.allocationSize(value.basePath) +
+        FfiConverterString.allocationSize(value.sessionId)
+      );
+    }
+  }
+  return new FFIConverter();
+})();
+
+/**
+ * Returned by a successful [`P2pConnection::start`].
+ */
+export type P2pStartResponse = {
+  /**
+   * The session id that was registered (echoed back for convenience).
+   */
+  sessionId: string;
+};
+
+/**
+ * Generated factory for {@link P2pStartResponse} record objects.
+ */
+export const P2pStartResponse = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<P2pStartResponse, ReturnType<typeof defaults>>(
+      defaults,
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link P2pStartResponse}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link P2pStartResponse}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link webdavserver} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<P2pStartResponse>,
+  });
+})();
+
+const FfiConverterTypeP2pStartResponse = (() => {
+  type TypeName = P2pStartResponse;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        sessionId: FfiConverterString.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.sessionId, into);
+    }
+    allocationSize(value: TypeName): number {
+      return FfiConverterString.allocationSize(value.sessionId);
+    }
+  }
+  return new FFIConverter();
+})();
 
 export type StartOptions = {
-    port: /*u16*/number | undefined,
-    basePath: string,
-    auth: Auth | undefined
-}
+  port: /*u16*/ number | undefined;
+  basePath: string;
+  auth: Auth | undefined;
+};
 
 /**
  * Generated factory for {@link StartOptions} record objects.
  */
 export const StartOptions = (() => {
-    const defaults = () => ({
-    });
-    const create = (() => {
-        return uniffiCreateRecord<StartOptions, ReturnType<typeof defaults>>(defaults);
-    })();
-    return Object.freeze({
-        /**
-         * Create a frozen instance of {@link StartOptions}, with defaults specified
-         * in Rust, in the {@link webdavserver} crate.
-         */
-        create,
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<StartOptions, ReturnType<typeof defaults>>(
+      defaults,
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link StartOptions}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    create,
 
-        /**
-         * Create a frozen instance of {@link StartOptions}, with defaults specified
-         * in Rust, in the {@link webdavserver} crate.
-         */
-        new: create,
+    /**
+     * Create a frozen instance of {@link StartOptions}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    new: create,
 
-        /**
-         * Defaults specified in the {@link webdavserver} crate.
-         */
-        defaults: () => Object.freeze(defaults()) as Partial<StartOptions>,
-    });
+    /**
+     * Defaults specified in the {@link webdavserver} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<StartOptions>,
+  });
 })();
 
 const FfiConverterTypeStartOptions = (() => {
-    type TypeName = StartOptions;
-    class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
-        read(from: RustBuffer): TypeName {
-            return {
-                port: FfiConverterOptionalUInt16.read(from), 
-                basePath: FfiConverterString.read(from), 
-                auth: FfiConverterOptionalTypeAuth.read(from)
-            };
-        }
-        write(value: TypeName, into: RustBuffer): void {
-            FfiConverterOptionalUInt16.write(value.port, into);
-            FfiConverterString.write(value.basePath, into);
-            FfiConverterOptionalTypeAuth.write(value.auth, into);
-        }
-        allocationSize(value: TypeName): number {
-            return FfiConverterOptionalUInt16.allocationSize(value.port) + 
-            FfiConverterString.allocationSize(value.basePath) + 
-            FfiConverterOptionalTypeAuth.allocationSize(value.auth);
-            
-        }
-    };
-    return new FFIConverter();
+  type TypeName = StartOptions;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        port: FfiConverterOptionalUInt16.read(from),
+        basePath: FfiConverterString.read(from),
+        auth: FfiConverterOptionalTypeAuth.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterOptionalUInt16.write(value.port, into);
+      FfiConverterString.write(value.basePath, into);
+      FfiConverterOptionalTypeAuth.write(value.auth, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterOptionalUInt16.allocationSize(value.port) +
+        FfiConverterString.allocationSize(value.basePath) +
+        FfiConverterOptionalTypeAuth.allocationSize(value.auth)
+      );
+    }
+  }
+  return new FFIConverter();
 })();
 
-
 export type StartResponse = {
-    ip: string,
-    port: /*u16*/number
-}
+  ip: string;
+  port: /*u16*/ number;
+};
 
 /**
  * Generated factory for {@link StartResponse} record objects.
  */
 export const StartResponse = (() => {
-    const defaults = () => ({
-    });
-    const create = (() => {
-        return uniffiCreateRecord<StartResponse, ReturnType<typeof defaults>>(defaults);
-    })();
-    return Object.freeze({
-        /**
-         * Create a frozen instance of {@link StartResponse}, with defaults specified
-         * in Rust, in the {@link webdavserver} crate.
-         */
-        create,
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<StartResponse, ReturnType<typeof defaults>>(
+      defaults,
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link StartResponse}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    create,
 
-        /**
-         * Create a frozen instance of {@link StartResponse}, with defaults specified
-         * in Rust, in the {@link webdavserver} crate.
-         */
-        new: create,
+    /**
+     * Create a frozen instance of {@link StartResponse}, with defaults specified
+     * in Rust, in the {@link webdavserver} crate.
+     */
+    new: create,
 
-        /**
-         * Defaults specified in the {@link webdavserver} crate.
-         */
-        defaults: () => Object.freeze(defaults()) as Partial<StartResponse>,
-    });
+    /**
+     * Defaults specified in the {@link webdavserver} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<StartResponse>,
+  });
 })();
 
 const FfiConverterTypeStartResponse = (() => {
-    type TypeName = StartResponse;
-    class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
-        read(from: RustBuffer): TypeName {
-            return {
-                ip: FfiConverterString.read(from), 
-                port: FfiConverterUInt16.read(from)
-            };
-        }
-        write(value: TypeName, into: RustBuffer): void {
-            FfiConverterString.write(value.ip, into);
-            FfiConverterUInt16.write(value.port, into);
-        }
-        allocationSize(value: TypeName): number {
-            return FfiConverterString.allocationSize(value.ip) + 
-            FfiConverterUInt16.allocationSize(value.port);
-            
-        }
-    };
-    return new FFIConverter();
+  type TypeName = StartResponse;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        ip: FfiConverterString.read(from),
+        port: FfiConverterUInt16.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.ip, into);
+      FfiConverterUInt16.write(value.port, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterString.allocationSize(value.ip) +
+        FfiConverterUInt16.allocationSize(value.port)
+      );
+    }
+  }
+  return new FFIConverter();
 })();
 
-
 const stringConverter = {
-    stringToBytes: (s: string) =>
-        uniffiCaller.rustCall((status) => nativeModule().ubrn_uniffi_internal_fn_func_ffi__string_to_arraybuffer(s, status)),
-    bytesToString: (ab: UniffiByteArray) =>
-        uniffiCaller.rustCall((status) => nativeModule().ubrn_uniffi_internal_fn_func_ffi__arraybuffer_to_string(ab, status)),
-    stringByteLength: (s: string) =>
-        uniffiCaller.rustCall((status) => nativeModule().ubrn_uniffi_internal_fn_func_ffi__string_to_byte_length(s, status)),
+  stringToBytes: (s: string) =>
+    uniffiCaller.rustCall((status) =>
+      nativeModule().ubrn_uniffi_internal_fn_func_ffi__string_to_arraybuffer(
+        s,
+        status,
+      ),
+    ),
+  bytesToString: (ab: UniffiByteArray) =>
+    uniffiCaller.rustCall((status) =>
+      nativeModule().ubrn_uniffi_internal_fn_func_ffi__arraybuffer_to_string(
+        ab,
+        status,
+      ),
+    ),
+  stringByteLength: (s: string) =>
+    uniffiCaller.rustCall((status) =>
+      nativeModule().ubrn_uniffi_internal_fn_func_ffi__string_to_byte_length(
+        s,
+        status,
+      ),
+    ),
 };
 const FfiConverterString = uniffiCreateFfiConverterString(stringConverter);
-
-
-
-
-
 
 // Error type: ServerError
 
 // Enum: ServerError
 export enum ServerError_Tags {
-    AlreadyRunning = "AlreadyRunning",
-    NotRunning = "NotRunning",
-    BindFailed = "BindFailed",
-    RuntimeError = "RuntimeError"
+  AlreadyRunning = "AlreadyRunning",
+  NotRunning = "NotRunning",
+  BindFailed = "BindFailed",
+  RuntimeError = "RuntimeError",
 }
 /**
  * =======================
@@ -281,169 +419,147 @@ export enum ServerError_Tags {
  * =======================
  */
 export const ServerError = (() => {
-    
+  type AlreadyRunning__interface = {
+    tag: ServerError_Tags.AlreadyRunning;
+  };
 
-    type AlreadyRunning__interface = {
-        tag: ServerError_Tags.AlreadyRunning
-    };
-
-    
-    class AlreadyRunning_ extends UniffiError implements AlreadyRunning__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "ServerError";
-        readonly tag = ServerError_Tags.AlreadyRunning;
-        constructor() {
-            super("ServerError", "AlreadyRunning");
-        }
-
-        static new(): AlreadyRunning_ {
-            return new AlreadyRunning_();
-        }
-
-        static instanceOf(obj: any): obj is AlreadyRunning_ {
-            return obj.tag === ServerError_Tags.AlreadyRunning;
-        }
-
-        
-        static hasInner(obj: any): obj is AlreadyRunning_ {
-            return false;
-        }
-
-    }
-    
-
-    type NotRunning__interface = {
-        tag: ServerError_Tags.NotRunning
-    };
-
-    
-    class NotRunning_ extends UniffiError implements NotRunning__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "ServerError";
-        readonly tag = ServerError_Tags.NotRunning;
-        constructor() {
-            super("ServerError", "NotRunning");
-        }
-
-        static new(): NotRunning_ {
-            return new NotRunning_();
-        }
-
-        static instanceOf(obj: any): obj is NotRunning_ {
-            return obj.tag === ServerError_Tags.NotRunning;
-        }
-
-        
-        static hasInner(obj: any): obj is NotRunning_ {
-            return false;
-        }
-
-    }
-    
-
-    type BindFailed__interface = {
-        tag: ServerError_Tags.BindFailed;
-        inner: Readonly<
-[/*u16*/number
-]>
-    };
-
-    
-    class BindFailed_ extends UniffiError implements BindFailed__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "ServerError";
-        readonly tag = ServerError_Tags.BindFailed;
-        readonly inner: Readonly<
-[/*u16*/number
-]>;
-        constructor(v0: /*u16*/number) {
-            super("ServerError", "BindFailed");
-            this.inner = Object.freeze([v0]);
-        }
-
-        static new(v0: /*u16*/number): BindFailed_ {
-            return new BindFailed_(v0);
-        }
-
-        static instanceOf(obj: any): obj is BindFailed_ {
-            return obj.tag === ServerError_Tags.BindFailed;
-        }
-
-        
-        static hasInner(obj: any): obj is BindFailed_ {
-            return BindFailed_.instanceOf(obj);
-        }
-
-        static getInner(obj: BindFailed_): Readonly<
-[/*u16*/number
-]> {
-            return obj.inner;
-        }
-
-    }
-    
-
-    type RuntimeError__interface = {
-        tag: ServerError_Tags.RuntimeError;
-        inner: Readonly<{message: string}>
-    };
-
-    
-    class RuntimeError_ extends UniffiError implements RuntimeError__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "ServerError";
-        readonly tag = ServerError_Tags.RuntimeError;
-        readonly inner: Readonly<{message: string}>;
-        constructor(inner: { message: string }) {
-            super("ServerError", "RuntimeError");
-            this.inner = Object.freeze(inner);
-        }
-
-        static new(inner: { message: string }): RuntimeError_ {
-            return new RuntimeError_(inner);
-        }
-
-        static instanceOf(obj: any): obj is RuntimeError_ {
-            return obj.tag === ServerError_Tags.RuntimeError;
-        }
-
-        
-        static hasInner(obj: any): obj is RuntimeError_ {
-            return RuntimeError_.instanceOf(obj);
-        }
-
-        static getInner(obj: RuntimeError_): Readonly<{message: string}> {
-            return obj.inner;
-        }
-
+  class AlreadyRunning_
+    extends UniffiError
+    implements AlreadyRunning__interface
+  {
+    /**
+     * @private
+     * This field is private and should not be used, use `tag` instead.
+     */
+    readonly [uniffiTypeNameSymbol] = "ServerError";
+    readonly tag = ServerError_Tags.AlreadyRunning;
+    constructor() {
+      super("ServerError", "AlreadyRunning");
     }
 
-    function instanceOf(obj: any): obj is ServerError {
-        return obj[uniffiTypeNameSymbol] === "ServerError";
+    static new(): AlreadyRunning_ {
+      return new AlreadyRunning_();
     }
 
-    return Object.freeze({
-        instanceOf,
-  AlreadyRunning: AlreadyRunning_, 
-  NotRunning: NotRunning_, 
-  BindFailed: BindFailed_, 
-  RuntimeError: RuntimeError_
-    });
+    static instanceOf(obj: any): obj is AlreadyRunning_ {
+      return obj.tag === ServerError_Tags.AlreadyRunning;
+    }
 
+    static hasInner(obj: any): obj is AlreadyRunning_ {
+      return false;
+    }
+  }
+
+  type NotRunning__interface = {
+    tag: ServerError_Tags.NotRunning;
+  };
+
+  class NotRunning_ extends UniffiError implements NotRunning__interface {
+    /**
+     * @private
+     * This field is private and should not be used, use `tag` instead.
+     */
+    readonly [uniffiTypeNameSymbol] = "ServerError";
+    readonly tag = ServerError_Tags.NotRunning;
+    constructor() {
+      super("ServerError", "NotRunning");
+    }
+
+    static new(): NotRunning_ {
+      return new NotRunning_();
+    }
+
+    static instanceOf(obj: any): obj is NotRunning_ {
+      return obj.tag === ServerError_Tags.NotRunning;
+    }
+
+    static hasInner(obj: any): obj is NotRunning_ {
+      return false;
+    }
+  }
+
+  type BindFailed__interface = {
+    tag: ServerError_Tags.BindFailed;
+    inner: Readonly<[/*u16*/ number]>;
+  };
+
+  class BindFailed_ extends UniffiError implements BindFailed__interface {
+    /**
+     * @private
+     * This field is private and should not be used, use `tag` instead.
+     */
+    readonly [uniffiTypeNameSymbol] = "ServerError";
+    readonly tag = ServerError_Tags.BindFailed;
+    readonly inner: Readonly<[/*u16*/ number]>;
+    constructor(v0: /*u16*/ number) {
+      super("ServerError", "BindFailed");
+      this.inner = Object.freeze([v0]);
+    }
+
+    static new(v0: /*u16*/ number): BindFailed_ {
+      return new BindFailed_(v0);
+    }
+
+    static instanceOf(obj: any): obj is BindFailed_ {
+      return obj.tag === ServerError_Tags.BindFailed;
+    }
+
+    static hasInner(obj: any): obj is BindFailed_ {
+      return BindFailed_.instanceOf(obj);
+    }
+
+    static getInner(obj: BindFailed_): Readonly<[/*u16*/ number]> {
+      return obj.inner;
+    }
+  }
+
+  type RuntimeError__interface = {
+    tag: ServerError_Tags.RuntimeError;
+    inner: Readonly<{ message: string }>;
+  };
+
+  class RuntimeError_ extends UniffiError implements RuntimeError__interface {
+    /**
+     * @private
+     * This field is private and should not be used, use `tag` instead.
+     */
+    readonly [uniffiTypeNameSymbol] = "ServerError";
+    readonly tag = ServerError_Tags.RuntimeError;
+    readonly inner: Readonly<{ message: string }>;
+    constructor(inner: { message: string }) {
+      super("ServerError", "RuntimeError");
+      this.inner = Object.freeze(inner);
+    }
+
+    static new(inner: { message: string }): RuntimeError_ {
+      return new RuntimeError_(inner);
+    }
+
+    static instanceOf(obj: any): obj is RuntimeError_ {
+      return obj.tag === ServerError_Tags.RuntimeError;
+    }
+
+    static hasInner(obj: any): obj is RuntimeError_ {
+      return RuntimeError_.instanceOf(obj);
+    }
+
+    static getInner(obj: RuntimeError_): Readonly<{ message: string }> {
+      return obj.inner;
+    }
+  }
+
+  function instanceOf(obj: any): obj is ServerError {
+    return obj[uniffiTypeNameSymbol] === "ServerError";
+  }
+
+  return Object.freeze({
+    instanceOf,
+    AlreadyRunning: AlreadyRunning_,
+    NotRunning: NotRunning_,
+    BindFailed: BindFailed_,
+    RuntimeError: RuntimeError_,
+  });
 })();
-
 
 /**
  * =======================
@@ -452,210 +568,426 @@ export const ServerError = (() => {
  */
 
 export type ServerError = InstanceType<
-    typeof ServerError[keyof Omit<typeof ServerError, 'instanceOf'>]
+  (typeof ServerError)[keyof Omit<typeof ServerError, "instanceOf">]
 >;
 
 // FfiConverter for enum ServerError
 const FfiConverterTypeServerError = (() => {
-    const ordinalConverter = FfiConverterInt32;
-    type TypeName = ServerError;
-    class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
-        read(from: RustBuffer): TypeName {
-            switch (ordinalConverter.read(from)) {
-                case 1: return new ServerError.AlreadyRunning();
-                case 2: return new ServerError.NotRunning();
-                case 3: return new ServerError.BindFailed(FfiConverterUInt16.read(from));
-                case 4: return new ServerError.RuntimeError({message: FfiConverterString.read(from) });
-                default: throw new UniffiInternalError.UnexpectedEnumCase();
-            }
-        }
-        write(value: TypeName, into: RustBuffer): void {
-            switch (value.tag) {
-                case ServerError_Tags.AlreadyRunning: {
-                    ordinalConverter.write(1, into);
-                    return;
-                }
-                case ServerError_Tags.NotRunning: {
-                    ordinalConverter.write(2, into);
-                    return;
-                }
-                case ServerError_Tags.BindFailed: {
-                    ordinalConverter.write(3, into);
-                    const inner = value.inner;
-                    FfiConverterUInt16.write(inner[0], into);
-                    return;
-                }
-                case ServerError_Tags.RuntimeError: {
-                    ordinalConverter.write(4, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.message, into);
-                    return;
-                }
-                default:
-                    // Throwing from here means that ServerError_Tags hasn't matched an ordinal.
-                    throw new UniffiInternalError.UnexpectedEnumCase();
-            }
-        }
-        allocationSize(value: TypeName): number {
-            switch (value.tag) {
-                case ServerError_Tags.AlreadyRunning: {
-                    return ordinalConverter.allocationSize(1);
-                }
-                case ServerError_Tags.NotRunning: {
-                    return ordinalConverter.allocationSize(2);
-                }
-                case ServerError_Tags.BindFailed: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(3);
-                    size += FfiConverterUInt16.allocationSize(inner[0]);
-                    return size;
-                }
-                case ServerError_Tags.RuntimeError: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(4);
-                    size += FfiConverterString.allocationSize(inner.message);
-                    return size;
-                }
-                default: throw new UniffiInternalError.UnexpectedEnumCase();
-            }
-        }
+  const ordinalConverter = FfiConverterInt32;
+  type TypeName = ServerError;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      switch (ordinalConverter.read(from)) {
+        case 1:
+          return new ServerError.AlreadyRunning();
+        case 2:
+          return new ServerError.NotRunning();
+        case 3:
+          return new ServerError.BindFailed(FfiConverterUInt16.read(from));
+        case 4:
+          return new ServerError.RuntimeError({
+            message: FfiConverterString.read(from),
+          });
+        default:
+          throw new UniffiInternalError.UnexpectedEnumCase();
+      }
     }
-    return new FFIConverter();
+    write(value: TypeName, into: RustBuffer): void {
+      switch (value.tag) {
+        case ServerError_Tags.AlreadyRunning: {
+          ordinalConverter.write(1, into);
+          return;
+        }
+        case ServerError_Tags.NotRunning: {
+          ordinalConverter.write(2, into);
+          return;
+        }
+        case ServerError_Tags.BindFailed: {
+          ordinalConverter.write(3, into);
+          const inner = value.inner;
+          FfiConverterUInt16.write(inner[0], into);
+          return;
+        }
+        case ServerError_Tags.RuntimeError: {
+          ordinalConverter.write(4, into);
+          const inner = value.inner;
+          FfiConverterString.write(inner.message, into);
+          return;
+        }
+        default:
+          // Throwing from here means that ServerError_Tags hasn't matched an ordinal.
+          throw new UniffiInternalError.UnexpectedEnumCase();
+      }
+    }
+    allocationSize(value: TypeName): number {
+      switch (value.tag) {
+        case ServerError_Tags.AlreadyRunning: {
+          return ordinalConverter.allocationSize(1);
+        }
+        case ServerError_Tags.NotRunning: {
+          return ordinalConverter.allocationSize(2);
+        }
+        case ServerError_Tags.BindFailed: {
+          const inner = value.inner;
+          let size = ordinalConverter.allocationSize(3);
+          size += FfiConverterUInt16.allocationSize(inner[0]);
+          return size;
+        }
+        case ServerError_Tags.RuntimeError: {
+          const inner = value.inner;
+          let size = ordinalConverter.allocationSize(4);
+          size += FfiConverterString.allocationSize(inner.message);
+          return size;
+        }
+        default:
+          throw new UniffiInternalError.UnexpectedEnumCase();
+      }
+    }
+  }
+  return new FFIConverter();
 })();
 
+/**
+ * Long-lived P2P server object.  Create once, call `start` / `stop`.
+ */
+export interface P2pConnectionInterface {
+  /**
+   * Start the P2P server.
+   *
+   * Spins up an internal Tokio runtime, builds a [`Peer`], and calls
+   * [`p2p_connect::run`] in the background.  Returns immediately once the
+   * runtime is running; the P2P handshake continues asynchronously.
+   *
+   * Returns `Err(ServerError::AlreadyRunning)` if called while already
+   * connected.
+   */
+  start(opts: P2pStartOptions) /*throws*/ : P2pStartResponse;
+  /**
+   * Stop the P2P server and release the runtime.
+   *
+   * Returns `Err(ServerError::NotRunning)` if called while not running.
+   */
+  stop() /*throws*/ : string;
+}
+
+/**
+ * Long-lived P2P server object.  Create once, call `start` / `stop`.
+ */
+export class P2pConnection
+  extends UniffiAbstractObject
+  implements P2pConnectionInterface
+{
+  readonly [uniffiTypeNameSymbol] = "P2pConnection";
+  readonly [destructorGuardSymbol]: UniffiRustArcPtr;
+  readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
+  /**
+   * Create a new (idle) `P2pConnection`.
+   */
+  constructor() {
+    super();
+    const pointer = uniffiCaller.rustCall(
+      /*caller:*/ (callStatus) => {
+        return nativeModule().ubrn_uniffi_webdavserver_fn_constructor_p2pconnection_new(
+          callStatus,
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift,
+    );
+    this[pointerLiteralSymbol] = pointer;
+    this[destructorGuardSymbol] =
+      uniffiTypeP2pConnectionObjectFactory.bless(pointer);
+  }
+
+  /**
+   * Start the P2P server.
+   *
+   * Spins up an internal Tokio runtime, builds a [`Peer`], and calls
+   * [`p2p_connect::run`] in the background.  Returns immediately once the
+   * runtime is running; the P2P handshake continues asynchronously.
+   *
+   * Returns `Err(ServerError::AlreadyRunning)` if called while already
+   * connected.
+   */
+  start(opts: P2pStartOptions): P2pStartResponse /*throws*/ {
+    return FfiConverterTypeP2pStartResponse.lift(
+      uniffiCaller.rustCallWithError(
+        /*liftError:*/ FfiConverterTypeServerError.lift.bind(
+          FfiConverterTypeServerError,
+        ),
+        /*caller:*/ (callStatus) => {
+          return nativeModule().ubrn_uniffi_webdavserver_fn_method_p2pconnection_start(
+            uniffiTypeP2pConnectionObjectFactory.clonePointer(this),
+            FfiConverterTypeP2pStartOptions.lower(opts),
+            callStatus,
+          );
+        },
+        /*liftString:*/ FfiConverterString.lift,
+      ),
+    );
+  }
+
+  /**
+   * Stop the P2P server and release the runtime.
+   *
+   * Returns `Err(ServerError::NotRunning)` if called while not running.
+   */
+  stop(): string /*throws*/ {
+    return FfiConverterString.lift(
+      uniffiCaller.rustCallWithError(
+        /*liftError:*/ FfiConverterTypeServerError.lift.bind(
+          FfiConverterTypeServerError,
+        ),
+        /*caller:*/ (callStatus) => {
+          return nativeModule().ubrn_uniffi_webdavserver_fn_method_p2pconnection_stop(
+            uniffiTypeP2pConnectionObjectFactory.clonePointer(this),
+            callStatus,
+          );
+        },
+        /*liftString:*/ FfiConverterString.lift,
+      ),
+    );
+  }
+
+  /**
+   * {@inheritDoc uniffi-bindgen-react-native#UniffiAbstractObject.uniffiDestroy}
+   */
+  uniffiDestroy(): void {
+    const ptr = (this as any)[destructorGuardSymbol];
+    if (ptr !== undefined) {
+      const pointer = uniffiTypeP2pConnectionObjectFactory.pointer(this);
+      uniffiTypeP2pConnectionObjectFactory.freePointer(pointer);
+      uniffiTypeP2pConnectionObjectFactory.unbless(ptr);
+      delete (this as any)[destructorGuardSymbol];
+    }
+  }
+
+  static instanceOf(obj: any): obj is P2pConnection {
+    return uniffiTypeP2pConnectionObjectFactory.isConcreteType(obj);
+  }
+}
+
+const uniffiTypeP2pConnectionObjectFactory: UniffiObjectFactory<P2pConnectionInterface> =
+  (() => {
+    return {
+      create(pointer: UnsafeMutableRawPointer): P2pConnectionInterface {
+        const instance = Object.create(P2pConnection.prototype);
+        instance[pointerLiteralSymbol] = pointer;
+        instance[destructorGuardSymbol] = this.bless(pointer);
+        instance[uniffiTypeNameSymbol] = "P2pConnection";
+        return instance;
+      },
+
+      bless(p: UnsafeMutableRawPointer): UniffiRustArcPtr {
+        return uniffiCaller.rustCall(
+          /*caller:*/ (status) =>
+            nativeModule().ubrn_uniffi_internal_fn_method_p2pconnection_ffi__bless_pointer(
+              p,
+              status,
+            ),
+          /*liftString:*/ FfiConverterString.lift,
+        );
+      },
+
+      unbless(ptr: UniffiRustArcPtr) {
+        ptr.markDestroyed();
+      },
+
+      pointer(obj: P2pConnectionInterface): UnsafeMutableRawPointer {
+        if ((obj as any)[destructorGuardSymbol] === undefined) {
+          throw new UniffiInternalError.UnexpectedNullPointer();
+        }
+        return (obj as any)[pointerLiteralSymbol];
+      },
+
+      clonePointer(obj: P2pConnectionInterface): UnsafeMutableRawPointer {
+        const pointer = this.pointer(obj);
+        return uniffiCaller.rustCall(
+          /*caller:*/ (callStatus) =>
+            nativeModule().ubrn_uniffi_webdavserver_fn_clone_p2pconnection(
+              pointer,
+              callStatus,
+            ),
+          /*liftString:*/ FfiConverterString.lift,
+        );
+      },
+
+      freePointer(pointer: UnsafeMutableRawPointer): void {
+        uniffiCaller.rustCall(
+          /*caller:*/ (callStatus) =>
+            nativeModule().ubrn_uniffi_webdavserver_fn_free_p2pconnection(
+              pointer,
+              callStatus,
+            ),
+          /*liftString:*/ FfiConverterString.lift,
+        );
+      },
+
+      isConcreteType(obj: any): obj is P2pConnectionInterface {
+        return (
+          obj[destructorGuardSymbol] &&
+          obj[uniffiTypeNameSymbol] === "P2pConnection"
+        );
+      },
+    };
+  })();
+// FfiConverter for P2pConnectionInterface
+const FfiConverterTypeP2pConnection = new FfiConverterObject(
+  uniffiTypeP2pConnectionObjectFactory,
+);
 
 export interface WebDavServerInterface {
-    
-    start(opts: StartOptions)  /*throws*/: StartResponse;
-    stop()  /*throws*/: string;
+  start(opts: StartOptions) /*throws*/ : StartResponse;
+  stop() /*throws*/ : string;
 }
 
-
-export class WebDavServer extends UniffiAbstractObject implements WebDavServerInterface {
-
-    readonly [uniffiTypeNameSymbol] = "WebDavServer";
-    readonly [destructorGuardSymbol]: UniffiRustArcPtr;
-    readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
-    constructor() {
-        super();
-        const pointer =
-            uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().ubrn_uniffi_webdavserver_fn_constructor_webdavserver_new(
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift,
+export class WebDavServer
+  extends UniffiAbstractObject
+  implements WebDavServerInterface
+{
+  readonly [uniffiTypeNameSymbol] = "WebDavServer";
+  readonly [destructorGuardSymbol]: UniffiRustArcPtr;
+  readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
+  constructor() {
+    super();
+    const pointer = uniffiCaller.rustCall(
+      /*caller:*/ (callStatus) => {
+        return nativeModule().ubrn_uniffi_webdavserver_fn_constructor_webdavserver_new(
+          callStatus,
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift,
     );
-        this[pointerLiteralSymbol] = pointer;
-        this[destructorGuardSymbol] = uniffiTypeWebDavServerObjectFactory.bless(pointer);
-    }
+    this[pointerLiteralSymbol] = pointer;
+    this[destructorGuardSymbol] =
+      uniffiTypeWebDavServerObjectFactory.bless(pointer);
+  }
 
-    
-
-    
- start(opts: StartOptions): StartResponse /*throws*/ {
+  start(opts: StartOptions): StartResponse /*throws*/ {
     return FfiConverterTypeStartResponse.lift(
-        uniffiCaller.rustCallWithError(
-            /*liftError:*/ FfiConverterTypeServerError.lift.bind(FfiConverterTypeServerError),
-            /*caller:*/ (callStatus) => {
-                return nativeModule().ubrn_uniffi_webdavserver_fn_method_webdavserver_start(uniffiTypeWebDavServerObjectFactory.clonePointer(this), 
-        FfiConverterTypeStartOptions.lower(opts),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift,
-    ));
-    }
-    
- stop(): string /*throws*/ {
+      uniffiCaller.rustCallWithError(
+        /*liftError:*/ FfiConverterTypeServerError.lift.bind(
+          FfiConverterTypeServerError,
+        ),
+        /*caller:*/ (callStatus) => {
+          return nativeModule().ubrn_uniffi_webdavserver_fn_method_webdavserver_start(
+            uniffiTypeWebDavServerObjectFactory.clonePointer(this),
+            FfiConverterTypeStartOptions.lower(opts),
+            callStatus,
+          );
+        },
+        /*liftString:*/ FfiConverterString.lift,
+      ),
+    );
+  }
+
+  stop(): string /*throws*/ {
     return FfiConverterString.lift(
-        uniffiCaller.rustCallWithError(
-            /*liftError:*/ FfiConverterTypeServerError.lift.bind(FfiConverterTypeServerError),
-            /*caller:*/ (callStatus) => {
-                return nativeModule().ubrn_uniffi_webdavserver_fn_method_webdavserver_stop(uniffiTypeWebDavServerObjectFactory.clonePointer(this), 
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift,
-    ));
-    }
-    
+      uniffiCaller.rustCallWithError(
+        /*liftError:*/ FfiConverterTypeServerError.lift.bind(
+          FfiConverterTypeServerError,
+        ),
+        /*caller:*/ (callStatus) => {
+          return nativeModule().ubrn_uniffi_webdavserver_fn_method_webdavserver_stop(
+            uniffiTypeWebDavServerObjectFactory.clonePointer(this),
+            callStatus,
+          );
+        },
+        /*liftString:*/ FfiConverterString.lift,
+      ),
+    );
+  }
 
-    /**
-     * {@inheritDoc uniffi-bindgen-react-native#UniffiAbstractObject.uniffiDestroy}
-     */
-    uniffiDestroy(): void {
-        const ptr = (this as any)[destructorGuardSymbol];
-        if (ptr !== undefined) {
-            const pointer = uniffiTypeWebDavServerObjectFactory.pointer(this);
-            uniffiTypeWebDavServerObjectFactory.freePointer(pointer);
-            uniffiTypeWebDavServerObjectFactory.unbless(ptr);
-            delete (this as any)[destructorGuardSymbol];
-        }
+  /**
+   * {@inheritDoc uniffi-bindgen-react-native#UniffiAbstractObject.uniffiDestroy}
+   */
+  uniffiDestroy(): void {
+    const ptr = (this as any)[destructorGuardSymbol];
+    if (ptr !== undefined) {
+      const pointer = uniffiTypeWebDavServerObjectFactory.pointer(this);
+      uniffiTypeWebDavServerObjectFactory.freePointer(pointer);
+      uniffiTypeWebDavServerObjectFactory.unbless(ptr);
+      delete (this as any)[destructorGuardSymbol];
     }
+  }
 
-    static instanceOf(obj: any): obj is WebDavServer {
-        return uniffiTypeWebDavServerObjectFactory.isConcreteType(obj);
-    }
-
-    
+  static instanceOf(obj: any): obj is WebDavServer {
+    return uniffiTypeWebDavServerObjectFactory.isConcreteType(obj);
+  }
 }
 
-const uniffiTypeWebDavServerObjectFactory: UniffiObjectFactory<WebDavServerInterface> = (() => {
-    
+const uniffiTypeWebDavServerObjectFactory: UniffiObjectFactory<WebDavServerInterface> =
+  (() => {
     return {
-    create(pointer: UnsafeMutableRawPointer): WebDavServerInterface {
+      create(pointer: UnsafeMutableRawPointer): WebDavServerInterface {
         const instance = Object.create(WebDavServer.prototype);
         instance[pointerLiteralSymbol] = pointer;
         instance[destructorGuardSymbol] = this.bless(pointer);
         instance[uniffiTypeNameSymbol] = "WebDavServer";
         return instance;
-    },
+      },
 
-    
-    bless(p: UnsafeMutableRawPointer): UniffiRustArcPtr {
+      bless(p: UnsafeMutableRawPointer): UniffiRustArcPtr {
         return uniffiCaller.rustCall(
-            /*caller:*/ (status) =>
-                nativeModule().ubrn_uniffi_internal_fn_method_webdavserver_ffi__bless_pointer(p, status),
-            /*liftString:*/ FfiConverterString.lift
+          /*caller:*/ (status) =>
+            nativeModule().ubrn_uniffi_internal_fn_method_webdavserver_ffi__bless_pointer(
+              p,
+              status,
+            ),
+          /*liftString:*/ FfiConverterString.lift,
         );
-    },
+      },
 
-    unbless(ptr: UniffiRustArcPtr) {
+      unbless(ptr: UniffiRustArcPtr) {
         ptr.markDestroyed();
-    },
+      },
 
-    pointer(obj: WebDavServerInterface): UnsafeMutableRawPointer {
+      pointer(obj: WebDavServerInterface): UnsafeMutableRawPointer {
         if ((obj as any)[destructorGuardSymbol] === undefined) {
-            throw new UniffiInternalError.UnexpectedNullPointer();
+          throw new UniffiInternalError.UnexpectedNullPointer();
         }
         return (obj as any)[pointerLiteralSymbol];
-    },
+      },
 
-    clonePointer(obj: WebDavServerInterface): UnsafeMutableRawPointer {
+      clonePointer(obj: WebDavServerInterface): UnsafeMutableRawPointer {
         const pointer = this.pointer(obj);
         return uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => nativeModule().ubrn_uniffi_webdavserver_fn_clone_webdavserver(pointer, callStatus),
-            /*liftString:*/ FfiConverterString.lift
+          /*caller:*/ (callStatus) =>
+            nativeModule().ubrn_uniffi_webdavserver_fn_clone_webdavserver(
+              pointer,
+              callStatus,
+            ),
+          /*liftString:*/ FfiConverterString.lift,
         );
-    },
+      },
 
-    freePointer(pointer: UnsafeMutableRawPointer): void {
+      freePointer(pointer: UnsafeMutableRawPointer): void {
         uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => nativeModule().ubrn_uniffi_webdavserver_fn_free_webdavserver(pointer, callStatus),
-            /*liftString:*/ FfiConverterString.lift
+          /*caller:*/ (callStatus) =>
+            nativeModule().ubrn_uniffi_webdavserver_fn_free_webdavserver(
+              pointer,
+              callStatus,
+            ),
+          /*liftString:*/ FfiConverterString.lift,
         );
-    },
+      },
 
-    isConcreteType(obj: any): obj is WebDavServerInterface {
-        return obj[destructorGuardSymbol] && obj[uniffiTypeNameSymbol] === "WebDavServer";
-    },
-}})();
+      isConcreteType(obj: any): obj is WebDavServerInterface {
+        return (
+          obj[destructorGuardSymbol] &&
+          obj[uniffiTypeNameSymbol] === "WebDavServer"
+        );
+      },
+    };
+  })();
 // FfiConverter for WebDavServerInterface
-const FfiConverterTypeWebDavServer =  new FfiConverterObject(uniffiTypeWebDavServerObjectFactory);
-
+const FfiConverterTypeWebDavServer = new FfiConverterObject(
+  uniffiTypeWebDavServerObjectFactory,
+);
 
 // FfiConverter for Auth | undefined
-const FfiConverterOptionalTypeAuth = new FfiConverterOptional(FfiConverterTypeAuth);
-
+const FfiConverterOptionalTypeAuth = new FfiConverterOptional(
+  FfiConverterTypeAuth,
+);
 
 // FfiConverter for /*u16*/number | undefined
 const FfiConverterOptionalUInt16 = new FfiConverterOptional(FfiConverterUInt16);
@@ -671,32 +1003,77 @@ const FfiConverterOptionalUInt16 = new FfiConverterOptional(FfiConverterUInt16);
  * It also initializes the machinery to enable Rust to talk back to Javascript.
  */
 function uniffiEnsureInitialized() {
-    // Get the bindings contract version from our ComponentInterface
-    const bindingsContractVersion = 29;
-    // Get the scaffolding contract version by calling the into the dylib
-    const scaffoldingContractVersion = nativeModule().ubrn_ffi_webdavserver_uniffi_contract_version();
-    if (bindingsContractVersion !== scaffoldingContractVersion) {
-        throw new UniffiInternalError.ContractVersionMismatch(scaffoldingContractVersion, bindingsContractVersion);
-    }
-    if (nativeModule().ubrn_uniffi_webdavserver_checksum_method_webdavserver_start() !== 45751) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_webdavserver_checksum_method_webdavserver_start");
-    }
-    if (nativeModule().ubrn_uniffi_webdavserver_checksum_method_webdavserver_stop() !== 48387) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_webdavserver_checksum_method_webdavserver_stop");
-    }
-    if (nativeModule().ubrn_uniffi_webdavserver_checksum_constructor_webdavserver_new() !== 46813) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_webdavserver_checksum_constructor_webdavserver_new");
-    }
-
-    }
+  // Get the bindings contract version from our ComponentInterface
+  const bindingsContractVersion = 29;
+  // Get the scaffolding contract version by calling the into the dylib
+  const scaffoldingContractVersion =
+    nativeModule().ubrn_ffi_webdavserver_uniffi_contract_version();
+  if (bindingsContractVersion !== scaffoldingContractVersion) {
+    throw new UniffiInternalError.ContractVersionMismatch(
+      scaffoldingContractVersion,
+      bindingsContractVersion,
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_webdavserver_checksum_method_p2pconnection_start() !==
+    7320
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_webdavserver_checksum_method_p2pconnection_start",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_webdavserver_checksum_method_p2pconnection_stop() !==
+    35343
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_webdavserver_checksum_method_p2pconnection_stop",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_webdavserver_checksum_method_webdavserver_start() !==
+    45751
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_webdavserver_checksum_method_webdavserver_start",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_webdavserver_checksum_method_webdavserver_stop() !==
+    48387
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_webdavserver_checksum_method_webdavserver_stop",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_webdavserver_checksum_constructor_p2pconnection_new() !==
+    21598
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_webdavserver_checksum_constructor_p2pconnection_new",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_webdavserver_checksum_constructor_webdavserver_new() !==
+    46813
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_webdavserver_checksum_constructor_webdavserver_new",
+    );
+  }
+}
 
 export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
     FfiConverterTypeAuth,
+    FfiConverterTypeP2pConnection,
+    FfiConverterTypeP2pStartOptions,
+    FfiConverterTypeP2pStartResponse,
     FfiConverterTypeServerError,
     FfiConverterTypeStartOptions,
     FfiConverterTypeStartResponse,
     FfiConverterTypeWebDavServer,
-  }
+  },
 });

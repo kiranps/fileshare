@@ -77,7 +77,7 @@ class PeerRPC {
 		});
 	}
 
-	request(op: string, payload: any, timeoutMs = 10000): Promise<any> {
+	request(op: string, payload: any, timeoutMs = 90000): Promise<any> {
 		const id = crypto.randomUUID();
 		return this.requestWithId(id, op, payload, timeoutMs);
 	}
@@ -249,8 +249,10 @@ class P2PService {
 			try {
 				await postOffer(sid, JSON.stringify(data));
 				const answer = await pollAnswer(sid);
+				console.log(answer);
 				peer.signal(answer);
 			} catch (err: any) {
+				console.log(err);
 				this.state = "idle";
 				this.cleanup();
 				conn.emit("error", err);
@@ -259,6 +261,7 @@ class P2PService {
 
 		peer.on("connect", () => {
 			this.state = "connected";
+			console.log("connected");
 
 			// Control channel — JSON RPC
 			this.rpc = new PeerRPC(peer);

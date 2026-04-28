@@ -18,11 +18,8 @@ export default function ConnectionInfo({ isRunning, onPairDevice }: ConnectionIn
       </Text>
       <View className="rounded-xl border border-border/50 bg-muted/30 p-4">
         <Text className="text-sm leading-relaxed text-muted-foreground">
-          {'1. Make sure your phone and computer are on the same Wi\u2011Fi network.\n\n'}
-          {'2. Tap \u201cStart sharing\u201d below.\n\n'}
-          {
-            '3. On your computer, open the link shown above in a browser or file explorer to browse and download files.'
-          }
+          {'1. Tap “Start sharing” below.'}\n
+          {'2. Tap “Pair device” below and scan the code from your other device.'}
         </Text>
         {isRunning && (
           <TouchableOpacity

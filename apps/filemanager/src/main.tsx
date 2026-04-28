@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import Sentry from "./sentry"; // remains relative
+//import Sentry from "./sentry"; // remains relative
 import "./index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
@@ -16,12 +16,17 @@ export const queryClient = new QueryClient({
 
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
-		<Sentry.ErrorBoundary fallback={<p>Something went wrong</p>}>
-			<BrowserRouter>
-				<QueryClientProvider client={queryClient}>
-					<App />
-				</QueryClientProvider>
-			</BrowserRouter>
-		</Sentry.ErrorBoundary>
+		<BrowserRouter>
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>
+		</BrowserRouter>
 	</StrictMode>,
 );
+//<Sentry.ErrorBoundary fallback={<p>Something went wrong</p>}>
+//<BrowserRouter>
+//<QueryClientProvider client={queryClient}>
+//<App />
+//</QueryClientProvider>
+//</BrowserRouter>
+//</Sentry.ErrorBoundary>

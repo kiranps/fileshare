@@ -1,17 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ToastAndroid } from 'react-native';
-import {
-  Server as ServerIcon,
-  Copy,
-  CheckCircle2,
-  XCircle,
-  Play,
-  Square,
-} from 'lucide-react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { Server as ServerIcon, CheckCircle2, XCircle, Play, Square } from 'lucide-react-native';
 import { interopIcon } from '@/utils/css';
 
 interopIcon(ServerIcon);
-interopIcon(Copy);
 interopIcon(CheckCircle2);
 interopIcon(XCircle);
 interopIcon(Play);
@@ -19,16 +11,10 @@ interopIcon(Square);
 
 interface ServerControlsProps {
   isRunning: boolean;
-  ip: string | null;
-  port: number;
   onToggle: () => void;
 }
 
-export default function ServerControls({ isRunning, ip, port, onToggle }: ServerControlsProps) {
-  const copyAddress = () => {
-    ToastAndroid.show('copied', ToastAndroid.SHORT);
-  };
-
+export default function ServerControls({ isRunning, onToggle }: ServerControlsProps) {
   return (
     <>
       {/* Status Card */}
@@ -46,9 +32,7 @@ export default function ServerControls({ isRunning, ip, port, onToggle }: Server
                   {isRunning ? 'Sharing active' : 'Not sharing'}
                 </Text>
                 <Text className="text-sm text-muted-foreground">
-                  {isRunning
-                    ? 'Open the link on your computer to browse files'
-                    : 'Tap the button below to start sharing'}
+                  {isRunning ? 'P2P file sharing active' : 'Tap the button below to start sharing'}
                 </Text>
               </View>
             </View>
@@ -58,26 +42,8 @@ export default function ServerControls({ isRunning, ip, port, onToggle }: Server
               <XCircle className="text-muted-foreground" size={24} />
             )}
           </View>
-
-          {/* Connection address — shown only when server is running */}
-          {isRunning && (
-            <View className="mt-4 border-t border-border/50 pt-4">
-              <TouchableOpacity
-                onPress={copyAddress}
-                className="flex-row items-center justify-between rounded-lg border border-border bg-background p-3">
-                <View>
-                  <Text className="mb-1 text-xs text-muted-foreground">Open on your computer</Text>
-                  <Text className="font-mono text-sm text-foreground">
-                    dav://{ip}:{port}
-                  </Text>
-                </View>
-                <Copy className="text-muted-foreground" size={18} />
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
       </View>
-
       {/* Fixed Bottom Action */}
       <View className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background to-transparent p-6">
         <TouchableOpacity

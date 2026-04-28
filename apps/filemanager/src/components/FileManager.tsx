@@ -12,8 +12,7 @@ export const FileManager: FC = () => {
 	const activePath = useFileManagerStore((s) => s.activePath);
 	const setFiles = useFileManagerStore((s) => s.setFiles);
 	const { data, isLoading, error } = useFiles(activePath);
-	console.log("files");
-	console.log(data);
+	console.log(error);
 
 	// Push the fetched (and filtered) files into the global store so that the
 	// sort/selection slices always work on the current file list.

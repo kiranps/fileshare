@@ -29,8 +29,10 @@ use webdavserver::peer::{Peer, PeerConfig};
 
 #[tokio::main]
 async fn main() {
-    CryptoProvider::install_default(rustls::crypto::aws_lc_rs::default_provider())
-        .expect("crypto init failed");
+    //CryptoProvider::install_default(rustls::crypto::aws_lc_rs::default_provider())
+    //.expect("crypto init failed");
+    let _ = CryptoProvider::install_default(rustls::crypto::ring::default_provider());
+    //.expect("crypto init failed");
     // ── Parse minimal CLI args ────────────────────────────────────────────────
     let args: Vec<String> = std::env::args().collect();
 
@@ -39,6 +41,9 @@ async fn main() {
         PathBuf::from(flag_value(&args, "--base").unwrap_or_else(|| "/home/kiran".to_string()));
     let signal_base =
         flag_value(&args, "--signal").unwrap_or_else(|| "http://localhost:9000".to_string());
+    //let signal_base = flag_value(&args, "--signal").unwrap_or_else(|| {
+    //"https://vhlkksm25fy4nvj3zz4ruoao7i0ewjoa.lambda-url.ap-south-1.on.aws/".to_string()
+    //});
 
     // ── Ensure the base directory exists ─────────────────────────────────────
     std::fs::create_dir_all(&base_path).expect("could not create base directory");

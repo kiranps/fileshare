@@ -9,6 +9,7 @@ mod webdav_server;
 pub mod p2p_types;
 pub mod p2p_handler;
 pub mod p2p_connect;
+pub mod p2p_connection;
 pub mod peer;
 
 uniffi::setup_scaffolding!();
@@ -32,3 +33,4 @@ pub enum ServerError {
 }
 
 pub use webdav_server::{StartOptions, WebDavServer};
+pub use p2p_connection::{P2pConnection, P2pStartOptions, P2pStartResponse};

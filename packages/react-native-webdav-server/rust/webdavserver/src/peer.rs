@@ -25,6 +25,7 @@ use axum::body::Bytes;
 use reqwest::Client;
 use serde::Deserialize;
 use tokio::{sync::Mutex, time::sleep};
+use tracing::info;
 use webrtc::{
     api::APIBuilder,
     data_channel::{RTCDataChannel, data_channel_message::DataChannelMessage},
@@ -229,6 +230,7 @@ impl Peer {
     /// have been made.
     pub async fn connect(self: &Arc<Self>, session_id: &str) {
         let client = Client::new();
+        //let client = reqwest::Client::builder().use_rustls_tls().build().unwrap();
         let max = self.config.max_reconnect_attempts;
         let mut attempt: u32 = 0;
         // Version of the offer used for the last successfully established connection.
@@ -258,7 +260,7 @@ impl Peer {
             }
 
             // ── Poll for a *new* offer ────────────────────────────────────────
-            println!("[signal] ⏳ waiting for offer on session={session_id}…");
+            info!("[signal] ⏳ waiting for offer on session={session_id}…");
             let versioned_offer = match self
                 .poll_offer_new_version(&client, session_id, last_established_version)
                 .await
@@ -271,7 +273,7 @@ impl Peer {
                     continue;
                 }
             };
-            println!(
+            info!(
                 "[signal] 📥 offer received (version={})",
                 versioned_offer.version
             );
@@ -474,23 +476,38 @@ impl Peer {
         let deadline =
             tokio::time::Instant::now() + Duration::from_secs(self.config.poll_timeout_secs);
 
+        info!("poll offer url {:#?}", url);
+
         loop {
             if tokio::time::Instant::now() > deadline {
+                info!("timed out {}", self.config.poll_timeout_secs);
                 return Err(format!(
                     "timed out after {}s waiting for offer",
                     self.config.poll_timeout_secs
                 ));
             }
 
+            info!("before offet call");
+
             let resp = client
                 .get(&url)
                 .send()
                 .await
-                .map_err(|e| e.to_string())?
+                .map_err(|e| {
+                    info!("request1 error: {:?}", e);
+                    e.to_string()
+                })?
                 .error_for_status()
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| {
+                    info!("request2 error: {:?}", e);
+                    e.to_string()
+                })?;
+
+            info!("offer resp {:#?}", resp);
 
             let body: OfferOrPending = resp.json().await.map_err(|e| e.to_string())?;
+
+            info!("offer body {:#?}", body);
 
             match body {
                 OfferOrPending::Offer(offer) => {

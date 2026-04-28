@@ -33,6 +33,7 @@ function toFileProps(data: any[]): {
 
 async function listFiles(path: string) {
 	const result = await p2p.conn?.request("fs.list", { path });
+	console.log(result);
 	return toFileProps(result);
 }
 
