@@ -46,7 +46,6 @@ rustls = "0.23.39"
 crate-type = ["cdylib", "staticlib", "lib"]
 
 [dev-dependencies]
-reqwest = "0.13.1"
 tower = { version = "0.5.3", features = ["util"] }
 quick-xml = { version = "0.39.2", features = ["serialize"] }
 urlencoding = "2.1.3"

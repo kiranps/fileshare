@@ -400,21 +400,21 @@ pub struct GetData {
 // Handle result — returned by p2p_handler::handle()
 // ---------------------------------------------------------------------------
 
-/// Returned by [`crate::p2p_handler::handle`].
-///
-/// - `Json`   — a complete JSON response string; send it directly over the
-///              control data channel.
-/// - `Stream` — a streaming download.  All frames (HEADER, CHUNK, EOF, ERROR)
-///              are sent on the dedicated file data channel using the binary
-///              framing protocol:
-///
-///              `[ 1 byte: frame_type ][ 36 bytes: ASCII UUID ][ N bytes: payload ]`
-///
-///              frame_type values:
-///              - `0x01` HEADER — payload is UTF-8 JSON `{ filename, total_size }`
-///              - `0x02` CHUNK  — payload is raw binary file bytes
-///              - `0x03` EOF    — payload empty; transfer complete
-///              - `0x04` ERROR  — payload is UTF-8 error message
+// Returned by [`crate::p2p_handler::handle`].
+//
+// - `Json`   — a complete JSON response string; send it directly over the
+//              control data channel.
+// - `Stream` — a streaming download.  All frames (HEADER, CHUNK, EOF, ERROR)
+//              are sent on the dedicated file data channel using the binary
+//              framing protocol:
+//
+//              `[ 1 byte: frame_type ][ 36 bytes: ASCII UUID ][ N bytes: payload ]`
+//
+//              frame_type values:
+//              - `0x01` HEADER — payload is UTF-8 JSON `{ filename, total_size }`
+//              - `0x02` CHUNK  — payload is raw binary file bytes
+//              - `0x03` EOF    — payload empty; transfer complete
+//              - `0x04` ERROR  — payload is UTF-8 error message
 pub enum P2pHandleResult {
     /// A complete serialised [`P2pResponse`] ready to send.
     Json(String),
@@ -431,9 +431,7 @@ pub enum P2pHandleResult {
         header_payload_json: String,
         /// The byte stream to pump as CHUNK frames.
         stream: Box<
-            dyn futures_util::Stream<Item = Result<bytes::Bytes, std::io::Error>>
-                + Send
-                + Unpin,
+            dyn futures_util::Stream<Item = Result<bytes::Bytes, std::io::Error>> + Send + Unpin,
         >,
     },
 }
