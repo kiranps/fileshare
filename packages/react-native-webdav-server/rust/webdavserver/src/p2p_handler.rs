@@ -54,6 +54,7 @@ use axum::body::Bytes;
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use futures_util::StreamExt;
 use serde_json::json;
+use urlencoding;
 
 /// Entry point: parse `msg`, dispatch to service, return a [`P2pHandleResult`].
 ///
@@ -500,8 +501,14 @@ pub async fn handle(msg: &str, base_path: &PathBuf) -> P2pHandleResult {
 // ---------------------------------------------------------------------------
 
 /// Resolve a relative request path against the server base path.
+/// The request path may be percent-encoded (e.g. spaces as `%20`); it is
+/// decoded before being joined so the resulting `PathBuf` matches the real
+/// filesystem entry.
 fn resolve(base: &PathBuf, req_path: &str) -> PathBuf {
-    base.join(req_path.trim_start_matches('/'))
+    let decoded = urlencoding::decode(req_path)
+        .unwrap_or_else(|_| req_path.into())
+        .into_owned();
+    base.join(decoded.trim_start_matches('/'))
 }
 
 fn filename_from_path(path: &str) -> String {

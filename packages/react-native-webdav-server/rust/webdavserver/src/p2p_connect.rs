@@ -35,6 +35,7 @@
 //! when the remote peer is slower than the filesystem.
 
 use std::{path::PathBuf, sync::Arc, time::Duration};
+use tracing::info;
 
 use futures_util::StreamExt;
 use tokio::time::sleep;
@@ -85,7 +86,11 @@ pub async fn run(peer: Arc<Peer>, session_id: &str, base_path: PathBuf) {
 #[inline]
 fn build_frame(frame_type: u8, id: &str, payload: &[u8]) -> Vec<u8> {
     let id_bytes = id.as_bytes();
-    debug_assert_eq!(id_bytes.len(), ID_LEN, "correlation id must be a 36-byte UUID");
+    debug_assert_eq!(
+        id_bytes.len(),
+        ID_LEN,
+        "correlation id must be a 36-byte UUID"
+    );
     let mut frame = Vec::with_capacity(1 + ID_LEN + payload.len());
     frame.push(frame_type);
     frame.extend_from_slice(id_bytes);
@@ -100,6 +105,8 @@ async fn dispatch(msg: String, peer: Arc<Peer>, base_path: &PathBuf) {
     match handle(&msg, base_path).await {
         // ── Normal JSON response ──────────────────────────────────────────────
         P2pHandleResult::Json(json) => {
+            info!("[peer] response {:#?}", json);
+            info!("[peer] response length {:#?}", json.len());
             if let Err(e) = peer.send(&json).await {
                 eprintln!("[p2p_connect] control send error: {e}");
             }
@@ -113,8 +120,7 @@ async fn dispatch(msg: String, peer: Arc<Peer>, base_path: &PathBuf) {
         } => {
             // 1. Send HEADER frame on the file data channel.
             //    [ 0x01 ][ 36-byte UUID ][ UTF-8 JSON payload ]
-            let header_frame =
-                build_frame(FRAME_HEADER, &req_id, header_payload_json.as_bytes());
+            let header_frame = build_frame(FRAME_HEADER, &req_id, header_payload_json.as_bytes());
             if let Err(e) = peer.send_binary(&header_frame).await {
                 eprintln!("[p2p_connect] HEADER frame send error: {e}");
                 // Send an ERROR frame so the client doesn't hang.
@@ -165,8 +171,7 @@ async fn dispatch(msg: String, peer: Arc<Peer>, base_path: &PathBuf) {
                             let chunk_frame = build_frame(FRAME_CHUNK, &req_id, slice);
                             if let Err(e) = peer.send_binary(&chunk_frame).await {
                                 eprintln!("[p2p_connect] CHUNK frame send error: {e}");
-                                let err_frame =
-                                    build_frame(FRAME_ERROR, &req_id, e.as_bytes());
+                                let err_frame = build_frame(FRAME_ERROR, &req_id, e.as_bytes());
                                 let _ = peer.send_binary(&err_frame).await;
                                 return;
                             }
@@ -177,8 +182,7 @@ async fn dispatch(msg: String, peer: Arc<Peer>, base_path: &PathBuf) {
                         let e: std::io::Error = e;
                         eprintln!("[p2p_connect] stream read error: {e}");
                         // [ 0x04 ][ 36-byte UUID ][ UTF-8 error message ]
-                        let err_frame =
-                            build_frame(FRAME_ERROR, &req_id, e.to_string().as_bytes());
+                        let err_frame = build_frame(FRAME_ERROR, &req_id, e.to_string().as_bytes());
                         let _ = peer.send_binary(&err_frame).await;
                         break;
                     }

@@ -213,6 +213,120 @@ async fn list_nonexistent_returns_not_found() {
     assert_err(&v, "not_found");
 }
 
+/// Comprehensive listing test covering:
+/// - directory name with space (path sent as `%20`-encoded)
+/// - children: plain names, spaces, unicode (UTF-8), special chars (#, &, [])
+/// - correct `is_dir` flag for subdirectory children
+/// - all required entry fields present (path, is_dir, size, etag, last_modified)
+#[tokio::test]
+async fn list_special_names() {
+    // --- plain children ---
+    setup_file("ls_mixed/plain.txt", "plain");
+
+    // --- spaces (paths sent percent-encoded, filesystem uses real spaces) ---
+    setup_file("ls_mixed/hello world.txt", "hw");
+    setup_dir("ls_mixed/sub dir");
+
+    // --- unicode ---
+    setup_file("ls_mixed/résumé.txt", "cv");
+    setup_file("ls_mixed/über.md", "ue");
+    setup_dir("ls_mixed/été");
+
+    // --- special chars valid on the filesystem ---
+    setup_file("ls_mixed/report#1.txt", "r1");
+    setup_file("ls_mixed/a&b.txt", "ab");
+    setup_file("ls_mixed/[draft].txt", "d");
+
+    // Path itself uses %20 encoding for the parent (plain name here, but
+    // verifies decode is applied).
+    let req = r#"{"id":"l_all","op":"fs.list","payload":{"path":"ls_mixed"}}"#;
+    let resp = handle_json(req).await;
+    let v = parse(&resp);
+    assert_ok(&v);
+
+    let entries = v["data"].as_array().expect("entries array");
+
+    // ── schema: every entry must have all fields ──────────────────────────
+    for entry in entries.iter() {
+        assert!(entry["path"].is_string(), "path missing: {entry}");
+        assert!(entry["is_dir"].is_boolean(), "is_dir missing: {entry}");
+        assert!(entry["size"].is_number(), "size missing: {entry}");
+        assert!(entry["etag"].is_string(), "etag missing: {entry}");
+        assert!(
+            entry["last_modified"].is_string(),
+            "last_modified missing: {entry}"
+        );
+    }
+
+    let paths: Vec<&str> = entries
+        .iter()
+        .map(|e| e["path"].as_str().unwrap())
+        .collect();
+
+    // ── plain ─────────────────────────────────────────────────────────────
+    assert!(
+        paths.iter().any(|p| p.contains("plain.txt")),
+        "plain.txt missing: {paths:?}"
+    );
+
+    // ── spaces ────────────────────────────────────────────────────────────
+    assert!(
+        paths.iter().any(|p| p.contains("hello world.txt")),
+        "hello world.txt missing: {paths:?}"
+    );
+    let sub_dir_entry = entries
+        .iter()
+        .find(|e| e["path"].as_str().unwrap_or("").contains("sub dir"))
+        .expect("sub dir entry missing");
+    assert_eq!(sub_dir_entry["is_dir"], true);
+
+    // ── unicode ───────────────────────────────────────────────────────────
+    assert!(
+        paths.iter().any(|p| p.contains("résumé.txt")),
+        "résumé.txt missing: {paths:?}"
+    );
+    assert!(
+        paths.iter().any(|p| p.contains("über.md")),
+        "über.md missing: {paths:?}"
+    );
+    assert!(
+        paths.iter().any(|p| p.contains("été")),
+        "été missing: {paths:?}"
+    );
+
+    // ── special chars ─────────────────────────────────────────────────────
+    assert!(
+        paths.iter().any(|p| p.contains("report#1.txt")),
+        "report#1.txt missing: {paths:?}"
+    );
+    assert!(
+        paths.iter().any(|p| p.contains("a&b.txt")),
+        "a&b.txt missing: {paths:?}"
+    );
+    assert!(
+        paths.iter().any(|p| p.contains("[draft].txt")),
+        "[draft].txt missing: {paths:?}"
+    );
+
+    // ── listing a directory with %20-encoded path ─────────────────────────
+    // Create a parent dir whose name has a space; send its path percent-encoded.
+    setup_file("my documents/notes.txt", "hi");
+    let req2 = r#"{"id":"l_enc","op":"fs.list","payload":{"path":"my%20documents"}}"#;
+    let resp2 = handle_json(req2).await;
+    let v2 = parse(&resp2);
+    assert_ok(&v2);
+    let paths2: Vec<&str> = v2["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["path"].as_str().unwrap())
+        .collect();
+    assert!(
+        paths2.iter().any(|p| p.contains("notes.txt")),
+        "notes.txt missing: {paths2:?}"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // fs.get
 // ---------------------------------------------------------------------------
@@ -437,7 +551,8 @@ async fn copy_file_creates_destination() {
 #[tokio::test]
 async fn copy_source_not_found_returns_not_found() {
     remove("copy_no_src.txt");
-    let req = r#"{"id":"c2","op":"fs.copy","payload":{"src":"copy_no_src.txt","dst":"copy_no_dst.txt"}}"#;
+    let req =
+        r#"{"id":"c2","op":"fs.copy","payload":{"src":"copy_no_src.txt","dst":"copy_no_dst.txt"}}"#;
     let resp = handle_json(req).await;
     let v = parse(&resp);
     assert_err(&v, "not_found");
@@ -474,7 +589,8 @@ async fn move_file_renames_it() {
 #[tokio::test]
 async fn move_source_not_found_returns_not_found() {
     remove("mv_no_src.txt");
-    let req = r#"{"id":"mv2","op":"fs.move","payload":{"src":"mv_no_src.txt","dst":"mv_no_dst.txt"}}"#;
+    let req =
+        r#"{"id":"mv2","op":"fs.move","payload":{"src":"mv_no_src.txt","dst":"mv_no_dst.txt"}}"#;
     let resp = handle_json(req).await;
     let v = parse(&resp);
     assert_err(&v, "not_found");
@@ -528,6 +644,9 @@ async fn error_response_contains_error_field() {
     let resp = handle_json(req).await;
     let v = parse(&resp);
     assert_eq!(v["ok"], false);
-    assert!(v["error"].is_string(), "error field should be a string: {v}");
+    assert!(
+        v["error"].is_string(),
+        "error field should be a string: {v}"
+    );
     assert!(v["data"].is_null(), "data should be absent on error: {v}");
 }

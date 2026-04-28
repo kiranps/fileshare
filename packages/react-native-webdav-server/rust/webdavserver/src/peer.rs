@@ -476,8 +476,6 @@ impl Peer {
         let deadline =
             tokio::time::Instant::now() + Duration::from_secs(self.config.poll_timeout_secs);
 
-        info!("poll offer url {:#?}", url);
-
         loop {
             if tokio::time::Instant::now() > deadline {
                 info!("timed out {}", self.config.poll_timeout_secs);
@@ -487,27 +485,15 @@ impl Peer {
                 ));
             }
 
-            info!("before offet call");
-
             let resp = client
                 .get(&url)
                 .send()
                 .await
-                .map_err(|e| {
-                    info!("request1 error: {:?}", e);
-                    e.to_string()
-                })?
+                .map_err(|e| e.to_string())?
                 .error_for_status()
-                .map_err(|e| {
-                    info!("request2 error: {:?}", e);
-                    e.to_string()
-                })?;
-
-            info!("offer resp {:#?}", resp);
+                .map_err(|e| e.to_string())?;
 
             let body: OfferOrPending = resp.json().await.map_err(|e| e.to_string())?;
-
-            info!("offer body {:#?}", body);
 
             match body {
                 OfferOrPending::Offer(offer) => {

@@ -72,6 +72,7 @@ class PeerRPC {
 
 		peer.on("data", (raw: Buffer | string) => {
 			const text = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
+			console.log(text);
 			const msg: RPCMessage = JSON.parse(text);
 			this.handleMessage(msg);
 		});
@@ -249,10 +250,8 @@ class P2PService {
 			try {
 				await postOffer(sid, JSON.stringify(data));
 				const answer = await pollAnswer(sid);
-				console.log(answer);
 				peer.signal(answer);
 			} catch (err: any) {
-				console.log(err);
 				this.state = "idle";
 				this.cleanup();
 				conn.emit("error", err);
